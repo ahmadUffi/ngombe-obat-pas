@@ -1,0 +1,191 @@
+import React, { useReducer, useState } from "react";
+import { supabase } from "../supabaseClient";
+import { logo, backgroundRegister } from "../assets";
+
+const initialState = {
+  email: "",
+  username: "",
+  password: "",
+  confirmPassword: "",
+  noHp: "",
+  profile: null,
+  error: null,
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ERROR":
+      return { ...state, error: action.value };
+    default:
+      return state;
+  }
+}
+
+const Register = () => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const handleChange = (e) => {
+    const value =
+      e.target.name === "profile" ? e.target.files[0] : e.target.value;
+    dispatch({ type: "SET_FIELD", field: e.target.name, value });
+  };
+
+  const submitHandler = async (e) => {
+    e.preventDefault();
+    if (state.password !== state.confirmPassword) {
+      dispatch({ type: "SET_ERROR", value: "Password tidak cocok" });
+      return;
+    }
+
+    try {
+      // Sign up
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: state.email,
+          password: state.password,
+          email_confirm: true,
+        });
+
+      if (signUpError) throw signUpError;
+
+      const user = signUpData.user;
+
+      console.log(user);
+
+      // Upload profile image (opsional)
+      let profileImgUrl = null;
+      if (state.profile) {
+        const fileExt = state.profile.name.split(".").pop();
+        const filePath = `profile_${user.id}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("profile-images")
+          .upload(filePath, state.profile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("profile-images")
+          .getPublicUrl(filePath);
+
+        profileImgUrl = publicUrlData.publicUrl;
+      }
+
+      // Save profile to table
+      const { error: dbError } = await supabase.from("profile").insert([
+        {
+          user_id: user.id,
+          email: state.email,
+          username: state.username,
+          no_hp: state.noHp,
+          img_profile: profileImgUrl,
+        },
+      ]);
+
+      if (dbError) throw dbError;
+      alert("Registrasi berhasil. Silakan verifikasi email.");
+    } catch (err) {
+      dispatch({ type: "SET_ERROR", value: err.message });
+    }
+  };
+
+  const styles = {
+    input: {
+      width: "317px",
+      padding: "10px",
+      borderRadius: "5px",
+      marginBottom: "10px",
+      outline: "none",
+      border: "1px solid #ccc",
+      backgroundColor: "white",
+    },
+  };
+
+  return (
+    <div className="regiter grid  lg:grid-cols-2 grid-rows-2 lg:grid-rows-1 items-center h-[100dvh] overflow-hidden">
+      <div className="gambar order-2 lg:order-1 relative z-10">
+        <img
+          src={backgroundRegister}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <div className="relative z-20 lg:flex items-center order-1 lg:order-2 md:order-1">
+        <div className="w-[290px] md:w-[387px] fixed top-[40%] translate-y-[-40%] lg:translate-y-[0] shadow-xl left-[50%] translate-x-[-50%] lg:translate-x-[0] lg:static z-30 bg-[#FFE7DF] h-max p-6 rounded-xl flex flex-col m-auto items-center gap-10">
+          <div className="logo">
+            <img src={logo} alt="logo" className="w-19 md:w-25" />
+          </div>
+          {state.error && <p className="text-red-500">{state.error}</p>}
+          <form onSubmit={submitHandler} className="flex  w-full flex-col px-1">
+            <input
+              type="email"
+              name="email"
+              placeholder="Masukkan Email Anda"
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+              value={state.email}
+              required
+            />
+
+            <input
+              type="text"
+              name="username"
+              placeholder="Masukkan Username Anda"
+              // style={styles.input}
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+              value={state.username}
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Masukkan Password Anda"
+              // style={styles.input}
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+              value={state.password}
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Konfirmasi Password"
+              // style={styles.input}
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+              value={state.confirmPassword}
+              required
+            />
+            <input
+              type="number"
+              name="noHp"
+              placeholder="Masukkan No WhatsApp Anda"
+              // style={styles.input}
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+              value={state.noHp}
+              required
+            />
+            <input
+              type="file"
+              name="profile"
+              // style={styles.input}
+              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
+              onChange={handleChange}
+            />
+            <button
+              type="submit"
+              className="bg-white w-max py-1.5 px-5 rounded-md m-auto cursor-pointer"
+            >
+              Daftar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Register;

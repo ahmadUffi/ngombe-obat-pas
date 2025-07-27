@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --white: #fcfcfc;
+  --green: #f3fff4;
+  --pink: #ffeded;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#search {
+  outline: none;
+  border: none;
+  background-color: transparent;
+}
+
+#search:active {
+  outline: none;
+  border: none;
+  background-color: transparent;
+}
