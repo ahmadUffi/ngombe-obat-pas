@@ -6,8 +6,8 @@ import { AuthContext } from "../hooks/useAuth";
 import MainPage from "../Page/MainPage";
 import Jadwal from "../Page/Jadwal";
 import Control from "../Page/Control";
-import History from "../Page/History";
 import Note from "../Page/Note";
+import History from "../Page/History";
 import Login from "../components/Login";
 import Register from "../components/Register";
 
@@ -73,19 +73,19 @@ export const routes = [
     showInNav: true,
   },
   {
-    path: "/history",
-    element: <History />,
-    isProtected: true,
-    title: "Riwayat",
-    icon: "📊",
-    showInNav: true,
-  },
-  {
     path: "/note",
     element: <Note />,
     isProtected: true,
     title: "Catatan",
     icon: "📝",
+    showInNav: true,
+  },
+  {
+    path: "/history",
+    element: <History />,
+    isProtected: true,
+    title: "Riwayat",
+    icon: "📊",
     showInNav: true,
   },
 ];

@@ -32,8 +32,13 @@ const Jadwal = () => {
   const loadJadwalData = async () => {
     try {
       const data = await getAllJadwal();
+      console.log("Jadwal API Response:", data); // Debug log
+
+      // Ensure data is an array
+      const dataArray = Array.isArray(data) ? data : [];
+
       // Transform API data to match frontend format with safe defaults
-      const transformedData = data.map((item) => ({
+      const transformedData = dataArray.map((item) => ({
         ...item,
         id: item.id || Math.random().toString(36).substr(2, 9), // Ensure ID exists
         nama_obat: item.nama_obat || "Obat tidak diketahui",

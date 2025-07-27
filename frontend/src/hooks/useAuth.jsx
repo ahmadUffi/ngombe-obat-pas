@@ -5,6 +5,15 @@ import { apiService } from "../api/apiservice";
 
 export const AuthContext = createContext();
 
+// Create a hook to use the auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => apiService.getToken());
   const [user, setUser] = useState(null);

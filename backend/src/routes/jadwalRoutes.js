@@ -16,6 +16,6 @@ router.get("/get-for-web", verifySupabaseUser, getAllJadwalbyIDForWeb);
 router.get("/get-for-iot", verifySupabaseUser, getAllJadwalbyIDForIot);
 router.put("/update-stock-obat-iot", updateStockObatByIdForIot);
 router.put("/update-stock-obat-web", updateStockObatByIdForWeb);
-router.delete("/delete", verifySupabaseUser, deleteJadwalById);
+router.delete("/delete/:jadwal_id", verifySupabaseUser, deleteJadwalById);
 
 export default router;

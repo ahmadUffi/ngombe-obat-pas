@@ -5,77 +5,75 @@ import {
   getJadwalByIDProfile,
   updateObatByID,
 } from "../services/jadwalService.js";
-import { asyncHandler } from "../middleware/errorHandler.js";
 
-export const inputJadwal = asyncHandler(async (req, res) => {
-  const user_id = req.user.id;
-  await createJadwal(user_id, req.body);
+export const inputJadwal = async (req, res) => {
+  try {
+    const user_id = req.user.id; // ✅ ambil dari .id, bukan .sub
+    await createJadwal(user_id, req.body);
+    return res.status(201).json({
+      message: "Jadwal berhasil dibuat",
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
 
-  res.status(201).json({
-    success: true,
-    message: "Jadwal berhasil dibuat",
-  });
-});
+export const getAllJadwalbyIDForWeb = async (req, res) => {
+  try {
+    const user_id = req.user.id; // dari token yang didecode di middleware
+    const jadwals = await getJadwalByID(user_id);
 
-export const getAllJadwalbyIDForWeb = asyncHandler(async (req, res) => {
-  const user_id = req.user.id;
-  const jadwals = await getJadwalByID(user_id);
+    return res.status(200).json(jadwals);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
 
-  res.status(200).json(jadwals);
-});
+export const getAllJadwalbyIDForIot = async (req, res) => {
+  try {
+    const user_id = req.user.id; // dari token yang didecode di middleware
+    const jadwals = await getJadwalByIDProfile(user_id);
 
-export const getAllJadwalbyIDForIot = asyncHandler(async (req, res) => {
-  const user_id = req.user.id;
-  const jadwals = await getJadwalByIDProfile(user_id);
+    return res.status(200).json(jadwals);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
 
-  res.status(200).json(jadwals);
-});
-
-export const updateStockObatByIdForIot = asyncHandler(async (req, res) => {
+export const updateStockObatByIdForIot = async (req, res) => {
   const { id_obat } = req.body;
-
-  if (!id_obat) {
-    return res.status(400).json({
-      success: false,
-      message: "ID obat harus diisi",
-    });
+  try {
+    const result = await updateObatByID(id_obat, "iot");
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
+};
 
-  const result = await updateObatByID(id_obat, "iot");
-
-  res.status(200).json(result);
-});
-
-export const updateStockObatByIdForWeb = asyncHandler(async (req, res) => {
+export const updateStockObatByIdForWeb = async (req, res) => {
   const { id_obat, newStock } = req.body;
-
-  if (!id_obat || newStock === undefined) {
-    return res.status(400).json({
-      success: false,
-      message: "ID obat dan stock baru harus diisi",
-    });
+  try {
+    const result = await updateObatByID(id_obat, "web", newStock);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
+};
 
-  const result = await updateObatByID(id_obat, "web", newStock);
-
-  res.status(200).json(result);
-});
-
-export const deleteJadwalById = asyncHandler(async (req, res) => {
+export const deleteJadwalById = async (req, res) => {
+  const { jadwal_id } = req.params;
   const user_id = req.user.id;
-  const { jadwal_id } = req.body;
 
-  if (!jadwal_id) {
-    return res.status(400).json({
+  try {
+    await deleteJadwal(jadwal_id, user_id);
+    return res.status(200).json({
+      success: true,
+      message: "Jadwal berhasil dihapus",
+    });
+  } catch (err) {
+    return res.status(500).json({
       success: false,
-      message: "ID jadwal harus diisi",
+      message: err.message,
     });
   }
-
-  await deleteJadwal(jadwal_id, user_id);
-
-  res.status(200).json({
-    success: true,
-    message: "Jadwal berhasil dihapus",
-  });
-});
+};

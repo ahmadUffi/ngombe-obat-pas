@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import CalendarIcon from "./svg/CalendarIcon";
 import NoteIcon from "./svg/NoteIcon";
 import ControlIcon from "./svg/ControlIcon";
+import HistoryIcon from "./svg/HistoryIcon";
 import { logo } from "../../assets";
 
 const NavbarLeft = ({ isOpen, onClose }) => {
@@ -130,32 +131,6 @@ const NavbarLeft = ({ isOpen, onClose }) => {
               </button>
             </li>
 
-            {/* Riwayat */}
-            <li className="w-full">
-              <button
-                onClick={() => handleNavClick("/history")}
-                className={`${styles.icon} w-full`}
-                aria-label="Go to History"
-              >
-                <svg
-                  className="w-6 h-6 text-gray-700 group-hover:text-gray-900"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Riwayat
-                </span>
-              </button>
-            </li>
-
             {/* Catatan */}
             <li className="w-full">
               <button
@@ -166,6 +141,20 @@ const NavbarLeft = ({ isOpen, onClose }) => {
                 <NoteIcon />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
                   Catatan
+                </span>
+              </button>
+            </li>
+
+            {/* Riwayat */}
+            <li className="w-full">
+              <button
+                onClick={() => handleNavClick("/history")}
+                className={`${styles.icon} w-full`}
+                aria-label="Go to History"
+              >
+                <HistoryIcon />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                  Riwayat
                 </span>
               </button>
             </li>

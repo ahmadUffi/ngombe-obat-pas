@@ -32,15 +32,13 @@ const Control = () => {
   const loadControlData = async () => {
     try {
       const data = await getAllControl();
+      console.log("API Response:", data); // Debug log
 
-      if (!data || data.length === 0) {
-        console.log("No control data found");
-        setControlSchedules([]);
-        return;
-      }
+      // Ensure data is an array
+      const dataArray = Array.isArray(data) ? data : [];
 
       // Transform API data to match frontend format
-      const transformedData = data.map((item) => ({
+      const transformedData = dataArray.map((item) => ({
         id: item.id,
         tanggal: item.tanggal || "",
         dokter: item.dokter || "Dokter tidak diketahui",
@@ -48,8 +46,8 @@ const Control = () => {
         nama_pasien: item.nama_pasien || "Pasien tidak diketahui",
         isDone: item.isDone || false,
         created_at: item.created_at || "",
+        updated_at: item.updated_at || "",
       }));
-
       setControlSchedules(transformedData);
     } catch (err) {
       console.error("Error loading control data:", err);
@@ -72,10 +70,10 @@ const Control = () => {
     try {
       // Transform frontend data to API format
       const apiData = {
-        title: newSchedule.dokter || newSchedule.title,
-        description: newSchedule.nama_pasien || newSchedule.description,
-        scheduled_date: newSchedule.tanggal || newSchedule.scheduled_date,
-        type: newSchedule.type || "medical_checkup",
+        tanggal: newSchedule.tanggal,
+        dokter: newSchedule.dokter,
+        waktu: newSchedule.waktu,
+        nama_pasien: newSchedule.nama_pasien,
       };
 
       await createControl(apiData);
@@ -84,7 +82,12 @@ const Control = () => {
       alert("Jadwal kontrol berhasil dibuat!");
     } catch (err) {
       console.error("Error creating control:", err);
-      alert("Gagal membuat jadwal kontrol: " + err.message);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Gagal membuat jadwal kontrol";
+      alert(errorMessage);
     }
   };
 
@@ -98,11 +101,10 @@ const Control = () => {
   const handleUpdateSchedule = async (updatedSchedule) => {
     try {
       const apiData = {
-        title: updatedSchedule.dokter || updatedSchedule.title,
-        description: updatedSchedule.nama_pasien || updatedSchedule.description,
-        scheduled_date:
-          updatedSchedule.tanggal || updatedSchedule.scheduled_date,
-        type: updatedSchedule.type || "medical_checkup",
+        tanggal: updatedSchedule.tanggal,
+        dokter: updatedSchedule.dokter,
+        waktu: updatedSchedule.waktu,
+        nama_pasien: updatedSchedule.nama_pasien,
       };
 
       await editControl(editingData.id, apiData);
@@ -112,38 +114,43 @@ const Control = () => {
       alert("Jadwal kontrol berhasil diupdate!");
     } catch (err) {
       console.error("Error updating control:", err);
-      alert("Gagal mengupdate jadwal kontrol: " + err.message);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Gagal mengupdate jadwal kontrol";
+      alert(errorMessage);
     }
   };
 
-  // Handle mark as done
-  const handleDeleteSchedule = async (schedule) => {
+  // Handle marking schedule as done
+  const handleMarkDone = async (schedule) => {
     if (
       confirm(
         `Apakah Anda yakin ingin menandai jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} sebagai selesai?`
       )
     ) {
       try {
-        console.log("Marking as done, ID:", schedule.id);
-        const result = await markDone(schedule.id);
-        console.log("Mark as done result:", result);
+        await markDone(schedule.id);
         loadControlData(); // Reload data
         alert("Jadwal kontrol berhasil ditandai selesai!");
       } catch (err) {
         console.error("Error marking done:", err);
-        alert(
-          "Gagal menandai selesai: " +
-            (err.response?.data?.message || err.message)
-        );
+        const errorMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Gagal menandai selesai";
+        alert(errorMessage);
       }
     }
   };
 
   // Handle permanently deleting schedule
-  const handleRealDeleteSchedule = async (schedule) => {
+  const handleDelete = async (schedule) => {
     if (
       confirm(
-        `Apakah Anda yakin ingin MENGHAPUS PERMANEN jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal}?`
+        `Apakah Anda yakin ingin menghapus permanen jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal}? Tindakan ini tidak dapat dibatalkan.`
       )
     ) {
       try {
@@ -152,7 +159,12 @@ const Control = () => {
         alert("Jadwal kontrol berhasil dihapus!");
       } catch (err) {
         console.error("Error deleting control:", err);
-        alert("Gagal menghapus jadwal kontrol: " + err.message);
+        const errorMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Gagal menghapus jadwal kontrol";
+        alert(errorMessage);
       }
     }
   };
@@ -175,9 +187,9 @@ const Control = () => {
         return controlSchedules.filter(
           (schedule) => schedule.tanggal === tomorrowStr
         );
-      case "upcoming":
+      case "completed":
         return controlSchedules.filter(
-          (schedule) => schedule.tanggal > todayStr
+          (schedule) => schedule.isDone === true
         );
       case "past":
         return controlSchedules.filter(
@@ -277,17 +289,17 @@ const Control = () => {
               )
             </button>
             <button
-              onClick={() => setFilter("upcoming")}
+              onClick={() => setFilter("completed")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === "upcoming"
+                filter === "completed"
                   ? "bg-green-500 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
-              Mendatang (
+              Selesai (
               {
                 controlSchedules.filter(
-                  (s) => s.tanggal > new Date().toISOString().split("T")[0]
+                  (s) => s.isDone === true
                 ).length
               }
               )
@@ -328,11 +340,11 @@ const Control = () => {
               <div className="text-2xl font-bold text-green-600">
                 {
                   controlSchedules.filter(
-                    (s) => s.tanggal > new Date().toISOString().split("T")[0]
+                    (s) => s.isDone === true
                   ).length
                 }
               </div>
-              <div className="text-sm text-gray-600">Mendatang</div>
+              <div className="text-sm text-gray-600">Selesai</div>
             </div>
           </div>
         </div>
@@ -344,8 +356,8 @@ const Control = () => {
               <BoxControl
                 data={schedule}
                 onEdit={handleEditSchedule}
-                onDelete={handleDeleteSchedule}
-                onRealDelete={handleRealDeleteSchedule}
+                onDelete={handleDelete}
+                onMarkDone={handleMarkDone}
               />
             </div>
           ))}

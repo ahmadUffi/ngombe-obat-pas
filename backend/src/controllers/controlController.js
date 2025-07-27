@@ -5,110 +5,115 @@ import {
   updateControl,
   deleteControl,
 } from "../services/controlService.js";
-import { asyncHandler } from "../middleware/errorHandler.js";
 
-// Create Kontrol
-export const createKontrol = asyncHandler(async (req, res) => {
+// ✅ Create Kontrol
+export const createKontrol = async (req, res) => {
   const user_id = req.user.id;
   const { tanggal, dokter, waktu, nama_pasien } = req.body;
 
-  if (!tanggal || !dokter || !waktu || !nama_pasien) {
-    return res.status(400).json({
+  try {
+    const newKontrol = await createControl(user_id, {
+      tanggal,
+      dokter,
+      waktu,
+      nama_pasien,
+    });
+    return res.status(201).json({
+      success: true,
+      message: "Kontrol berhasil dibuat",
+      data: newKontrol,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "Semua field harus diisi",
+      message: "Gagal membuat kontrol",
+      error: error.message,
     });
   }
+};
 
-  const newKontrol = await createControl(user_id, {
-    tanggal,
-    dokter,
-    waktu,
-    nama_pasien,
-  });
-
-  res.status(201).json({
-    success: true,
-    message: "Kontrol berhasil dibuat",
-    data: newKontrol,
-  });
-});
-
-// Get All Kontrol for User
-export const getAllKontrol = asyncHandler(async (req, res) => {
+//  Get All Kontrol for User
+export const getAllKontrol = async (req, res) => {
   const user_id = req.user.id;
-  const kontrols = await getControl(user_id);
 
-  res.status(200).json({
-    success: true,
-    message: "Data kontrol berhasil diambil",
-    data: kontrols,
-  });
-});
+  try {
+    const kontrols = await getControl(user_id);
+    return res.status(200).json({
+      success: true,
+      message: "Data kontrol berhasil diambil",
+      data: kontrols,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mengambil data kontrol",
+      error: error.message,
+    });
+  }
+};
 
 // Update isDone Status
-export const setKontrolIsDone = asyncHandler(async (req, res) => {
-  const { id } = req.body;
-  const user_id = req.user.id;
+export const setKontrolIsDone = async (req, res) => {
+  const { id, isDone } = req.body;
 
-  if (!id) {
-    return res.status(400).json({
+  try {
+    const updated = await updateIsDone(id, isDone);
+    return res.status(200).json({
+      success: true,
+      message: "Status isDone berhasil diupdate",
+      data: updated,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "ID harus diisi",
+      message: "Gagal update status isDone",
+      error: error.message,
     });
   }
+};
 
-  // Always set to true when marking as done
-  const result = await updateIsDone(id, true);
-
-  res.status(200).json({
-    success: true,
-    message: "Kontrol berhasil ditandai selesai",
-    data: result,
-  });
-});
-
-// Update Kontrol Data
-export const editKontrol = asyncHandler(async (req, res) => {
+//  Update Kontrol Data (tanggal, dokter, waktu)
+export const editKontrol = async (req, res) => {
   const { id } = req.params;
   const { tanggal, dokter, waktu, nama_pasien } = req.body;
 
-  if (!id) {
-    return res.status(400).json({
+  try {
+    const updated = await updateControl(id, {
+      tanggal,
+      dokter,
+      waktu,
+      nama_pasien,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Kontrol berhasil diupdate",
+      data: updated,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "ID kontrol harus diisi",
+      message: "Gagal update kontrol",
+      error: error.message,
     });
   }
-
-  const updated = await updateControl(id, {
-    tanggal,
-    dokter,
-    waktu,
-    nama_pasien,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: "Kontrol berhasil diupdate",
-    data: updated,
-  });
-});
+};
 
 // Delete Kontrol
-export const deleteKontrol = asyncHandler(async (req, res) => {
-  const user_id = req.user.id;
+export const deleteKontrol = async (req, res) => {
   const { id } = req.params;
+  const user_id = req.user.id;
 
-  if (!id) {
-    return res.status(400).json({
+  try {
+    await deleteControl(id, user_id);
+    return res.status(200).json({
+      success: true,
+      message: "Kontrol berhasil dihapus",
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "ID kontrol harus diisi",
+      message: "Gagal menghapus kontrol",
+      error: error.message,
     });
   }
-
-  await deleteControl(id, user_id);
-
-  res.status(200).json({
-    success: true,
-    message: "Kontrol berhasil dihapus",
-  });
-});
+};
