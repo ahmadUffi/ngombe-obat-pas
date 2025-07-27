@@ -7,29 +7,42 @@ import { useState } from "react";
 
 const Jadwal = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditQuantityOpen, setIsEditQuantityOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [filter, setFilter] = useState("all");
-  const [viewMode, setViewMode] = useState("flex"); // "flex" atau "grid"
 
   const cliCkHandler = () => {
     setIsOpen(!isOpen);
     console.log(isOpen);
   };
 
-  // Sample data dengan format baru
-  const jadwalData = [
+  const handleEditQuantity = (item) => {
+    setEditingItem(item);
+    setIsEditQuantityOpen(true);
+  };
+
+  const handleCloseEditQuantity = () => {
+    setIsEditQuantityOpen(false);
+    setEditingItem(null);
+  };
+
+  // Sample data dengan format baru - converted to state
+  const [jadwalData, setJadwalData] = useState([
     {
+      id: 1,
       nama_obat: "Amoxicillin 500mg",
       nama_pasien: "Ahmad Uffi",
       dosis_obat: 1,
       jumlah_obat: 12,
-      jam_awal: ["10:00", "12:00", "18:00"],
-      jam_berakhir: ["11:00", "12:30", "18:30"],
+      jam_awal: ["10:00", "13:00", "18:00"],
+      jam_berakhir: ["11:00", "13:30", "18:30"],
       catatan:
         "Antibiotik untuk infeksi saluran pernapasan. Harus diminum sampai habis meskipun gejala sudah membaik. Jangan lupa minum air putih yang banyak.",
       kategori: "sebelum makan",
       slot_obat: "A",
     },
     {
+      id: 2,
       nama_obat: "Paracetamol 500mg",
       nama_pasien: "Siti Nurhaliza",
       dosis_obat: 1,
@@ -42,6 +55,7 @@ const Jadwal = () => {
       slot_obat: "B",
     },
     {
+      id: 3,
       nama_obat: "Vitamin D3",
       nama_pasien: "Budi Santoso",
       dosis_obat: 2,
@@ -54,6 +68,7 @@ const Jadwal = () => {
       slot_obat: "C",
     },
     {
+      id: 4,
       nama_obat: "Omeprazole 20mg",
       nama_pasien: "Maria Sari",
       dosis_obat: 1,
@@ -66,6 +81,7 @@ const Jadwal = () => {
       slot_obat: "D",
     },
     {
+      id: 5,
       nama_obat: "Metformin 500mg",
       nama_pasien: "Andi Wijaya",
       dosis_obat: 1,
@@ -78,6 +94,7 @@ const Jadwal = () => {
       slot_obat: "E",
     },
     {
+      id: 6,
       nama_obat: "Bodrek",
       nama_pasien: "fulan",
       dosis_obat: 1,
@@ -89,6 +106,7 @@ const Jadwal = () => {
       slot_obat: "D",
     },
     {
+      id: 7,
       nama_obat: "Cetirizine 10mg",
       nama_pasien: "Lisa Permata",
       dosis_obat: 1,
@@ -100,13 +118,38 @@ const Jadwal = () => {
       kategori: "sebelum makan",
       slot_obat: "F",
     },
-  ];
+    {
+      id: 8,
+      nama_obat: "Ibuprofen 400mg",
+      nama_pasien: "Rudi Hartono",
+      dosis_obat: 1,
+      jumlah_obat: 0,
+      jam_awal: ["08:00", "20:00"],
+      jam_berakhir: ["08:30", "20:30"],
+      catatan: "Obat anti inflamasi. Stok habis, perlu beli lagi.",
+      kategori: "sesudah makan",
+      slot_obat: "G",
+    },
+    {
+      id: 9,
+      nama_obat: "Lansoprazole 30mg",
+      nama_pasien: "Dewi Sartika",
+      dosis_obat: 1,
+      jumlah_obat: 0,
+      jam_awal: ["06:00"],
+      jam_berakhir: ["06:30"],
+      catatan: "Obat lambung. Habis, segera restock.",
+      kategori: "sebelum makan",
+      slot_obat: "H",
+    },
+  ]);
 
   const filteredData = jadwalData.filter((item) => {
     if (filter === "all") return true;
-    if (filter === "critical") return item.jumlah_obat <= 3;
-    if (filter === "low") return item.jumlah_obat <= 10 && item.jumlah_obat > 3;
-    if (filter === "active") return item.jumlah_obat > 10;
+    if (filter === "habis") return item.jumlah_obat === 0;
+    if (filter === "sedikit")
+      return item.jumlah_obat <= 10 && item.jumlah_obat > 0;
+    if (filter === "aman") return item.jumlah_obat > 10;
     return true;
   });
 
@@ -118,54 +161,6 @@ const Jadwal = () => {
           <h1 className="text-2xl font-bold text-gray-800">
             Jadwal Minum Obat
           </h1>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode("flex")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                viewMode === "flex"
-                  ? "bg-white text-gray-800 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                viewMode === "grid"
-                  ? "bg-white text-gray-800 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <p className="text-gray-600 mb-4">
@@ -183,43 +178,43 @@ const Jadwal = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Semua ({jadwalData.length})
+            SEMUA ({jadwalData.length})
           </button>
           <button
-            onClick={() => setFilter("critical")}
+            onClick={() => setFilter("sedikit")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "critical"
-                ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            Kritis ({jadwalData.filter((item) => item.jumlah_obat <= 3).length})
-          </button>
-          <button
-            onClick={() => setFilter("low")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "low"
+              filter === "sedikit"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Sedikit (
+            SEDIKIT (
             {
               jadwalData.filter(
-                (item) => item.jumlah_obat <= 10 && item.jumlah_obat > 3
+                (item) => item.jumlah_obat <= 10 && item.jumlah_obat > 0
               ).length
             }
             )
           </button>
           <button
-            onClick={() => setFilter("active")}
+            onClick={() => setFilter("habis")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "active"
+              filter === "habis"
+                ? "bg-red-500 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            HABIS ({jadwalData.filter((item) => item.jumlah_obat === 0).length})
+          </button>
+          <button
+            onClick={() => setFilter("aman")}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filter === "aman"
                 ? "bg-green-500 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Aman ({jadwalData.filter((item) => item.jumlah_obat > 10).length})
+            AMAN ({jadwalData.filter((item) => item.jumlah_obat > 10).length})
           </button>
         </div>
 
@@ -276,19 +271,10 @@ const Jadwal = () => {
       </div>
 
       {/* Cards Grid */}
-      <div
-        className={
-          viewMode === "flex"
-            ? "flex flex-wrap justify-start gap-6 mb-20"
-            : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-20"
-        }
-      >
+      <div className="flex flex-wrap justify-start gap-6 mb-20">
         {filteredData.map((data, index) => (
-          <div
-            key={index}
-            className={viewMode === "flex" ? "flex-shrink-0 " : ""}
-          >
-            <BoxJadwal data={data} />
+          <div key={data.id || index} className="flex-shrink-0">
+            <BoxJadwal data={data} onEditQuantity={handleEditQuantity} />
           </div>
         ))}
       </div>
@@ -320,17 +306,165 @@ const Jadwal = () => {
         </div>
       )}
       <AddButton clickHandler={cliCkHandler} />
+
+      {/* Add Medication Modal */}
       <Modal isOpen={isOpen} onClose={cliCkHandler}>
         <InputJadwalObat
           onSubmit={(newJadwal) => {
-            console.log("New jadwal:", newJadwal);
-            // Here you would typically save the jadwal to your backend
-            // For now we'll just close the modal
+            const jadwalWithId = {
+              ...newJadwal,
+              id: Date.now(), // Simple ID generation
+            };
+            setJadwalData((prev) => [...prev, jadwalWithId]);
+            console.log("New jadwal:", jadwalWithId);
             setIsOpen(false);
           }}
         />
       </Modal>
+
+      {/* Edit Quantity Modal */}
+      <Modal isOpen={isEditQuantityOpen} onClose={handleCloseEditQuantity}>
+        <EditQuantityModal
+          item={editingItem}
+          onSubmit={(updatedQuantity) => {
+            setJadwalData((prev) =>
+              prev.map((item) =>
+                item.id === editingItem.id
+                  ? { ...item, jumlah_obat: updatedQuantity }
+                  : item
+              )
+            );
+            handleCloseEditQuantity();
+          }}
+        />
+      </Modal>
     </Layout>
+  );
+};
+
+// Edit Quantity Modal Component
+const EditQuantityModal = ({ item, onSubmit }) => {
+  const [quantity, setQuantity] = useState(item?.jumlah_obat || 0);
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (quantity < 1) {
+      setError("Jumlah obat harus minimal 1");
+      return;
+    }
+
+    if (quantity > 999) {
+      setError("Jumlah obat maksimal 999");
+      return;
+    }
+
+    onSubmit(parseInt(quantity));
+  };
+
+  if (!item) return null;
+
+  return (
+    <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl w-full max-w-md mx-auto flex flex-col shadow-2xl border border-blue-200">
+      {/* Header */}
+      <div className="p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-xl">
+        <h2 className="text-lg font-bold text-center flex items-center justify-center">
+          <span className="mr-2">💊</span>
+          Edit Jumlah Obat
+        </h2>
+        <p className="text-blue-100 text-center mt-1 text-sm">
+          Perbarui jumlah stok obat
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <h3 className="font-bold text-gray-800 flex items-center">
+            <span className="mr-2">💊</span>
+            {item.nama_obat}
+          </h3>
+          <p className="text-sm text-gray-600 mt-1 flex items-center">
+            <span className="mr-2">👤</span>
+            {item.nama_pasien}
+          </p>
+          <p className="text-xs text-gray-500 mt-2 flex items-center">
+            <span className="mr-2">📦</span>
+            Jumlah saat ini:{" "}
+            <span className="font-bold ml-1">{item.jumlah_obat}</span>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="flex items-center text-sm font-bold text-gray-700 mb-2">
+              <span className="mr-2">🔢</span>
+              Jumlah Obat Baru <span className="text-red-500 ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => {
+                  setQuantity(e.target.value);
+                  setError("");
+                }}
+                min="1"
+                max="999"
+                className={`w-full px-4 py-3 text-lg text-center border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-gradient-to-r from-white to-gray-50 ${
+                  error
+                    ? "border-red-400 focus:border-red-500 bg-red-50"
+                    : "border-gray-300 focus:border-blue-400"
+                }`}
+                placeholder="Masukkan jumlah obat"
+              />
+              {error && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className="text-red-500">⚠️</span>
+                </div>
+              )}
+            </div>
+            {error && (
+              <p className="text-red-500 text-xs mt-2 flex items-center">
+                <span className="mr-1">❌</span>
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* Quantity indicator */}
+          <div className="mb-4">
+            <div className="text-xs text-gray-600 mb-2">Status Stok:</div>
+            <div
+              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                quantity <= 3
+                  ? "bg-red-100 text-red-800"
+                  : quantity <= 10
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
+              {quantity <= 3
+                ? "🚨 Kritis - Perlu Beli Segera"
+                : quantity <= 10
+                ? "⚠️ Sedikit - Hampir Habis"
+                : "✅ Aman - Stok Cukup"}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <span className="flex items-center justify-center">
+              <span className="mr-2">💾</span>
+              Simpan Perubahan
+            </span>
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
 

@@ -1,21 +1,25 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import CalendarIcon from "./svg/CalendarIcon";
 import NoteIcon from "./svg/NoteIcon";
+import ControlIcon from "./svg/ControlIcon";
 import { logo } from "../../assets";
 
 const NavbarLeft = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+
   // style css
   const styles = {
     icon: "icon flex flex-col gap-2 items-center justify-center cursor-pointer hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 group",
   };
 
-  const handleNavClick = (section) => {
+  const handleNavClick = (path) => {
     // Close sidebar on mobile after navigation
     if (window.innerWidth < 1024) {
       onClose();
     }
-    // Add navigation logic here
-    console.log(`Navigating to ${section}`);
+    // Navigate to the specified path
+    navigate(path);
   };
 
   return (
@@ -75,7 +79,7 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             {/* Jadwal */}
             <li className="w-full">
               <button
-                onClick={() => handleNavClick("jadwal")}
+                onClick={() => handleNavClick("/jadwal")}
                 className={`${styles.icon} w-full`}
                 aria-label="Go to Schedule"
               >
@@ -86,10 +90,24 @@ const NavbarLeft = ({ isOpen, onClose }) => {
               </button>
             </li>
 
+            {/* Kontrol */}
+            <li className="w-full">
+              <button
+                onClick={() => handleNavClick("/control")}
+                className={`${styles.icon} w-full`}
+                aria-label="Go to Control"
+              >
+                <ControlIcon />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                  Kontrol
+                </span>
+              </button>
+            </li>
+
             {/* Catatan */}
             <li className="w-full">
               <button
-                onClick={() => handleNavClick("catatan")}
+                onClick={() => handleNavClick("/note")}
                 className={`${styles.icon} w-full`}
                 aria-label="Go to Notes"
               >

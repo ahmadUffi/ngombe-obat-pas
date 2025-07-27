@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BoxJadwal = ({ data }) => {
+const BoxJadwal = ({ data, onEditQuantity }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Menggunakan format data baru
@@ -103,9 +103,9 @@ const BoxJadwal = ({ data }) => {
 
   return (
     <div className="p-2">
-      <div className="w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
+      <div className="w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group max-h-[600px] flex flex-col">
         {/* Header - Always Visible */}
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 relative">
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 relative flex-shrink-0">
           {/* Status Badge */}
           <div className="absolute top-2 right-2 flex gap-1 items-start ">
             {" "}
@@ -215,11 +215,11 @@ const BoxJadwal = ({ data }) => {
 
         {/* Expanded Details */}
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${
+            isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
           } overflow-hidden`}
         >
-          <div className="p-4 space-y-4 bg-gray-50">
+          <div className="p-4 space-y-4 bg-gray-50 overflow-y-auto flex-1">
             {/* Semua Jam Minum */}
             <div>
               <p className={`${styles.title} mb-2`}>Semua Jadwal Minum</p>
@@ -348,48 +348,28 @@ const BoxJadwal = ({ data }) => {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                Edit
-              </button>
-              <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                Minum
-              </button>
-            </div>
-
             {/* Quick Actions */}
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 mb-2">Aksi Cepat</div>
               <div className="flex gap-2">
-                <button className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-700 py-1.5 px-2 rounded text-xs font-medium transition-colors">
-                  Beli Obat
+                <button
+                  onClick={() => onEditQuantity && onEditQuantity(data)}
+                  className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 py-1.5 px-2 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Edit Jumlah
                 </button>
                 <button className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-1.5 px-2 rounded text-xs font-medium transition-colors">
                   Hapus
