@@ -3,6 +3,7 @@ import {
   getControl,
   updateIsDone,
   updateControl,
+  deleteControl,
 } from "../services/controlService.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
 
@@ -46,20 +47,23 @@ export const getAllKontrol = asyncHandler(async (req, res) => {
 
 // Update isDone Status
 export const setKontrolIsDone = asyncHandler(async (req, res) => {
-  const { id, isDone } = req.body;
+  const { id } = req.body;
+  const user_id = req.user.id;
 
-  if (!id || isDone === undefined) {
+  if (!id) {
     return res.status(400).json({
       success: false,
-      message: "ID dan status isDone harus diisi",
+      message: "ID harus diisi",
     });
   }
 
-  await updateIsDone(id, isDone);
+  // Always set to true when marking as done
+  const result = await updateIsDone(id, true);
 
   res.status(200).json({
     success: true,
-    message: "Status isDone berhasil diupdate",
+    message: "Kontrol berhasil ditandai selesai",
+    data: result,
   });
 });
 
@@ -86,5 +90,25 @@ export const editKontrol = asyncHandler(async (req, res) => {
     success: true,
     message: "Kontrol berhasil diupdate",
     data: updated,
+  });
+});
+
+// Delete Kontrol
+export const deleteKontrol = asyncHandler(async (req, res) => {
+  const user_id = req.user.id;
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "ID kontrol harus diisi",
+    });
+  }
+
+  await deleteControl(id, user_id);
+
+  res.status(200).json({
+    success: true,
+    message: "Kontrol berhasil dihapus",
   });
 });

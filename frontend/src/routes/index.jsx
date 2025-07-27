@@ -6,6 +6,7 @@ import { AuthContext } from "../hooks/useAuth";
 import MainPage from "../Page/MainPage";
 import Jadwal from "../Page/Jadwal";
 import Control from "../Page/Control";
+import History from "../Page/History";
 import Note from "../Page/Note";
 import Login from "../components/Login";
 import Register from "../components/Register";
@@ -69,6 +70,14 @@ export const routes = [
     isProtected: true,
     title: "Kontrol Dokter",
     icon: "🏥",
+    showInNav: true,
+  },
+  {
+    path: "/history",
+    element: <History />,
+    isProtected: true,
+    title: "Riwayat",
+    icon: "📊",
     showInNav: true,
   },
   {

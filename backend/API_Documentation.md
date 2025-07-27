@@ -866,6 +866,38 @@ curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
   }'
 ```
 
+### DELETE `/v1/api/kontrol/delete/:id`
+
+Menghapus jadwal kontrol medis.
+
+**Request:**
+
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
 ## Endpoint Peringatan
 
 ### POST `/v1/api/peringatan/create`
@@ -1093,15 +1125,13 @@ curl -X POST http://163.53.195.57:5000/v1/api/history/insert \
   }'
 ```
 
-````
-
 **Response Success (201):**
 
 ```json
 {
   "message": "History berhasil ditambahkan"
 }
-````
+```
 
 **Example cURL:**
 
@@ -1311,58 +1341,289 @@ curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
   }'
 ```
 
----
+### DELETE `/v1/api/kontrol/delete/:id`
 
-## ⚠️ **Peringatan (Warning) Endpoints**
+Menghapus jadwal kontrol medis.
 
-All peringatan endpoints require authentication.
+**Request:**
 
-### POST `/v1/api/peringatan/create-peringatan`
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
 
-Membuat peringatan baru. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
+**Response:**
 
 ```json
 {
-  "title": "Stok Obat Habis",
-  "message": "Stok Paracetamol hampir habis",
-  "type": "stock_warning",
-  "priority": "high"
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
 }
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+## Endpoint Peringatan
+
+### POST `/v1/api/peringatan/create`
+
+Membuat peringatan baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/peringatan/create`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "pesan": "Obat hampir habis"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "Peringatan berhasil dibuat",
+  "data": {
+    "id": 1,
+    "user_id": "uuid-123",
+    "jadwal_id": "1",
+    "pesan": "Obat hampir habis",
+    "created_at": "2025-07-27T12:00:00Z"
+  }
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan pesan harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "pesan": "Obat hampir habis"
+  }'
+```
+
+### GET `/v1/api/peringatan/get-all`
+
+Mendapatkan semua peringatan pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/peringatan/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data peringatan berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": "1",
+      "pesan": "Obat hampir habis",
+      "created_at": "2025-07-27T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### GET `/v1/api/history/get-all`
+
+Mendapatkan semua riwayat pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/history/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data history berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": 1,
+      "status": "diminum",
+      "created_at": "2025-01-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+## Kode Status HTTP
+
+| Kode | Deskripsi                                              |
+| ---- | ------------------------------------------------------ |
+| 200  | OK - Request berhasil                                  |
+| 201  | Created - Resource berhasil dibuat                     |
+| 400  | Bad Request - Parameter tidak valid atau tidak lengkap |
+| 401  | Unauthorized - Token tidak valid atau tidak ada        |
+| 404  | Not Found - Resource tidak ditemukan                   |
+| 500  | Internal Server Error - Kesalahan pada server          |
+
+## Penanganan Error
+
+Semua error response menggunakan format yang konsisten:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas"
+}
+```
+
+Untuk mode development, akan ada informasi tambahan:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas",
+  "stack": "Stack trace error (hanya di development mode)"
+}
+```
+
+## 📊 Endpoint History
+
+### POST `/v1/api/history/insert`
+
+Menambahkan history baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/history/insert`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "status": "diminum"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "History berhasil dibuat"
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan status harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/insert \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "status": "diminum"
+  }'
 ```
 
 **Response Success (201):**
 
 ```json
 {
-  "message": "Peringatan berhasil dibuat"
+  "message": "History berhasil ditambahkan"
 }
 ```
 
 **Example cURL:**
 
 ```bash
-curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create-peringatan \
+curl -X POST http://163.53.195.57:5000/v1/api/history/input-history \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your_jwt_token>" \
   -d '{
-    "title": "Stok Obat Habis",
-    "message": "Stok Paracetamol hampir habis",
-    "type": "stock_warning",
-    "priority": "high"
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1
   }'
 ```
 
-### GET `/v1/api/peringatan/get-all-peringatan`
+### GET `/v1/api/history/get-all-history`
 
-Mendapatkan semua peringatan user. **Requires Authentication**
+Mendapatkan semua history user. **Requires Authentication**
 
 **Headers:**
 
@@ -1377,11 +1638,9 @@ Authorization: Bearer <jwt_token>
   {
     "id": 1,
     "user_id": "uuid-123",
-    "title": "Stok Obat Habis",
-    "message": "Stok Paracetamol hampir habis",
-    "type": "stock_warning",
-    "priority": "high",
-    "is_read": false,
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1,
     "created_at": "2025-01-27T10:00:00Z"
   }
 ]
@@ -1390,54 +1649,1798 @@ Authorization: Bearer <jwt_token>
 **Example cURL:**
 
 ```bash
-curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all-peringatan \
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
   -H "Authorization: Bearer <your_jwt_token>"
 ```
 
 ---
 
-## 🔒 **Authentication Flow**
+## 🎛️ **Control Endpoints**
 
-1. **Login**: POST ke `/v1/api/login` dengan email dan password
-2. **Dapatkan Token**: Ambil `access_token` dari response
-3. **Gunakan Token**: Sertakan token di header `Authorization: Bearer <token>` untuk endpoint yang memerlukan autentikasi
+All control endpoints require authentication.
 
-## 📝 **Error Handling**
+### POST `/v1/api/kontrol/create-kontrol`
 
-Semua endpoint menggunakan HTTP status codes standar:
+Membuat kontrol baru. **Requires Authentication**
 
-- **200**: OK - Request berhasil
-- **201**: Created - Resource berhasil dibuat
-- **400**: Bad Request - Request tidak valid
-- **401**: Unauthorized - Token tidak valid atau tidak ada
-- **404**: Not Found - Resource tidak ditemukan
-- **500**: Internal Server Error - Error server
+**Headers:**
 
-Format error response:
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
 
 ```json
 {
-  "error": "Error message description",
-  "message": "User-friendly error message"
+  "title": "Kontrol Tekanan Darah",
+  "description": "Cek tekanan darah rutin",
+  "scheduled_date": "2025-01-28",
+  "type": "medical_checkup"
 }
 ```
 
-## 🚀 **Development Notes**
+**Response Success (201):**
 
-- Server berjalan di port 5000
-- Menggunakan Supabase untuk database dan authentication
-- CORS enabled untuk semua origins
-- Request body harus dalam format JSON dengan header `Content-Type: application/json`
+```json
+{
+  "message": "Kontrol berhasil dibuat"
+}
+```
 
-## 📱 **Postman Collection**
+**Example cURL:**
 
-Untuk memudahkan testing, import collection berikut ke Postman:
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup"
+  }'
+```
 
-**Base URL Variable**: `http://163.53.195.57:5000`
+### GET `/v1/api/kontrol/get-all-kontrol`
 
-**Environment Variables:**
+Mendapatkan semua kontrol user. **Requires Authentication**
 
-- `base_url`: `http://163.53.195.57:5000`
-- `jwt_token`: `<your_jwt_token_here>`
+**Headers:**
 
-Setelah login, set variable `jwt_token` dengan access_token yang didapat dari response login.
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup",
+    "is_done": false,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/kontrol/get-all-kontrol \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### PATCH `/v1/api/kontrol/done`
+
+Menandai kontrol sebagai selesai. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "id": 1
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil ditandai selesai"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PATCH http://163.53.195.57:5000/v1/api/kontrol/done \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": 1
+  }'
+```
+
+### PUT `/v1/api/kontrol/edit/:id`
+
+Mengedit kontrol berdasarkan ID. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah Updated",
+  "description": "Cek tekanan darah rutin - updated",
+  "scheduled_date": "2025-01-29",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil diupdate"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah Updated",
+    "description": "Cek tekanan darah rutin - updated",
+    "scheduled_date": "2025-01-29",
+    "type": "medical_checkup"
+  }'
+```
+
+### DELETE `/v1/api/kontrol/delete/:id`
+
+Menghapus jadwal kontrol medis.
+
+**Request:**
+
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+## Endpoint Peringatan
+
+### POST `/v1/api/peringatan/create`
+
+Membuat peringatan baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/peringatan/create`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "pesan": "Obat hampir habis"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "Peringatan berhasil dibuat",
+  "data": {
+    "id": 1,
+    "user_id": "uuid-123",
+    "jadwal_id": "1",
+    "pesan": "Obat hampir habis",
+    "created_at": "2025-07-27T12:00:00Z"
+  }
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan pesan harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "pesan": "Obat hampir habis"
+  }'
+```
+
+### GET `/v1/api/peringatan/get-all`
+
+Mendapatkan semua peringatan pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/peringatan/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data peringatan berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": "1",
+      "pesan": "Obat hampir habis",
+      "created_at": "2025-07-27T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### GET `/v1/api/history/get-all`
+
+Mendapatkan semua riwayat pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/history/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data history berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": 1,
+      "status": "diminum",
+      "created_at": "2025-01-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+## Kode Status HTTP
+
+| Kode | Deskripsi                                              |
+| ---- | ------------------------------------------------------ |
+| 200  | OK - Request berhasil                                  |
+| 201  | Created - Resource berhasil dibuat                     |
+| 400  | Bad Request - Parameter tidak valid atau tidak lengkap |
+| 401  | Unauthorized - Token tidak valid atau tidak ada        |
+| 404  | Not Found - Resource tidak ditemukan                   |
+| 500  | Internal Server Error - Kesalahan pada server          |
+
+## Penanganan Error
+
+Semua error response menggunakan format yang konsisten:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas"
+}
+```
+
+Untuk mode development, akan ada informasi tambahan:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas",
+  "stack": "Stack trace error (hanya di development mode)"
+}
+```
+
+## 📊 Endpoint History
+
+### POST `/v1/api/history/insert`
+
+Menambahkan history baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/history/insert`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "status": "diminum"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "History berhasil dibuat"
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan status harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/insert \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "status": "diminum"
+  }'
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "History berhasil ditambahkan"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/input-history \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1
+  }'
+```
+
+### GET `/v1/api/history/get-all-history`
+
+Mendapatkan semua history user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+---
+
+## 🎛️ **Control Endpoints**
+
+All control endpoints require authentication.
+
+### POST `/v1/api/kontrol/create-kontrol`
+
+Membuat kontrol baru. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah",
+  "description": "Cek tekanan darah rutin",
+  "scheduled_date": "2025-01-28",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "Kontrol berhasil dibuat"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup"
+  }'
+```
+
+### GET `/v1/api/kontrol/get-all-kontrol`
+
+Mendapatkan semua kontrol user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup",
+    "is_done": false,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/kontrol/get-all-kontrol \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### PATCH `/v1/api/kontrol/done`
+
+Menandai kontrol sebagai selesai. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "id": 1
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil ditandai selesai"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PATCH http://163.53.195.57:5000/v1/api/kontrol/done \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": 1
+  }'
+```
+
+### PUT `/v1/api/kontrol/edit/:id`
+
+Mengedit kontrol berdasarkan ID. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah Updated",
+  "description": "Cek tekanan darah rutin - updated",
+  "scheduled_date": "2025-01-29",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil diupdate"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah Updated",
+    "description": "Cek tekanan darah rutin - updated",
+    "scheduled_date": "2025-01-29",
+    "type": "medical_checkup"
+  }'
+```
+
+### DELETE `/v1/api/kontrol/delete/:id`
+
+Menghapus jadwal kontrol medis.
+
+**Request:**
+
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+## Endpoint Peringatan
+
+### POST `/v1/api/peringatan/create`
+
+Membuat peringatan baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/peringatan/create`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "pesan": "Obat hampir habis"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "Peringatan berhasil dibuat",
+  "data": {
+    "id": 1,
+    "user_id": "uuid-123",
+    "jadwal_id": "1",
+    "pesan": "Obat hampir habis",
+    "created_at": "2025-07-27T12:00:00Z"
+  }
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan pesan harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "pesan": "Obat hampir habis"
+  }'
+```
+
+### GET `/v1/api/peringatan/get-all`
+
+Mendapatkan semua peringatan pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/peringatan/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data peringatan berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": "1",
+      "pesan": "Obat hampir habis",
+      "created_at": "2025-07-27T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### GET `/v1/api/history/get-all`
+
+Mendapatkan semua riwayat pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/history/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data history berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": 1,
+      "status": "diminum",
+      "created_at": "2025-01-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+## Kode Status HTTP
+
+| Kode | Deskripsi                                              |
+| ---- | ------------------------------------------------------ |
+| 200  | OK - Request berhasil                                  |
+| 201  | Created - Resource berhasil dibuat                     |
+| 400  | Bad Request - Parameter tidak valid atau tidak lengkap |
+| 401  | Unauthorized - Token tidak valid atau tidak ada        |
+| 404  | Not Found - Resource tidak ditemukan                   |
+| 500  | Internal Server Error - Kesalahan pada server          |
+
+## Penanganan Error
+
+Semua error response menggunakan format yang konsisten:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas"
+}
+```
+
+Untuk mode development, akan ada informasi tambahan:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas",
+  "stack": "Stack trace error (hanya di development mode)"
+}
+```
+
+## 📊 Endpoint History
+
+### POST `/v1/api/history/insert`
+
+Menambahkan history baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/history/insert`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "status": "diminum"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "History berhasil dibuat"
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan status harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/insert \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "status": "diminum"
+  }'
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "History berhasil ditambahkan"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/input-history \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1
+  }'
+```
+
+### GET `/v1/api/history/get-all-history`
+
+Mendapatkan semua history user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+---
+
+## 🎛️ **Control Endpoints**
+
+All control endpoints require authentication.
+
+### POST `/v1/api/kontrol/create-kontrol`
+
+Membuat kontrol baru. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah",
+  "description": "Cek tekanan darah rutin",
+  "scheduled_date": "2025-01-28",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "Kontrol berhasil dibuat"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup"
+  }'
+```
+
+### GET `/v1/api/kontrol/get-all-kontrol`
+
+Mendapatkan semua kontrol user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup",
+    "is_done": false,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/kontrol/get-all-kontrol \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### PATCH `/v1/api/kontrol/done`
+
+Menandai kontrol sebagai selesai. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "id": 1
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil ditandai selesai"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PATCH http://163.53.195.57:5000/v1/api/kontrol/done \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": 1
+  }'
+```
+
+### PUT `/v1/api/kontrol/edit/:id`
+
+Mengedit kontrol berdasarkan ID. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah Updated",
+  "description": "Cek tekanan darah rutin - updated",
+  "scheduled_date": "2025-01-29",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil diupdate"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah Updated",
+    "description": "Cek tekanan darah rutin - updated",
+    "scheduled_date": "2025-01-29",
+    "type": "medical_checkup"
+  }'
+```
+
+### DELETE `/v1/api/kontrol/delete/:id`
+
+Menghapus jadwal kontrol medis.
+
+**Request:**
+
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+## Endpoint Peringatan
+
+### POST `/v1/api/peringatan/create`
+
+Membuat peringatan baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/peringatan/create`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "pesan": "Obat hampir habis"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "Peringatan berhasil dibuat",
+  "data": {
+    "id": 1,
+    "user_id": "uuid-123",
+    "jadwal_id": "1",
+    "pesan": "Obat hampir habis",
+    "created_at": "2025-07-27T12:00:00Z"
+  }
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan pesan harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "pesan": "Obat hampir habis"
+  }'
+```
+
+### GET `/v1/api/peringatan/get-all`
+
+Mendapatkan semua peringatan pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/peringatan/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data peringatan berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": "1",
+      "pesan": "Obat hampir habis",
+      "created_at": "2025-07-27T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### GET `/v1/api/history/get-all`
+
+Mendapatkan semua riwayat pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/history/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data history berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": 1,
+      "status": "diminum",
+      "created_at": "2025-01-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+## Kode Status HTTP
+
+| Kode | Deskripsi                                              |
+| ---- | ------------------------------------------------------ |
+| 200  | OK - Request berhasil                                  |
+| 201  | Created - Resource berhasil dibuat                     |
+| 400  | Bad Request - Parameter tidak valid atau tidak lengkap |
+| 401  | Unauthorized - Token tidak valid atau tidak ada        |
+| 404  | Not Found - Resource tidak ditemukan                   |
+| 500  | Internal Server Error - Kesalahan pada server          |
+
+## Penanganan Error
+
+Semua error response menggunakan format yang konsisten:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas"
+}
+```
+
+Untuk mode development, akan ada informasi tambahan:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas",
+  "stack": "Stack trace error (hanya di development mode)"
+}
+```
+
+## 📊 Endpoint History
+
+### POST `/v1/api/history/insert`
+
+Menambahkan history baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/history/insert`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "status": "diminum"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "History berhasil dibuat"
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan status harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/insert \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "status": "diminum"
+  }'
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "History berhasil ditambahkan"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/history/input-history \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1
+  }'
+```
+
+### GET `/v1/api/history/get-all-history`
+
+Mendapatkan semua history user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "activity": "Obat diminum",
+    "timestamp": "2025-01-27T10:00:00Z",
+    "jadwal_id": 1,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+---
+
+## 🎛️ **Control Endpoints**
+
+All control endpoints require authentication.
+
+### POST `/v1/api/kontrol/create-kontrol`
+
+Membuat kontrol baru. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah",
+  "description": "Cek tekanan darah rutin",
+  "scheduled_date": "2025-01-28",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (201):**
+
+```json
+{
+  "message": "Kontrol berhasil dibuat"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup"
+  }'
+```
+
+### GET `/v1/api/kontrol/get-all-kontrol`
+
+Mendapatkan semua kontrol user. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response Success (200):**
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": "uuid-123",
+    "title": "Kontrol Tekanan Darah",
+    "description": "Cek tekanan darah rutin",
+    "scheduled_date": "2025-01-28",
+    "type": "medical_checkup",
+    "is_done": false,
+    "created_at": "2025-01-27T10:00:00Z"
+  }
+]
+```
+
+**Example cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/kontrol/get-all-kontrol \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### PATCH `/v1/api/kontrol/done`
+
+Menandai kontrol sebagai selesai. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "id": 1
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil ditandai selesai"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PATCH http://163.53.195.57:5000/v1/api/kontrol/done \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": 1
+  }'
+```
+
+### PUT `/v1/api/kontrol/edit/:id`
+
+Mengedit kontrol berdasarkan ID. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Kontrol Tekanan Darah Updated",
+  "description": "Cek tekanan darah rutin - updated",
+  "scheduled_date": "2025-01-29",
+  "type": "medical_checkup"
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "Kontrol berhasil diupdate"
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "title": "Kontrol Tekanan Darah Updated",
+    "description": "Cek tekanan darah rutin - updated",
+    "scheduled_date": "2025-01-29",
+    "type": "medical_checkup"
+  }'
+```
+
+### DELETE `/v1/api/kontrol/delete/:id`
+
+Menghapus jadwal kontrol medis.
+
+**Request:**
+
+- Method: `DELETE`
+- URL: `/v1/api/kontrol/delete/:id` (contoh: `/v1/api/kontrol/delete/1`)
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+- Parameters:
+  - `id`: ID kontrol yang akan dihapus (path parameter)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Kontrol berhasil dihapus"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://163.53.195.57:5000/v1/api/kontrol/delete/1 \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+## Endpoint Peringatan
+
+### POST `/v1/api/peringatan/create`
+
+Membuat peringatan baru.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/v1/api/peringatan/create`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- Body:
+
+```json
+{
+  "id": "1",
+  "pesan": "Obat hampir habis"
+}
+```
+
+**Response Sukses (201):**
+
+```json
+{
+  "success": true,
+  "message": "Peringatan berhasil dibuat",
+  "data": {
+    "id": 1,
+    "user_id": "uuid-123",
+    "jadwal_id": "1",
+    "pesan": "Obat hampir habis",
+    "created_at": "2025-07-27T12:00:00Z"
+  }
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "success": false,
+  "message": "ID dan pesan harus diisi"
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "id": "1",
+    "pesan": "Obat hampir habis"
+  }'
+```
+
+### GET `/v1/api/peringatan/get-all`
+
+Mendapatkan semua peringatan pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/peringatan/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data peringatan berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": "1",
+      "pesan": "Obat hampir habis",
+      "created_at": "2025-07-27T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+### GET `/v1/api/history/get-all`
+
+Mendapatkan semua riwayat pengguna.
+
+**Request:**
+
+- Method: `GET`
+- URL: `/v1/api/history/get-all`
+- Authentication: Required
+- Headers:
+  ```
+  Authorization: Bearer <jwt_token>
+  ```
+
+**Response Sukses (200):**
+
+```json
+{
+  "success": true,
+  "message": "Data history berhasil diambil",
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid-123",
+      "jadwal_id": 1,
+      "status": "diminum",
+      "created_at": "2025-01-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Contoh cURL:**
+
+```bash
+curl -X GET http://163.53.195.57:5000/v1/api/history/get-all \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+## Kode Status HTTP
+
+| Kode | Deskripsi                                              |
+| ---- | ------------------------------------------------------ |
+| 200  | OK - Request berhasil                                  |
+| 201  | Created - Resource berhasil dibuat                     |
+| 400  | Bad Request - Parameter tidak valid atau tidak lengkap |
+| 401  | Unauthorized - Token tidak valid atau tidak ada        |
+| 404  | Not Found - Resource tidak ditemukan                   |
+| 500  | Internal Server Error - Kesalahan pada server          |
+
+## Penanganan Error
+
+Semua error response menggunakan format yang konsisten:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas"
+}
+```
+
+Untuk mode development, akan ada informasi tambahan:
+
+```json
+{
+  "success": false,
+  "message": "Pesan error yang jelas",
+  "stack": "Stack trace error (hanya di development mode)"
+}
+```

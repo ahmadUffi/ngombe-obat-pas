@@ -1,6 +1,6 @@
 import React from "react";
 
-const BoxControl = ({ data, onEdit, onDelete }) => {
+const BoxControl = ({ data, onEdit, onDelete, onRealDelete }) => {
   // Format tanggal ke bahasa Indonesia
   const formatTanggal = (tanggal) => {
     const date = new Date(tanggal);
@@ -214,6 +214,25 @@ const BoxControl = ({ data, onEdit, onDelete }) => {
           </button>
           <button
             onClick={() => onDelete && onDelete(data)}
+            className="flex-1 px-4 py-2 text-sm font-medium text-yellow-700 bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 border border-yellow-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            Selesai
+          </button>
+          <button
+            onClick={() => onRealDelete && onRealDelete(data)}
             className="flex-1 px-4 py-2 text-sm font-medium text-red-700 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 border border-red-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
           >
             <svg

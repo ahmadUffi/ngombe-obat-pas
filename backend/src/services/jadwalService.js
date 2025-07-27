@@ -99,11 +99,24 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
     throw new Error("Gagal mengupdate data obat: " + errorUpdate.message);
 };
 
-export const deleteJadwal = async (id_jadwal) => {
+export const deleteJadwal = async (id_jadwal, user_id) => {
+  // First check if the jadwal belongs to the user
+  const { data: jadwal, error: errorCheck } = await supabase
+    .from("jadwal")
+    .select("id")
+    .eq("id", id_jadwal)
+    .eq("user_id", user_id)
+    .single();
+
+  if (errorCheck || !jadwal) {
+    throw new Error("Jadwal tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
   const { data, error: errorDelete } = await supabase
     .from("jadwal")
     .delete()
-    .eq("id", id_jadwal);
+    .eq("id", id_jadwal)
+    .eq("user_id", user_id);
 
   if (errorDelete)
     throw new Error("Gagal menghapus data jadwal: " + errorDelete.message);

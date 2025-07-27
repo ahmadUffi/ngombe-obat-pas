@@ -1,22 +1,16 @@
 import { useState, useEffect } from "react";
 
 const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
-  // Form state
+  // Form state - editing is now disabled
   const [formData, setFormData] = useState({
-    nama_pasien: initialData?.nama_pasien || "",
-    nama_obat: initialData?.nama_obat || "",
-    dosis_obat: initialData?.dosis_obat || 1,
-    slot_obat: initialData?.slot_obat || "A",
-    kategori: initialData?.kategori || "sesudah makan",
-    jumlah_obat: initialData?.jumlah_obat || 20,
-    catatan: initialData?.catatan || "",
-    jadwalMinum: initialData?.jam_awal
-      ? initialData.jam_awal.map((awal, i) => ({
-          id: Date.now() + i,
-          jam_awal: awal,
-          jam_berakhir: initialData.jam_berakhir[i] || awal,
-        }))
-      : [{ id: Date.now(), jam_awal: "08:00", jam_berakhir: "08:30" }],
+    nama_pasien: "",
+    nama_obat: "",
+    dosis_obat: 1,
+    slot_obat: "A",
+    kategori: "sesudah makan",
+    jumlah_obat: 20,
+    catatan: "",
+    jadwalMinum: [{ id: Date.now(), jam_awal: "08:00", jam_berakhir: "08:30" }],
   });
 
   // Validation state

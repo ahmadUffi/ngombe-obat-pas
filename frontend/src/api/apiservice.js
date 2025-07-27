@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Base URL from environment variable
-const BASE_URL = import.meta.env.VITE_BASE_URL || "http://163.53.195.57:5000";
+// const BASE_URL = import.meta.env.VITE_BASE_URL || "http://163.53.195.57:5000";
+const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 export class apiService {
   // ===============================
@@ -124,16 +125,13 @@ export class apiService {
   static async deleteJadwal(jadwal_id, token = null) {
     try {
       const authToken = token || this.getToken();
-      const response = await axios.put(
-        `${BASE_URL}/v1/api/jadwal/delete`,
-        { jadwal_id },
-        {
-          headers: {
-            Authorization: authToken ? `Bearer ${authToken}` : undefined,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.delete(`${BASE_URL}/v1/api/jadwal/delete`, {
+        headers: {
+          Authorization: authToken ? `Bearer ${authToken}` : undefined,
+          "Content-Type": "application/json",
+        },
+        data: { jadwal_id },
+      });
       return response.data;
     } catch (err) {
       console.error("Gagal hapus jadwal:", err.response?.data || err.message);
@@ -239,12 +237,37 @@ export class apiService {
           },
         }
       );
+      console.log("Mark done response:", response.data);
       return response.data;
     } catch (err) {
       console.error(
         "Gagal tandai kontrol selesai:",
         err.response?.data || err.message
       );
+      throw err;
+    }
+  }
+
+  /**
+   * Menghapus kontrol berdasarkan ID
+   * @param {number} id - ID kontrol
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Response message
+   */
+  static async deleteControl(id, token) {
+    try {
+      const response = await axios.delete(
+        `${BASE_URL}/v1/api/kontrol/delete/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Gagal hapus kontrol:", err.response?.data || err.message);
       throw err;
     }
   }

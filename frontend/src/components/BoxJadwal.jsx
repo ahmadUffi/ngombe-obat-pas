@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BoxJadwal = ({ data, onEditQuantity, onDelete, onEdit }) => {
+const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Menggunakan format data baru dengan safe defaults
@@ -370,25 +370,6 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete, onEdit }) => {
                     />
                   </svg>
                   Stok
-                </button>
-                <button
-                  onClick={() => onEdit && onEdit(data)}
-                  className="bg-green-100 hover:bg-green-200 text-green-700 py-1.5 px-1 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                  Edit
                 </button>
                 <button
                   onClick={() => onDelete && onDelete(data)}

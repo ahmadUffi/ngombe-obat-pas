@@ -156,44 +156,10 @@ const Jadwal = () => {
     }
   };
 
-  // Handle editing jadwal
-  const handleEditJadwal = (jadwal) => {
-    setEditingItem(jadwal);
-    setIsOpen(true);
-  };
+  // Note: Edit functionality has been removed as requested
 
-  // Handle updating jadwal
-  const handleUpdateJadwal = async (updatedJadwal) => {
-    try {
-      // Since there's no direct edit endpoint, we'll update the local state for now
-      // In production, you might want to delete and recreate, or add an edit endpoint to the API
-
-      // For now, let's simulate an edit by updating local state
-      setJadwalData((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id
-            ? { ...updatedJadwal, id: editingItem.id }
-            : item
-        )
-      );
-
-      setIsOpen(false);
-      setEditingItem(null);
-      alert("Jadwal berhasil diupdate!");
-
-      // TODO: Implement actual API call when edit endpoint is available
-      // await editJadwal(editingItem.id, apiData);
-      // loadJadwalData();
-    } catch (err) {
-      console.error("Error updating jadwal:", err);
-      alert("Gagal mengupdate jadwal: " + err.message);
-    }
-  };
-
-  // Determine which handler to use based on whether we're editing
-  const handleJadwalSubmit = editingItem
-    ? handleUpdateJadwal
-    : handleCreateJadwal;
+  // Always use create jadwal handler since editing is removed
+  const handleJadwalSubmit = handleCreateJadwal;
 
   return (
     <Layout className="relative">
@@ -347,8 +313,7 @@ const Jadwal = () => {
             <BoxJadwal
               data={data}
               onEditQuantity={handleEditQuantity}
-              onDelete={handleDeleteJadwal}
-              onEdit={handleEditJadwal}
+              onDelete={() => handleDeleteJadwal(data.id)}
             />
           </div>
         ))}

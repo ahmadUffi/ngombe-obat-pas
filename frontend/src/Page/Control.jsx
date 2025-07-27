@@ -18,6 +18,7 @@ const Control = () => {
     createControl,
     editControl,
     markDone,
+    deleteControl,
     loading,
     error,
     setError,
@@ -31,20 +32,24 @@ const Control = () => {
   const loadControlData = async () => {
     try {
       const data = await getAllControl();
+
+      if (!data || data.length === 0) {
+        console.log("No control data found");
+        setControlSchedules([]);
+        return;
+      }
+
       // Transform API data to match frontend format
       const transformedData = data.map((item) => ({
         id: item.id,
-        tanggal: item.scheduled_date || "",
-        dokter: item.title || "Dokter tidak diketahui", // Ensure dokter is never undefined/null
-        waktu: "09:00", // Default time since API doesn't specify time
-        nama_pasien: item.description || "Pasien tidak diketahui", // Ensure nama_pasien is never undefined/null
-        title: item.title || "",
-        description: item.description || "",
-        scheduled_date: item.scheduled_date || "",
-        type: item.type || "medical_checkup",
-        is_done: item.is_done || false,
+        tanggal: item.tanggal || "",
+        dokter: item.dokter || "Dokter tidak diketahui",
+        waktu: item.waktu || "09:00",
+        nama_pasien: item.nama_pasien || "Pasien tidak diketahui",
+        isDone: item.isDone || false,
         created_at: item.created_at || "",
       }));
+
       setControlSchedules(transformedData);
     } catch (err) {
       console.error("Error loading control data:", err);
@@ -111,7 +116,7 @@ const Control = () => {
     }
   };
 
-  // Handle deleting schedule (mark as done in this case)
+  // Handle mark as done
   const handleDeleteSchedule = async (schedule) => {
     if (
       confirm(
@@ -119,12 +124,35 @@ const Control = () => {
       )
     ) {
       try {
-        await markDone(schedule.id);
+        console.log("Marking as done, ID:", schedule.id);
+        const result = await markDone(schedule.id);
+        console.log("Mark as done result:", result);
         loadControlData(); // Reload data
         alert("Jadwal kontrol berhasil ditandai selesai!");
       } catch (err) {
         console.error("Error marking done:", err);
-        alert("Gagal menandai selesai: " + err.message);
+        alert(
+          "Gagal menandai selesai: " +
+            (err.response?.data?.message || err.message)
+        );
+      }
+    }
+  };
+
+  // Handle permanently deleting schedule
+  const handleRealDeleteSchedule = async (schedule) => {
+    if (
+      confirm(
+        `Apakah Anda yakin ingin MENGHAPUS PERMANEN jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal}?`
+      )
+    ) {
+      try {
+        await deleteControl(schedule.id);
+        loadControlData(); // Reload data
+        alert("Jadwal kontrol berhasil dihapus!");
+      } catch (err) {
+        console.error("Error deleting control:", err);
+        alert("Gagal menghapus jadwal kontrol: " + err.message);
       }
     }
   };
@@ -317,6 +345,7 @@ const Control = () => {
                 data={schedule}
                 onEdit={handleEditSchedule}
                 onDelete={handleDeleteSchedule}
+                onRealDelete={handleRealDeleteSchedule}
               />
             </div>
           ))}

@@ -4,6 +4,7 @@ import {
   getAllKontrol,
   setKontrolIsDone,
   editKontrol,
+  deleteKontrol,
 } from "../controllers/controlController.js";
 import { verifySupabaseUser } from "../middleware/verifySupabaseJWT.js";
 
@@ -15,5 +16,6 @@ router.post("/create-kontrol", createKontrol);
 router.get("/get-all-kontrol", getAllKontrol);
 router.patch("/done", setKontrolIsDone);
 router.put("/edit/:id", editKontrol);
+router.delete("/delete/:id", deleteKontrol);
 
 export default router;

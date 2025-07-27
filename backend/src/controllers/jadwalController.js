@@ -62,6 +62,7 @@ export const updateStockObatByIdForWeb = asyncHandler(async (req, res) => {
 });
 
 export const deleteJadwalById = asyncHandler(async (req, res) => {
+  const user_id = req.user.id;
   const { jadwal_id } = req.body;
 
   if (!jadwal_id) {
@@ -71,7 +72,7 @@ export const deleteJadwalById = asyncHandler(async (req, res) => {
     });
   }
 
-  await deleteJadwal(jadwal_id);
+  await deleteJadwal(jadwal_id, user_id);
 
   res.status(200).json({
     success: true,

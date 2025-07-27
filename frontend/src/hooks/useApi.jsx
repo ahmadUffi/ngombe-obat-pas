@@ -124,7 +124,21 @@ export const useControl = () => {
   const token = apiService.getToken();
 
   const getAllControl = useCallback(async () => {
-    return await callApi(apiService.getAllControl, token);
+    try {
+      const response = await callApi(apiService.getAllControl, token);
+      // Check if response has data property and it's an array
+      if (response && response.data && Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        // If no data or not an array, return empty array
+        console.warn("No control data found or invalid format");
+        return [];
+      }
+    } catch (err) {
+      console.error("Error in getAllControl:", err);
+      // Return empty array on error
+      return [];
+    }
   }, [callApi, token]);
 
   const createControl = useCallback(
@@ -143,7 +157,20 @@ export const useControl = () => {
 
   const markDone = useCallback(
     async (id) => {
-      return await callApi(apiService.markControlDone, id, token);
+      try {
+        console.log("Calling markControlDone with ID:", id);
+        return await callApi(apiService.markControlDone, id, token);
+      } catch (error) {
+        console.error("Error in markDone hook:", error);
+        throw error;
+      }
+    },
+    [callApi, token]
+  );
+
+  const deleteControl = useCallback(
+    async (id) => {
+      return await callApi(apiService.deleteControl, id, token);
     },
     [callApi, token]
   );
@@ -153,6 +180,7 @@ export const useControl = () => {
     createControl,
     editControl,
     markDone,
+    deleteControl,
     loading,
     error,
     setError,
