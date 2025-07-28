@@ -24,16 +24,19 @@ const MainPage = () => {
       // Load jadwal stats
       const jadwalData = await getAllJadwal();
       const totalJadwal = jadwalData?.length || 0;
+
+      // Filter berdasarkan kondisi stok baru:
+      // Hampir habis: < 6 (tapi > 0) atau Habis: = 0
       const jadwalKritis =
-        jadwalData?.filter((item) => item.jumlah_obat <= 3).length || 0;
+        jadwalData?.filter((item) => item.jumlah_obat < 6).length || 0;
 
       // Load control stats
       const controlData = await getAllControl();
       const totalControl = controlData?.length || 0;
       const today = new Date().toISOString().split("T")[0];
       const controlHariIni =
-        controlData?.filter((item) => item.scheduled_date === today).length ||
-        0;
+        controlData?.filter((item) => item.tanggal === today && !item.isDone)
+          .length || 0;
 
       setStats({
         totalJadwal,
@@ -53,6 +56,32 @@ const MainPage = () => {
     }
   };
 
+  // Helper function untuk menentukan kondisi stok
+  const getStockCondition = (jumlahObat) => {
+    if (jumlahObat === 0) {
+      return {
+        status: "habis",
+        color: "text-red-600",
+        bgColor: "bg-red-100",
+        icon: "❌",
+      };
+    } else if (jumlahObat < 6) {
+      return {
+        status: "hampir habis",
+        color: "text-orange-600",
+        bgColor: "bg-orange-100",
+        icon: "⚠️",
+      };
+    } else {
+      return {
+        status: "aman",
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+        icon: "✅",
+      };
+    }
+  };
+
   const navigationCards = [
     {
       title: "Jadwal Obat",
@@ -62,7 +91,7 @@ const MainPage = () => {
       color: "bg-blue-500",
       hoverColor: "hover:bg-blue-600",
       stats: `${stats.totalJadwal} Total${
-        stats.jadwalKritis > 0 ? ` • ${stats.jadwalKritis} Kritis` : ""
+        stats.jadwalKritis > 0 ? ` • ${stats.jadwalKritis} Perlu Perhatian` : ""
       }`,
     },
     {
@@ -113,10 +142,10 @@ const MainPage = () => {
 
           <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600 mb-1">
+              <div className="text-2xl font-bold text-orange-600 mb-1">
                 {stats.jadwalKritis}
               </div>
-              <div className="text-sm text-gray-600">Stok Kritis</div>
+              <div className="text-sm text-gray-600">Perlu Perhatian</div>
             </div>
           </div>
 

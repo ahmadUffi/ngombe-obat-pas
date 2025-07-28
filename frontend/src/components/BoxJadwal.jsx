@@ -28,12 +28,12 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
 
   // Status indicator based on stock level
   const getStatusInfo = () => {
-    if (jumlahObat <= 3) {
-      return { color: "bg-red-500", text: "Kritis", textColor: "text-red-600" };
-    } else if (jumlahObat <= 10) {
+    if (jumlahObat === 0) {
+      return { color: "bg-red-500", text: "Habis", textColor: "text-red-600" };
+    } else if (jumlahObat < 6) {
       return {
         color: "bg-orange-500",
-        text: "Sedikit",
+        text: "Hampir Habis",
         textColor: "text-orange-600",
       };
     } else {

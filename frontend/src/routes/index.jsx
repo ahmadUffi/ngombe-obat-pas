@@ -3,13 +3,14 @@ import { Navigate } from "react-router-dom";
 import { AuthContext } from "../hooks/useAuth";
 
 // Import all pages
-import MainPage from "../Page/MainPage";
+import Dashboard from "../Page/Dashboard";
 import Jadwal from "../Page/Jadwal";
 import Control from "../Page/Control";
 import Note from "../Page/Note";
 import History from "../Page/History";
 import Login from "../components/Login";
 import Register from "../components/Register";
+import MainPage from "../Page/MainPage";
 
 // Protected Route component
 export const ProtectedRoute = ({ children }) => {
@@ -18,11 +19,11 @@ export const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route component (redirects to dashboard if already authenticated)
+// Public Route component (redirects to mainpage if already authenticated)
 export const PublicRoute = ({ children }) => {
   const { isAuthenticated } = useContext(AuthContext);
 
-  return !isAuthenticated() ? children : <Navigate to="/dashboard" replace />;
+  return !isAuthenticated() ? children : <Navigate to="/" replace />;
 };
 
 // Route configuration

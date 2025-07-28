@@ -69,8 +69,8 @@ const Jadwal = () => {
     if (filter === "all") return true;
     if (filter === "habis") return item.jumlah_obat === 0;
     if (filter === "sedikit")
-      return item.jumlah_obat <= 10 && item.jumlah_obat > 0;
-    if (filter === "aman") return item.jumlah_obat > 10;
+      return item.jumlah_obat < 6 && item.jumlah_obat > 0;
+    if (filter === "aman") return item.jumlah_obat >= 6;
     return true;
   });
 
@@ -229,10 +229,10 @@ const Jadwal = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            SEDIKIT (
+            HAMPIR HABIS (
             {
               jadwalData.filter(
-                (item) => item.jumlah_obat <= 10 && item.jumlah_obat > 0
+                (item) => item.jumlah_obat < 6 && item.jumlah_obat > 0
               ).length
             }
             )
@@ -255,7 +255,7 @@ const Jadwal = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            AMAN ({jadwalData.filter((item) => item.jumlah_obat > 10).length})
+            AMAN ({jadwalData.filter((item) => item.jumlah_obat >= 6).length})
           </button>
         </div>
 

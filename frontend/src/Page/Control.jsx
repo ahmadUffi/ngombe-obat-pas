@@ -188,9 +188,7 @@ const Control = () => {
           (schedule) => schedule.tanggal === tomorrowStr
         );
       case "completed":
-        return controlSchedules.filter(
-          (schedule) => schedule.isDone === true
-        );
+        return controlSchedules.filter((schedule) => schedule.isDone === true);
       case "past":
         return controlSchedules.filter(
           (schedule) => schedule.tanggal < todayStr
@@ -297,12 +295,7 @@ const Control = () => {
               }`}
             >
               Selesai (
-              {
-                controlSchedules.filter(
-                  (s) => s.isDone === true
-                ).length
-              }
-              )
+              {controlSchedules.filter((s) => s.isDone === true).length})
             </button>
           </div>
 
@@ -338,11 +331,7 @@ const Control = () => {
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm border">
               <div className="text-2xl font-bold text-green-600">
-                {
-                  controlSchedules.filter(
-                    (s) => s.isDone === true
-                  ).length
-                }
+                {controlSchedules.filter((s) => s.isDone === true).length}
               </div>
               <div className="text-sm text-gray-600">Selesai</div>
             </div>
