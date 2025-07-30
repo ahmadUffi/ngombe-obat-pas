@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { backgroundRegister, logo } from "../assets";
-import { AuthContext } from "../hooks/useAuth";
+import { backgroundRegister, logo } from "../../assets";
+import { AuthContext } from "../../hooks/useAuth";
 
 const Login = () => {
   const navigate = useNavigate();

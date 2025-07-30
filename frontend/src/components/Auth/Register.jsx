@@ -1,7 +1,7 @@
 import React, { useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import { logo, backgroundRegister } from "../assets";
+import { supabase } from "../../supabaseClient";
+import { logo, backgroundRegister } from "../../assets";
 
 const initialState = {
   email: "",

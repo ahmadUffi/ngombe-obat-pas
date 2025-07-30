@@ -1,9 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import CalendarIcon from "./svg/CalendarIcon";
-import NoteIcon from "./svg/NoteIcon";
-import ControlIcon from "./svg/ControlIcon";
-import HistoryIcon from "./svg/HistoryIcon";
+import CalendarIcon from "../Icons/CalendarIcon";
+import NoteIcon from "../Icons/NoteIcon";
+import ControlIcon from "../Icons/ControlIcon";
+import HistoryIcon from "../Icons/HistoryIcon";
 import { logo } from "../../assets";
 
 const NavbarLeft = ({ isOpen, onClose }) => {

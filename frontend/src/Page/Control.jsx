@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import Layout from "../components/Utility/Layout";
-import BoxControl from "../components/BoxControl";
-import AddButton from "../components/Utility/AddButton";
-import Modal from "../components/Utility/Modal";
-import InputControlJadwal from "../components/InputControlJadwal";
+import Layout from "../components/Layout/Layout";
+import BoxControl from "../components/Cards/BoxControl";
+import AddButton from "../components/UI/AddButton";
+import Modal from "../components/UI/Modal";
+import InputControlJadwal from "../components/Forms/InputControlJadwal";
 import { useControl } from "../hooks/useApi";
 
 const Control = () => {
@@ -205,7 +205,7 @@ const Control = () => {
       <div className="p-4">
         {/* Loading state */}
         {loading && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/30 bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 shadow-xl">
               <div className="flex items-center space-x-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>

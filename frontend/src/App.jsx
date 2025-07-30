@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import { routes, ProtectedRoute, PublicRoute } from "./routes";
 import { AuthContext } from "./hooks/useAuth";
-import LoadingScreen from "./components/Utility/LoadingScreen";
+import LoadingScreen from "./components/UI/LoadingScreen";
 
 const App = () => {
   const { loading } = useContext(AuthContext);

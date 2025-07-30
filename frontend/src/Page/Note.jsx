@@ -1,5 +1,5 @@
 import React from "react";
-import Layout from "../components/Utility/Layout";
+import Layout from "../components/Layout/Layout";
 
 const Note = () => {
   return (

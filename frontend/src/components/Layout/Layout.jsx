@@ -1,7 +1,7 @@
 import React from "react";
 import NavbarTop from "./NavbarTop";
 import NavbarLeft from "./NavbarLeft";
-import Breadcrumb from "./Breadcrumb";
+import Breadcrumb from "../UI/Breadcrumb";
 import useSidebar from "../../hooks/useSidebar";
 
 const Layout = ({ children, className = "" }) => {

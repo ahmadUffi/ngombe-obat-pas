@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import SearchIcon from "./svg/SearchIcon";
-import BellIcon from "./svg/BellIcon";
+import SearchIcon from "../Icons/SearchIcon";
+import BellIcon from "../Icons/BellIcon";
 import { AuthContext } from "../../hooks/useAuth";
 
 const NavbarTop = ({ onToggleSidebar }) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import Layout from "../components/Utility/Layout";
-import { LoadingStats } from "../components/Utility/LoadingSpinner";
-import { WelcomeCard } from "../components/Utility/EmptyState";
+import Layout from "../components/Layout/Layout";
+import { LoadingStats } from "../components/UI/LoadingSpinner";
+import { WelcomeCard } from "../components/UI/EmptyState";
 import { useJadwal, useControl, useHistory } from "../hooks/useApi";
 
 const Dashboard = () => {

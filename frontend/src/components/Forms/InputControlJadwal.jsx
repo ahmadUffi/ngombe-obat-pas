@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CompactInputControl from "./CompactInputControl";
 
 const InputControlJadwal = ({ onSubmit, initialData }) => {
   // Form state based on the JSON structure provided
@@ -82,52 +83,6 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
     }
   };
 
-  // Compact Input Component with colorful styling
-  const CompactInput = ({
-    label,
-    name,
-    type = "text",
-    value,
-    onChange,
-    error,
-    placeholder,
-    required = false,
-    icon = "📝",
-  }) => (
-    <div className="mb-4">
-      <label className="flex items-center text-sm font-bold text-gray-700 mb-2">
-        <span className="mr-2">{icon}</span>
-        {label} {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      <div className="relative">
-        <input
-          type={type}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          autoComplete="off"
-          className={`w-full px-4 py-3 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-            error
-              ? "border-red-400 focus:border-red-500 bg-red-50"
-              : "border-gray-300 focus:border-blue-400 hover:border-gray-400 bg-white"
-          }`}
-        />
-        {error && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <span className="text-red-500">⚠️</span>
-          </div>
-        )}
-      </div>
-      {error && (
-        <p className="text-red-500 text-xs mt-2 flex items-center">
-          <span className="mr-1">❌</span>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-
   return (
     <div className="bg-white rounded-xl w-full max-w-md mx-auto max-h-[85vh] flex flex-col shadow-lg border border-gray-300">
       {/* Header */}
@@ -145,7 +100,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
       <div className="flex-1 overflow-y-auto p-4">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <CompactInput
+            <CompactInputControl
               label="Nama Pasien"
               name="nama_pasien"
               value={formData.nama_pasien}
@@ -156,7 +111,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
               icon="👤"
             />
 
-            <CompactInput
+            <CompactInputControl
               label="Nama Dokter"
               name="dokter"
               value={formData.dokter}
@@ -167,7 +122,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
               icon="👨‍⚕️"
             />
 
-            <CompactInput
+            <CompactInputControl
               label="Tanggal Kontrol"
               name="tanggal"
               type="date"
@@ -178,7 +133,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
               icon="📅"
             />
 
-            <CompactInput
+            <CompactInputControl
               label="Waktu"
               name="waktu"
               type="time"

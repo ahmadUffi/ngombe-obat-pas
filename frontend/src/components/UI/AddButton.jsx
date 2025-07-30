@@ -1,5 +1,5 @@
 import React from "react";
-import PlusIcon from "./svg/PlusIcon";
+import PlusIcon from "../Icons/PlusIcon";
 
 const AddButton = ({ clickHandler }) => {
   return (

@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import CompactInput from "./CompactInput";
+import CompactSelect from "./CompactSelect";
+import StepIndicator from "../UI/StepIndicator";
+import AllSlotsFullWarning from "../Common/AllSlotsFullWarning";
 
 const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   // Form state - editing is now disabled
@@ -21,8 +25,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
 
-  // Get used slots from existing jadwal (excluding current item if editing)
-  const getUsedSlots = () => {
+  // Get used slots from existing jadwal (excluding current item if editing) - Memoized
+  const usedSlots = useMemo(() => {
     return existingJadwal
       .filter((jadwal) => !initialData || jadwal.id !== initialData.id) // Exclude current item if editing
       .reduce((acc, jadwal) => {
@@ -32,14 +36,14 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
         };
         return acc;
       }, {});
-  };
+  }, [existingJadwal, initialData]);
 
-  const usedSlots = getUsedSlots();
+  // Check if all slots are full (for new items) - Memoized
+  const allSlotsFull = useMemo(() => {
+    return !initialData && Object.keys(usedSlots).length >= 8;
+  }, [initialData, usedSlots]);
 
-  // Check if all slots are full (for new items)
-  const allSlotsFull = !initialData && Object.keys(usedSlots).length >= 8;
-
-  // Auto-select first available slot if current slot is used
+  // Auto-select first available slot if current slot is used - Optimized
   useEffect(() => {
     if (usedSlots[formData.slot_obat] && !initialData) {
       const availableSlots = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -52,19 +56,24 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
         }));
       }
     }
-  }, [usedSlots, formData.slot_obat, initialData]);
+  }, [JSON.stringify(usedSlots), formData.slot_obat, initialData]);
 
-  // Handle input changes
-  const handleInputChange = (e) => {
+  // Handle input changes - Memoized
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
+    setErrors((prev) => {
+      if (prev[name]) {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
   // Handle jadwal input changes
   const handleJadwalChange = (index, field, value) => {
@@ -325,106 +334,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
     }
   };
 
-  // Compact Input Component
-  const CompactInput = ({
-    label,
-    name,
-    type = "text",
-    value,
-    onChange,
-    error,
-    placeholder,
-    required = false,
-    min,
-    max,
-  }) => (
-    <div className="mb-3">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        min={min}
-        max={max}
-        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          error ? "border-red-500" : "border-gray-300"
-        }`}
-      />
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
-  );
-
-  // Compact Select Component
-  const CompactSelect = ({
-    label,
-    name,
-    value,
-    onChange,
-    options,
-    error,
-    required = false,
-  }) => (
-    <div className="mb-3">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          error ? "border-red-500" : "border-gray-300"
-        }`}
-      >
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-            style={
-              option.disabled ? { color: "#9CA3AF", fontStyle: "italic" } : {}
-            }
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
-  );
-
-  // Step Progress Indicator
-  const StepIndicator = () => (
-    <div className="flex items-center justify-center mb-4 px-4">
-      {[1, 2, 3].map((step) => (
-        <div key={step} className="flex items-center">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step <= currentStep
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-600"
-            }`}
-          >
-            {step}
-          </div>
-          {step < 3 && (
-            <div
-              className={`w-8 h-0.5 mx-2 ${
-                step < currentStep ? "bg-blue-500" : "bg-gray-200"
-              }`}
-            />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-
-  // Step titles
-  const getStepTitle = (step) => {
+  // Step titles - Memoized
+  const getStepTitle = useCallback((step) => {
     switch (step) {
       case 1:
         return "Informasi Dasar";
@@ -435,7 +346,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       default:
         return "";
     }
-  };
+  }, []);
 
   return (
     <div className="bg-white rounded-lg w-full max-w-md mx-auto max-h-[85vh] flex flex-col">
@@ -444,7 +355,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
         <h2 className="text-lg font-semibold text-gray-800 text-center">
           {initialData ? "Edit" : "Tambah"} Jadwal Obat
         </h2>
-        <StepIndicator />
+        <StepIndicator currentStep={currentStep} />
 
         <p className="text-sm text-gray-600 text-center mt-2">
           {getStepTitle(currentStep)}
@@ -454,35 +365,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       {/* Form Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-4">
         {/* All Slots Full Warning */}
-        {allSlotsFull && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl shadow-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 text-xl">🚫</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <h4 className="text-red-800 font-bold text-lg mb-1">
-                  Semua Slot Obat Penuh!
-                </h4>
-                <p className="text-red-700 text-sm leading-relaxed mb-3">
-                  Tidak dapat menambah obat baru karena semua 8 slot sudah
-                  terisi. Untuk menambah obat baru, Anda perlu menghapus salah
-                  satu jadwal obat yang sudah ada terlebih dahulu.
-                </p>
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="px-2 py-1 bg-red-200 text-red-800 rounded-full font-medium">
-                    8/8 Slot Terpakai
-                  </span>
-                  <span className="text-red-600">
-                    💡 Hapus obat yang tidak diperlukan untuk membebaskan slot
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {allSlotsFull && <AllSlotsFullWarning />}
 
         <form onSubmit={handleSubmit}>
           {/* Step 1: Basic Information */}

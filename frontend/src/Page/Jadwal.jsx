@@ -1,8 +1,8 @@
-import BoxJadwal from "../components/BoxJadwal";
-import AddButton from "../components/Utility/AddButton";
-import Modal from "../components/Utility/Modal";
-import InputJadwalObat from "../components/InputJadwalObat";
-import Layout from "../components/Utility/Layout";
+import BoxJadwal from "../components/Cards/BoxJadwal";
+import AddButton from "../components/UI/AddButton";
+import Modal from "../components/UI/Modal";
+import InputJadwalObat from "../components/Forms/InputJadwalObat";
+import Layout from "../components/Layout/Layout";
 import { useState, useEffect } from "react";
 import { useJadwal } from "../hooks/useApi";
 
@@ -170,7 +170,7 @@ const Jadwal = () => {
     <Layout className="relative">
       {/* Loading state */}
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-xl">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>

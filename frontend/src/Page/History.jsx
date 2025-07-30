@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { apiService } from "../api/apiservice";
 import { useAuth } from "../hooks/useAuth";
-import NavbarTop from "../components/Utility/NavbarTop";
-import NavbarLeft from "../components/Utility/NavbarLeft";
+import NavbarTop from "../components/Layout/NavbarTop";
+import NavbarLeft from "../components/Layout/NavbarLeft";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { parseISO, isValid } from "date-fns";
-import Layout from "../components/Utility/Layout";
+import Layout from "../components/Layout/Layout";
 
 const History = () => {
   const { token } = useAuth();
