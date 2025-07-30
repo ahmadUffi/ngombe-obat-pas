@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import { routes, ProtectedRoute, PublicRoute } from "./routes";
 import { AuthContext } from "./hooks/useAuth";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import LoadingScreen from "./components/UI/LoadingScreen";
 
 const App = () => {
@@ -33,6 +35,20 @@ const App = () => {
         {/* Catch all route - redirect to login if not authenticated, dashboard if authenticated */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+
+      {/* React-toastify container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </BrowserRouter>
   );
 };

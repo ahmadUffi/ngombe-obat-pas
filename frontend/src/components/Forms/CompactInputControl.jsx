@@ -24,13 +24,13 @@ const CompactInputControl = ({
         autoComplete="off"
         className={`w-full px-4 py-3 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
           error
-            ? "border-red-400 focus:border-red-500 bg-red-50"
+            ? "border-red-400 focus:border-red-500 bg-red-50 pr-12"
             : "border-gray-300 focus:border-blue-400 hover:border-gray-400 bg-white"
         }`}
       />
       {error && (
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          <span className="text-red-500">⚠️</span>
+        <div className="absolute right-1 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <span className="text-red-500 text-lg">⚠️</span>
         </div>
       )}
     </div>

@@ -6,3 +6,4 @@ export { default as AddButton } from "./AddButton";
 export { default as StepIndicator } from "./StepIndicator";
 export { default as EmptyState } from "./EmptyState";
 export { default as Breadcrumb } from "./Breadcrumb";
+export { default as ConfirmModal } from "./ConfirmModal";

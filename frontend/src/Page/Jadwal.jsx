@@ -1,10 +1,12 @@
 import BoxJadwal from "../components/Cards/BoxJadwal";
 import AddButton from "../components/UI/AddButton";
 import Modal from "../components/UI/Modal";
+import ConfirmModal from "../components/UI/ConfirmModal";
 import InputJadwalObat from "../components/Forms/InputJadwalObat";
 import Layout from "../components/Layout/Layout";
 import { useState, useEffect } from "react";
 import { useJadwal } from "../hooks/useApi";
+import { toast } from "react-toastify";
 
 const Jadwal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +14,16 @@ const Jadwal = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [filter, setFilter] = useState("all");
   const [jadwalData, setJadwalData] = useState([]);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // State untuk modal konfirmasi
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "danger",
+  });
 
   // Using the custom hook for jadwal operations
   const {
@@ -94,6 +106,10 @@ const Jadwal = () => {
 
   // Handle creating new jadwal
   const handleCreateJadwal = async (jadwalData) => {
+    // Show loading toast
+    const loadingToastId = toast.loading("Menyimpan jadwal...");
+    setIsCreating(true);
+
     try {
       console.log("Frontend jadwal data:", jadwalData);
 
@@ -118,7 +134,14 @@ const Jadwal = () => {
       await createJadwal(apiData);
       setIsOpen(false);
       loadJadwalData(); // Reload data
-      alert("Jadwal berhasil dibuat!");
+
+      // Update toast to success
+      toast.update(loadingToastId, {
+        render: "Jadwal berhasil dibuat!",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error("Error creating jadwal:", err);
       console.error("Error response:", err.response?.data);
@@ -129,36 +152,87 @@ const Jadwal = () => {
         err.response?.data?.error ||
         err.message ||
         "Gagal membuat jadwal";
-      alert("Gagal membuat jadwal: " + errorMessage);
+
+      // Update toast to error
+      toast.update(loadingToastId, {
+        render: "Gagal membuat jadwal: " + errorMessage,
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
   // Handle updating stock
   const handleUpdateStock = async (id_obat, newStock) => {
+    // Show loading toast
+    const loadingToastId = toast.loading("Mengupdate stok obat...");
+
     try {
       await updateStock(id_obat, newStock);
       loadJadwalData(); // Reload data
       setIsEditQuantityOpen(false);
       setEditingItem(null);
-      alert("Stok obat berhasil diupdate!");
+
+      // Update toast to success
+      toast.update(loadingToastId, {
+        render: "Stok obat berhasil diupdate!",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error("Error updating stock:", err);
-      alert("Gagal mengupdate stok: " + err.message);
+
+      // Update toast to error
+      toast.update(loadingToastId, {
+        render: "Gagal mengupdate stok: " + err.message,
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
     }
   };
 
   // Handle deleting jadwal
   const handleDeleteJadwal = async (jadwal_id) => {
-    if (confirm("Apakah Anda yakin ingin menghapus jadwal ini?")) {
-      try {
-        await deleteJadwal(jadwal_id);
-        loadJadwalData(); // Reload data
-        alert("Jadwal berhasil dihapus!");
-      } catch (err) {
-        console.error("Error deleting jadwal:", err);
-        alert("Gagal menghapus jadwal: " + err.message);
-      }
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Jadwal",
+      message:
+        "Apakah Anda yakin ingin menghapus jadwal ini? Tindakan ini tidak dapat dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        // Show loading toast
+        const loadingToastId = toast.loading("Menghapus jadwal...");
+
+        try {
+          await deleteJadwal(jadwal_id);
+          loadJadwalData(); // Reload data
+
+          // Update toast to success
+          toast.update(loadingToastId, {
+            render: "Jadwal berhasil dihapus!",
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        } catch (err) {
+          console.error("Error deleting jadwal:", err);
+
+          // Update toast to error
+          toast.update(loadingToastId, {
+            render: "Gagal menghapus jadwal: " + err.message,
+            type: "error",
+            isLoading: false,
+            autoClose: 5000,
+          });
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      },
+    });
   };
 
   // Note: Edit functionality has been removed as requested
@@ -384,6 +458,16 @@ const Jadwal = () => {
           }}
         />
       </Modal>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </Layout>
   );
 };

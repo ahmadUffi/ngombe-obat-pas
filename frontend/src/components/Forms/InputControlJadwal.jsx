@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "react-toastify";
 import CompactInputControl from "./CompactInputControl";
 
 const InputControlJadwal = ({ onSubmit, initialData }) => {
@@ -69,6 +70,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      toast.error("Mohon lengkapi semua field yang diperlukan");
       return;
     }
 
@@ -76,8 +78,14 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
 
     try {
       await onSubmit(formData);
+      toast.success(
+        initialData
+          ? "Jadwal kontrol berhasil diperbarui!"
+          : "Jadwal kontrol berhasil ditambahkan!"
+      );
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast.error("Terjadi kesalahan saat menyimpan jadwal kontrol");
     } finally {
       setIsSubmitting(false);
     }

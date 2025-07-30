@@ -2,16 +2,15 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { backgroundRegister, logo } from "../../assets";
 import { AuthContext } from "../../hooks/useAuth";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
 
-  const { token, loginWithAPI, error } = useContext(AuthContext);
+  const { loginWithAPI } = useContext(AuthContext);
 
   const styles = {
     input: {
@@ -28,20 +27,25 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg("");
 
     try {
       const response = await loginWithAPI(email, password);
       console.log("✅ Login berhasil!");
       console.log("Token:", response.access_token);
-      setSuccessMsg("Login berhasil! Redirecting...");
-      // Redirect logic can be added here
-      window.location.href = "/"; // Simple redirect to main page
-    } catch (error) {
-      setErrorMsg(error.message);
-    }
 
-    setLoading(false);
+      toast.success("Login berhasil! Mengarahkan ke dashboard...");
+
+      // Delay sedikit untuk menampilkan toast
+      setTimeout(() => {
+        window.location.href = "/"; // Simple redirect to main page
+      }, 1000);
+    } catch (error) {
+      toast.error(
+        error.message || "Login gagal. Periksa email dan password Anda."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,26 +68,6 @@ const Login = () => {
         <h2 className="text-xl font-bold text-gray-800 text-center">
           Masuk ke Akun Anda
         </h2>
-
-        {successMsg && (
-          <div className="w-full p-3 bg-green-100 border border-green-300 rounded-lg">
-            <p className="text-green-600 text-sm text-center">{successMsg}</p>
-          </div>
-        )}
-
-        {(errorMsg || error) && (
-          <div className="w-full p-3 bg-red-100 border border-red-300 rounded-lg">
-            <p className="text-red-600 text-sm text-center">
-              {errorMsg || error}
-            </p>
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="w-full p-3 bg-green-100 border border-green-300 rounded-lg">
-            <p className="text-green-600 text-sm text-center">{successMsg}</p>
-          </div>
-        )}
 
         <form onSubmit={handleLogin} className="flex flex-col w-full">
           <input

@@ -3,14 +3,25 @@ import Layout from "../components/Layout/Layout";
 import BoxControl from "../components/Cards/BoxControl";
 import AddButton from "../components/UI/AddButton";
 import Modal from "../components/UI/Modal";
+import ConfirmModal from "../components/UI/ConfirmModal";
 import InputControlJadwal from "../components/Forms/InputControlJadwal";
 import { useControl } from "../hooks/useApi";
+import { toast } from "react-toastify";
 
 const Control = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingData, setEditingData] = useState(null);
   const [filter, setFilter] = useState("all");
   const [controlSchedules, setControlSchedules] = useState([]);
+
+  // State untuk modal konfirmasi
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "danger",
+  });
 
   // Using the custom hook for control operations
   const {
@@ -53,7 +64,7 @@ const Control = () => {
       console.error("Error loading control data:", err);
       // Set empty array on error instead of dummy data
       setControlSchedules([]);
-      setError("Gagal memuat data kontrol. Silakan coba lagi.");
+      toast.error("Gagal memuat data kontrol. Silakan coba lagi.");
     }
   };
 
@@ -79,7 +90,7 @@ const Control = () => {
       await createControl(apiData);
       setIsModalOpen(false);
       loadControlData(); // Reload data
-      alert("Jadwal kontrol berhasil dibuat!");
+      toast.success("Jadwal kontrol berhasil dibuat!");
     } catch (err) {
       console.error("Error creating control:", err);
       const errorMessage =
@@ -87,7 +98,7 @@ const Control = () => {
         err.response?.data?.error ||
         err.message ||
         "Gagal membuat jadwal kontrol";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -111,7 +122,7 @@ const Control = () => {
       setIsModalOpen(false);
       setEditingData(null);
       loadControlData(); // Reload data
-      alert("Jadwal kontrol berhasil diupdate!");
+      toast.success("Jadwal kontrol berhasil diperbarui!");
     } catch (err) {
       console.error("Error updating control:", err);
       const errorMessage =
@@ -119,54 +130,64 @@ const Control = () => {
         err.response?.data?.error ||
         err.message ||
         "Gagal mengupdate jadwal kontrol";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
   // Handle marking schedule as done
   const handleMarkDone = async (schedule) => {
-    if (
-      confirm(
-        `Apakah Anda yakin ingin menandai jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} sebagai selesai?`
-      )
-    ) {
-      try {
-        await markDone(schedule.id);
-        loadControlData(); // Reload data
-        alert("Jadwal kontrol berhasil ditandai selesai!");
-      } catch (err) {
-        console.error("Error marking done:", err);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          "Gagal menandai selesai";
-        alert(errorMessage);
-      }
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Tandai Selesai",
+      message: `Apakah Anda yakin ingin menandai jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} sebagai selesai?`,
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          await markDone(schedule.id);
+          loadControlData(); // Reload data
+          toast.success(
+            `Jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} berhasil ditandai selesai!`
+          );
+        } catch (err) {
+          console.error("Error marking done:", err);
+          const errorMessage =
+            err.response?.data?.message ||
+            err.response?.data?.error ||
+            err.message ||
+            "Gagal menandai selesai";
+          toast.error(errorMessage);
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      },
+    });
   };
 
   // Handle permanently deleting schedule
   const handleDelete = async (schedule) => {
-    if (
-      confirm(
-        `Apakah Anda yakin ingin menghapus permanen jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal}? Tindakan ini tidak dapat dibatalkan.`
-      )
-    ) {
-      try {
-        await deleteControl(schedule.id);
-        loadControlData(); // Reload data
-        alert("Jadwal kontrol berhasil dihapus!");
-      } catch (err) {
-        console.error("Error deleting control:", err);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          "Gagal menghapus jadwal kontrol";
-        alert(errorMessage);
-      }
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Jadwal",
+      message: `Apakah Anda yakin ingin menghapus permanen jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal}? Tindakan ini tidak dapat dibatalkan.`,
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          await deleteControl(schedule.id);
+          loadControlData(); // Reload data
+          toast.success(
+            `Jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} berhasil dihapus!`
+          );
+        } catch (err) {
+          console.error("Error deleting control:", err);
+          const errorMessage =
+            err.response?.data?.message ||
+            err.response?.data?.error ||
+            err.message ||
+            "Gagal menghapus jadwal kontrol";
+          toast.error(errorMessage);
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      },
+    });
   };
 
   // Filter schedules
@@ -402,6 +423,16 @@ const Control = () => {
             onSubmit={editingData ? handleUpdateSchedule : handleAddSchedule}
           />
         </Modal>
+
+        {/* Confirm Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          type={confirmModal.type}
+        />
       </div>
     </Layout>
   );
