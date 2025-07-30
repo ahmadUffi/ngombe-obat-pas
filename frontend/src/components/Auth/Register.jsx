@@ -114,121 +114,179 @@ const Register = () => {
     }
   };
 
-  const styles = {
-    input: {
-      width: "317px",
-      padding: "10px",
-      borderRadius: "5px",
-      marginBottom: "10px",
-      outline: "none",
-      border: "1px solid #ccc",
-      backgroundColor: "white",
-    },
-  };
-
   return (
-    <div className="regiter grid  lg:grid-cols-2 grid-rows-2 lg:grid-rows-1 items-center h-[100dvh] overflow-hidden">
-      <div className="gambar order-2 lg:order-1 relative z-10">
-        <img
-          src={backgroundRegister}
-          alt=""
-          className="h-full w-full object-cover"
-        />
-      </div>
-      <div className="relative z-20 lg:flex items-center order-1 lg:order-2 md:order-1">
-        <div className="w-[290px] md:w-[387px] fixed top-[40%] translate-y-[-40%] lg:translate-y-[0] shadow-xl left-[50%] translate-x-[-50%] lg:translate-x-[0] lg:static z-30 bg-[#FFE7DF] h-max p-6 rounded-xl flex flex-col m-auto items-center gap-10">
-          <div className="logo">
-            <img src={logo} alt="logo" className="w-19 md:w-25" />
-          </div>
-          {state.success && (
-            <div className="w-full p-3 bg-green-100 border border-green-300 rounded-lg">
-              <p className="text-green-600 text-sm text-center">
-                {state.success}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="grid lg:grid-cols-2 w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+        {/* Image Section */}
+        <div className="relative hidden lg:block">
+          <img
+            src={backgroundRegister}
+            alt="Medical Background"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+        </div>
+
+        {/* Register Form Section */}
+        <div className="flex flex-col justify-center p-8 lg:p-12">
+          <div className="w-full max-w-md mx-auto space-y-8">
+            {/* Logo and Title */}
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <img
+                  src={logo}
+                  alt="SmedBox Logo"
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Bergabung dengan SmedBox
+              </h1>
+              <p className="text-gray-600">
+                Buat akun untuk mulai mengatur jadwal obat Anda
               </p>
             </div>
-          )}
-          {state.error && (
-            <div className="w-full p-3 bg-red-100 border border-red-300 rounded-lg">
-              <p className="text-red-600 text-sm text-center">{state.error}</p>
+
+            {/* Success/Error Messages */}
+            {state.success && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <p className="text-green-700 text-sm font-medium text-center">
+                  {state.success}
+                </p>
+              </div>
+            )}
+
+            {state.error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-red-700 text-sm font-medium text-center">
+                  {state.error}
+                </p>
+              </div>
+            )}
+
+            {/* Register Form */}
+            <form onSubmit={submitHandler} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Masukkan email Anda"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                  onChange={handleChange}
+                  value={state.email}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Masukkan username Anda"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                  onChange={handleChange}
+                  value={state.username}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Masukkan password Anda"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                  onChange={handleChange}
+                  value={state.password}
+                  required
+                  disabled={loading}
+                  minLength="6"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Konfirmasi Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Konfirmasi password Anda"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                  onChange={handleChange}
+                  value={state.confirmPassword}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  No. WhatsApp
+                </label>
+                <input
+                  type="tel"
+                  name="noHp"
+                  placeholder="Masukkan nomor WhatsApp Anda"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                  onChange={handleChange}
+                  value={state.noHp}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Foto Profil (Opsional)
+                </label>
+                <input
+                  type="file"
+                  name="profile"
+                  accept="image/*"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl mt-6"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                    Mendaftar...
+                  </div>
+                ) : (
+                  "Daftar Sekarang"
+                )}
+              </button>
+            </form>
+
+            {/* Login Link */}
+            <div className="text-center">
+              <p className="text-gray-600 mb-3">Sudah punya akun?</p>
+              <button
+                onClick={() => navigate("/login")}
+                className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 underline-offset-4 hover:underline"
+              >
+                Masuk sekarang
+              </button>
             </div>
-          )}{" "}
-          <form onSubmit={submitHandler} className="flex  w-full flex-col px-1">
-            <input
-              type="email"
-              name="email"
-              placeholder="Masukkan Email Anda"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              value={state.email}
-              required
-              disabled={loading}
-            />
-            <input
-              type="text"
-              name="username"
-              placeholder="Masukkan Username Anda"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              value={state.username}
-              required
-              disabled={loading}
-            />
-            <input
-              type="password"
-              name="password"
-              placeholder="Masukkan Password Anda"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              value={state.password}
-              required
-              disabled={loading}
-              minLength="6"
-            />
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Konfirmasi Password"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              value={state.confirmPassword}
-              required
-              disabled={loading}
-            />
-            <input
-              type="tel"
-              name="noHp"
-              placeholder="Masukkan No WhatsApp Anda"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              value={state.noHp}
-              required
-              disabled={loading}
-            />
-            <input
-              type="file"
-              name="profile"
-              accept="image/*"
-              className="w-full md: px-4 py-2 mb-2 rounded-md border border-gray-300 outline-none bg-white text-sm sm:text-base"
-              onChange={handleChange}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-white w-max py-1.5 px-5 rounded-md m-auto cursor-pointer hover:bg-gray-200 disabled:opacity-50"
-            >
-              {loading ? "Mendaftar..." : "Daftar"}
-            </button>
-          </form>
-          {/* Link to Login */}
-          <div className="text-center text-sm mt-4">
-            <p className="text-gray-700 mb-2">Sudah punya akun?</p>
-            <button
-              onClick={() => navigate("/login")}
-              className="text-blue-600 hover:text-blue-800 underline font-medium"
-            >
-              Masuk di sini
-            </button>
           </div>
         </div>
       </div>

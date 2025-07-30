@@ -223,14 +223,16 @@ const Control = () => {
 
   return (
     <Layout>
-      <div className="p-4">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-4 space-y-8">
         {/* Loading state */}
         {loading && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 shadow-xl">
-              <div className="flex items-center space-x-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-                <span className="text-gray-700 font-medium">Loading...</span>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/50">
+              <div className="flex items-center space-x-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-purple-500 border-t-transparent"></div>
+                <span className="text-gray-700 font-semibold text-lg">
+                  Loading...
+                </span>
               </div>
             </div>
           </div>
@@ -238,13 +240,14 @@ const Control = () => {
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <div className="flex items-center">
-              <span className="text-red-500 mr-2">⚠️</span>
-              <span className="flex-1">{error}</span>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-red-200 p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-pink-50/50 rounded-3xl"></div>
+            <div className="relative flex items-center">
+              <span className="text-red-500 mr-3 text-xl">⚠️</span>
+              <span className="flex-1 text-red-700 font-semibold">{error}</span>
               <button
                 onClick={() => setError("")}
-                className="ml-2 text-red-700 hover:text-red-900"
+                className="ml-4 text-red-700 hover:text-red-900 p-2 rounded-xl hover:bg-red-100 transition-colors"
               >
                 ✕
               </button>
@@ -252,94 +255,57 @@ const Control = () => {
           </div>
         )}
 
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Jadwal Kontrol</h1>
+        {/* Header with Enhanced Design */}
+        <div className="text-center mb-12 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-indigo-600/10 rounded-3xl blur-3xl"></div>
+          <div className="relative">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full mb-6 shadow-2xl">
+              <span className="text-3xl">🏥</span>
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+              Jadwal Kontrol Dokter
+            </h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Kelola jadwal kontrol dengan dokter Anda secara teratur
+            </p>
           </div>
+        </div>
 
-          <p className="text-gray-600 mb-4">
-            Kelola jadwal kontrol dengan dokter Anda
-          </p>
-
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === "all"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Semua ({controlSchedules.length})
-            </button>
-            <button
-              onClick={() => setFilter("today")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === "today"
-                  ? "bg-red-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Hari Ini (
-              {
-                controlSchedules.filter(
-                  (s) => s.tanggal === new Date().toISOString().split("T")[0]
-                ).length
-              }
-              )
-            </button>
-            <button
-              onClick={() => setFilter("tomorrow")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === "tomorrow"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Besok (
-              {
-                controlSchedules.filter((s) => {
-                  const tomorrow = new Date();
-                  tomorrow.setDate(tomorrow.getDate() + 1);
-                  return s.tanggal === tomorrow.toISOString().split("T")[0];
-                }).length
-              }
-              )
-            </button>
-            <button
-              onClick={() => setFilter("completed")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === "completed"
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Selesai (
-              {controlSchedules.filter((s) => s.isDone === true).length})
-            </button>
-          </div>
-
-          {/* Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-3 rounded-lg shadow-sm border">
-              <div className="text-2xl font-bold text-blue-600">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div className="relative text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
                 {controlSchedules.length}
               </div>
-              <div className="text-sm text-gray-600">Total Jadwal</div>
+              <div className="text-sm text-gray-600 font-semibold">
+                Total Jadwal
+              </div>
             </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm border">
-              <div className="text-2xl font-bold text-red-600">
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-pink-50/50 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-pink-400/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div className="relative text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">
                 {
                   controlSchedules.filter(
                     (s) => s.tanggal === new Date().toISOString().split("T")[0]
                   ).length
                 }
               </div>
-              <div className="text-sm text-gray-600">Hari Ini</div>
+              <div className="text-sm text-gray-600 font-semibold">
+                Hari Ini
+              </div>
             </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm border">
-              <div className="text-2xl font-bold text-orange-600">
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-amber-50/50 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-400/10 to-amber-400/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div className="relative text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
                 {
                   controlSchedules.filter((s) => {
                     const tomorrow = new Date();
@@ -348,13 +314,117 @@ const Control = () => {
                   }).length
                 }
               </div>
-              <div className="text-sm text-gray-600">Besok</div>
+              <div className="text-sm text-gray-600 font-semibold">Besok</div>
             </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm border">
-              <div className="text-2xl font-bold text-green-600">
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-green-400/10 to-emerald-400/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div className="relative text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
                 {controlSchedules.filter((s) => s.isDone === true).length}
               </div>
-              <div className="text-sm text-gray-600">Selesai</div>
+              <div className="text-sm text-gray-600 font-semibold">Selesai</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 rounded-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-indigo-400/10 rounded-full translate-y-12 translate-x-12"></div>
+
+          <div className="relative">
+            <div className="flex items-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
+                <span className="text-xl text-white">🔍</span>
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Filter Jadwal
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => setFilter("all")}
+                className={`px-8 py-4 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 shadow-lg ${
+                  filter === "all"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xl hover:shadow-purple-500/25"
+                    : "bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-white/90 border border-gray-200"
+                }`}
+              >
+                🔍 Semua ({controlSchedules.length})
+              </button>
+              <button
+                onClick={() => setFilter("today")}
+                className={`px-8 py-4 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 shadow-lg ${
+                  filter === "today"
+                    ? "bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-2xl hover:shadow-red-500/25"
+                    : "bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-white/90 border border-gray-200"
+                }`}
+              >
+                📅 Hari Ini (
+                {
+                  controlSchedules.filter(
+                    (s) => s.tanggal === new Date().toISOString().split("T")[0]
+                  ).length
+                }
+                )
+              </button>
+              <button
+                onClick={() => setFilter("tomorrow")}
+                className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  filter === "tomorrow"
+                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg transform scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                }`}
+              >
+                ⏰ Besok (
+                {
+                  controlSchedules.filter((s) => {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return s.tanggal === tomorrow.toISOString().split("T")[0];
+                  }).length
+                }
+                )
+              </button>
+              <button
+                onClick={() => setFilter("completed")}
+                className={`px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  filter === "completed"
+                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg transform scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                }`}
+              >
+                ✅ Selesai (
+                {controlSchedules.filter((s) => s.isDone === true).length})
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Result Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="text-blue-800">
+                <span className="font-medium">
+                  Menampilkan {filteredSchedules.length}
+                </span>{" "}
+                dari {controlSchedules.length} jadwal kontrol
+              </div>
+              {filter !== "all" && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium border border-blue-300">
+                  Filter Aktif:{" "}
+                  {filter === "today"
+                    ? "Hari Ini"
+                    : filter === "tomorrow"
+                    ? "Besok"
+                    : filter === "completed"
+                    ? "Selesai"
+                    : filter === "past"
+                    ? "Masa Lalu"
+                    : filter}
+                </span>
+              )}
             </div>
           </div>
         </div>
