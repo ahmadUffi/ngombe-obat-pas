@@ -51,7 +51,7 @@ export const routes = [
   },
   {
     path: "/dashboard",
-    element: <MainPage />,
+    element: <Dashboard />,
     isProtected: true,
     title: "Dashboard",
     icon: "🏠",

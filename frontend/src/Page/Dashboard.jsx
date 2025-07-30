@@ -10,7 +10,8 @@ const Dashboard = () => {
     upcomingControls: 0,
     completedToday: 0,
     totalSchedules: 0,
-    stockAlert: 0, // Obat yang perlu perhatian (< 6)
+    stockAlert: 0, // < 6 pills (hampir habis)
+    emptyStock: 0, // = 0 pills (habis)
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,42 +29,109 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [jadwalData, controlData, historyData] = await Promise.all([
-        getAllJadwal().catch(() => []),
-        getAllControl().catch(() => []),
-        getAllHistory().catch(() => []),
-      ]);
+      // Fetch data with better error handling
+      let jadwalData = [];
+      let controlData = [];
+      let historyData = [];
+
+      try {
+        jadwalData = await getAllJadwal();
+        jadwalData = Array.isArray(jadwalData) ? jadwalData : [];
+      } catch (err) {
+        console.warn("Failed to fetch jadwal data:", err);
+        jadwalData = [];
+      }
+
+      try {
+        controlData = await getAllControl();
+        controlData = Array.isArray(controlData) ? controlData : [];
+      } catch (err) {
+        console.warn("Failed to fetch control data:", err);
+        controlData = [];
+      }
+
+      try {
+        historyData = await getAllHistory();
+        historyData = Array.isArray(historyData) ? historyData : [];
+      } catch (err) {
+        console.warn("Failed to fetch history data:", err);
+        historyData = [];
+      }
 
       const today = new Date().toISOString().split("T")[0];
       const now = new Date();
 
       // Today's remaining medications
       const todayMedications = jadwalData.filter((item) => {
-        if (!item.jam_awal) return false;
-        const times = Array.isArray(item.jam_awal)
-          ? item.jam_awal
-          : [item.jam_awal];
-        return times.some((time) => {
-          const medicationTime = new Date(`${today}T${time}`);
-          return medicationTime >= now;
-        });
+        if (!item || !item.jam_awal || item.jumlah_obat === 0) return false;
+
+        try {
+          const times = Array.isArray(item.jam_awal)
+            ? item.jam_awal
+            : [item.jam_awal];
+
+          return times.some((time) => {
+            if (!time) return false;
+            try {
+              const medicationTime = new Date(`${today}T${time}`);
+              return !isNaN(medicationTime.getTime()) && medicationTime >= now;
+            } catch (timeErr) {
+              console.warn("Invalid time format:", time);
+              return false;
+            }
+          });
+        } catch (itemErr) {
+          console.warn("Error processing medication item:", itemErr);
+          return false;
+        }
       }).length;
 
       // Upcoming controls
-      const upcomingControls = controlData.filter(
-        (item) => item.tanggal >= today && !item.isDone
-      ).length;
+      const upcomingControls = controlData.filter((item) => {
+        if (!item || !item.tanggal) return false;
+        try {
+          return item.tanggal >= today && !item.isDone;
+        } catch (err) {
+          console.warn("Error processing control item:", err);
+          return false;
+        }
+      }).length;
 
       // Completed today
-      const completedToday = historyData.filter(
-        (item) =>
-          item.created_at?.startsWith(today) && item.status === "diminum"
-      ).length;
+      const completedToday = historyData.filter((item) => {
+        if (!item || !item.created_at) return false;
+        try {
+          return (
+            item.created_at.startsWith(today) &&
+            (item.status === "diminum" || item.status === "diambil")
+          );
+        } catch (err) {
+          console.warn("Error processing history item:", err);
+          return false;
+        }
+      }).length;
 
-      // Stock alert: obat yang perlu perhatian (< 6)
-      const stockAlert = jadwalData.filter(
-        (item) => item.jumlah_obat < 6
-      ).length;
+      // Stock alert: obat hampir habis (1-5 pills)
+      const stockAlert = jadwalData.filter((item) => {
+        if (!item || typeof item.jumlah_obat !== "number") return false;
+        try {
+          return item.jumlah_obat > 0 && item.jumlah_obat < 6;
+        } catch (err) {
+          console.warn("Error processing stock item:", err);
+          return false;
+        }
+      }).length;
+
+      // Empty stock: obat habis (0 pills)
+      const emptyStock = jadwalData.filter((item) => {
+        if (!item || typeof item.jumlah_obat !== "number") return false;
+        try {
+          return item.jumlah_obat === 0;
+        } catch (err) {
+          console.warn("Error processing empty stock item:", err);
+          return false;
+        }
+      }).length;
 
       setStats({
         todayMedications,
@@ -71,10 +139,31 @@ const Dashboard = () => {
         completedToday,
         totalSchedules: jadwalData.length,
         stockAlert,
+        emptyStock,
+      });
+
+      console.log("Dashboard stats loaded successfully:", {
+        todayMedications,
+        upcomingControls,
+        completedToday,
+        totalSchedules: jadwalData.length,
+        stockAlert,
+        emptyStock,
       });
     } catch (error) {
-      console.error("Error loading stats:", error);
-      setError("Gagal memuat data");
+      console.error("Error loading dashboard stats:", error);
+      setError(
+        "Gagal memuat data dashboard. Silakan coba refresh atau periksa koneksi internet."
+      );
+
+      setStats({
+        todayMedications: 0,
+        upcomingControls: 0,
+        completedToday: 0,
+        totalSchedules: 0,
+        stockAlert: 0,
+        emptyStock: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -84,36 +173,10 @@ const Dashboard = () => {
     window.location.href = path;
   };
 
-  // Helper function untuk menentukan kondisi stok
-  const getStockCondition = (jumlahObat) => {
-    if (jumlahObat === 0) {
-      return {
-        status: "habis",
-        color: "text-red-600",
-        bgColor: "bg-red-100",
-        icon: "❌",
-      };
-    } else if (jumlahObat < 6) {
-      return {
-        status: "hampir habis",
-        color: "text-orange-600",
-        bgColor: "bg-orange-100",
-        icon: "⚠️",
-      };
-    } else {
-      return {
-        status: "aman",
-        color: "text-green-600",
-        bgColor: "bg-green-100",
-        icon: "✅",
-      };
-    }
-  };
-
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-4 space-y-8">
-        {/* Header with Enhanced Design */}
+        {/* Header */}
         <div className="text-center mb-12 relative">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-indigo-600/10 rounded-3xl blur-3xl"></div>
           <div className="relative">
@@ -126,6 +189,16 @@ const Dashboard = () => {
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               Pantau kesehatan dan kelola jadwal obat Anda dengan mudah
             </p>
+
+            {!loading && (
+              <button
+                onClick={loadStats}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
+              >
+                <span className="mr-2">🔄</span>
+                Refresh Data
+              </button>
+            )}
           </div>
         </div>
 
@@ -149,6 +222,7 @@ const Dashboard = () => {
 
         {/* Welcome Card for New Users */}
         {!loading &&
+          !error &&
           stats.totalSchedules === 0 &&
           stats.upcomingControls === 0 && (
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-10 relative overflow-hidden">
@@ -165,82 +239,77 @@ const Dashboard = () => {
             <LoadingStats />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Today's Medications */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl"></div>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="relative">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl shadow-lg">
-                    <span className="text-2xl">💊</span>
-                  </div>
-                  <div className="ml-6">
-                    <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 rounded-3xl"></div>
+            <div className="relative">
+              <div className="flex items-center mb-6">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
+                  <span className="text-2xl">📊</span>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    Statistik Hari Ini
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    Overview aktivitas kesehatan Anda
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {/* Today's Medications */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-blue-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">💊</div>
+                    <div className="text-2xl font-bold mb-1 text-blue-600">
                       {stats.todayMedications}
-                    </p>
-                    <p className="text-gray-600 font-semibold">Obat Hari Ini</p>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Obat Hari Ini
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Completed Today */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 rounded-3xl"></div>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-emerald-400/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="relative">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-lg">
-                    <span className="text-2xl">✅</span>
-                  </div>
-                  <div className="ml-6">
-                    <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                      {stats.completedToday}
-                    </p>
-                    <p className="text-gray-600 font-semibold">Sudah Diminum</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Upcoming Controls */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/50 rounded-3xl"></div>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-red-400/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="relative">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg">
-                    <span className="text-2xl">🏥</span>
-                  </div>
-                  <div className="ml-6">
-                    <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                      {stats.upcomingControls}
-                    </p>
-                    <p className="text-gray-600 font-semibold">
-                      Jadwal Kontrol
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Stock Alert */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/50 to-amber-50/50 rounded-3xl"></div>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-amber-400/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="relative">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-2xl shadow-lg">
-                    <span className="text-2xl">⚠️</span>
-                  </div>
-                  <div className="ml-6">
-                    <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                {/* Stock Alert - Hampir Habis */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-yellow-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">⚠️</div>
+                    <div className="text-2xl font-bold mb-1 text-yellow-600">
                       {stats.stockAlert}
-                    </p>
-                    <p className="text-gray-600 font-semibold">
-                      Perlu Perhatian
-                    </p>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Obat Hampir Habis
+                    </div>
+                  </div>
+                </div>
+
+                {/* Empty Stock - Habis */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-red-50 to-pink-50 border border-red-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-red-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">❌</div>
+                    <div className="text-2xl font-bold mb-1 text-red-600">
+                      {stats.emptyStock}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Obat Habis
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upcoming Controls */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-orange-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">🏥</div>
+                    <div className="text-2xl font-bold mb-1 text-orange-600">
+                      {stats.upcomingControls}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Jadwal Kontrol
+                    </div>
                   </div>
                 </div>
               </div>
@@ -249,56 +318,116 @@ const Dashboard = () => {
         )}
 
         {/* Quick Actions */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-10 relative overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden mb-8">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 rounded-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-indigo-400/10 rounded-full translate-y-16 translate-x-16"></div>
-
           <div className="relative">
-            <div className="flex items-center mb-8">
+            <div className="flex items-center mb-6">
               <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
-                <span className="text-xl text-white">⚡</span>
+                <span className="text-2xl">⚡</span>
               </div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                Aksi Cepat
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Aksi Cepat
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  Navigasi cepat ke fitur utama
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <button
                 onClick={() => navigateTo("/jadwal")}
-                className="group flex items-center p-6 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25 relative overflow-hidden"
+                className="group relative p-6 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <span className="text-2xl mr-4 relative z-10">💊</span>
-                <span className="font-bold text-lg relative z-10">
-                  Kelola Jadwal Obat
-                </span>
+                <div className="flex items-center relative z-10">
+                  <span className="text-2xl mr-4">💊</span>
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Kelola Jadwal Obat</div>
+                    <div className="text-blue-100 text-sm">
+                      Tambah & edit jadwal
+                    </div>
+                  </div>
+                </div>
               </button>
 
               <button
                 onClick={() => navigateTo("/control")}
-                className="group flex items-center p-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25 relative overflow-hidden"
+                className="group relative p-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <span className="text-2xl mr-4 relative z-10">🏥</span>
-                <span className="font-bold text-lg relative z-10">
-                  Jadwal Kontrol
-                </span>
+                <div className="flex items-center relative z-10">
+                  <span className="text-2xl mr-4">🏥</span>
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Jadwal Kontrol</div>
+                    <div className="text-orange-100 text-sm">
+                      Kontrol dokter
+                    </div>
+                  </div>
+                </div>
               </button>
 
               <button
                 onClick={() => navigateTo("/history")}
-                className="group flex items-center p-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-green-500/25 relative overflow-hidden"
+                className="group relative p-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-green-500/25 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <span className="text-2xl mr-4 relative z-10">📊</span>
-                <span className="font-bold text-lg relative z-10">
-                  Lihat Riwayat
-                </span>
+                <div className="flex items-center relative z-10">
+                  <span className="text-2xl mr-4">📊</span>
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Lihat Riwayat</div>
+                    <div className="text-green-100 text-sm">
+                      Aktivitas kesehatan
+                    </div>
+                  </div>
+                </div>
               </button>
             </div>
           </div>
         </div>
+
+        {/* Today's Medication Schedule */}
+        {!loading && !error && stats.todayMedications > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl"></div>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
+                    <span className="text-2xl">⏰</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      Jadwal Obat Hari Ini
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                      Obat yang perlu diminum hari ini
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigateTo("/jadwal")}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  Lihat Semua
+                </button>
+              </div>
+
+              <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-200/50">
+                <div className="text-center">
+                  <div className="text-3xl mb-2">💊</div>
+                  <div className="text-lg font-semibold text-blue-700">
+                    {stats.todayMedications} obat tersisa untuk hari ini
+                  </div>
+                  <div className="text-sm text-blue-600 mt-1">
+                    Jangan lupa minum obat sesuai jadwal!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

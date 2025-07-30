@@ -101,14 +101,18 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
   return (
     <div className="p-2">
       <div
-        className={`w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg group ${getCardBorderColor()} ${
-          isExpired() ? "opacity-75" : ""
-        }`}
+        className={`w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border transition-all duration-300 hover:shadow-lg group ${
+          data.isDone
+            ? "border-green-300 shadow-green-100 bg-green-50/30"
+            : getCardBorderColor()
+        } ${isExpired() || data.isDone ? "opacity-75" : ""}`}
       >
         {/* Header */}
         <div
           className={`p-4 rounded-t-xl ${
-            isExpired()
+            data.isDone
+              ? "bg-gradient-to-r from-green-50 to-emerald-50"
+              : isExpired()
               ? "bg-gradient-to-r from-gray-50 to-gray-100"
               : isToday()
               ? "bg-gradient-to-r from-red-50 to-pink-50"
@@ -195,7 +199,12 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
         <div className="px-4 pb-4 flex justify-between gap-2">
           <button
             onClick={() => onEdit && onEdit(data)}
-            className="flex-1 px-4 py-2 text-sm font-medium text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+            disabled={data.isDone}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm flex items-center justify-center gap-1 ${
+              data.isDone
+                ? "text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed opacity-50"
+                : "text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-300 hover:shadow-md"
+            }`}
           >
             <svg
               className="w-4 h-4"
@@ -210,7 +219,7 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
-            Edit
+            {data.isDone ? "Tidak dapat diedit" : "Edit"}
           </button>
 
           {!data.isDone && onMarkDone && (
@@ -237,7 +246,12 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
 
           <button
             onClick={() => onDelete && onDelete(data)}
-            className="flex-1 px-4 py-2 text-sm font-medium text-red-700 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 border border-red-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+            disabled={data.isDone}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm flex items-center justify-center gap-1 ${
+              data.isDone
+                ? "text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed opacity-50"
+                : "text-red-700 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 border border-red-300 hover:shadow-md"
+            }`}
           >
             <svg
               className="w-4 h-4"
@@ -252,9 +266,21 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
               />
             </svg>
-            Hapus
+            {data.isDone ? "Tidak dapat dihapus" : "Hapus"}
           </button>
         </div>
+
+        {/* Info message for completed controls */}
+        {data.isDone && (
+          <div className="px-4 pb-3">
+            <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
+              <p className="text-xs text-green-700 font-medium flex items-center justify-center gap-1">
+                <span>ℹ️</span>
+                Kontrol sudah selesai - tidak dapat diedit atau dihapus
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
