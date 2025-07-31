@@ -36,10 +36,10 @@ const App = () => {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      {/* React-toastify container */}
+      {/* Toast notifications container */}
       <ToastContainer
         position="top-right"
-        autoClose={4000}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

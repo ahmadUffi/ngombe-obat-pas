@@ -9,18 +9,112 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const { loginWithAPI } = useContext(AuthContext);
 
+  // Clear errors when user starts typing
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    if (errors.email) {
+      setErrors((prev) => ({ ...prev, email: null }));
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (errors.password) {
+      setErrors((prev) => ({ ...prev, password: null }));
+    }
+  };
+
+  // Validate form before submission
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!email.trim()) {
+      newErrors.email = "Email harus diisi";
+      toast.error("Email harus diisi!");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Format email tidak valid";
+      toast.error("Format email tidak valid!");
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Password harus diisi";
+      toast.error("Password harus diisi!");
+    } else if (password.length < 6) {
+      newErrors.password = "Password minimal 6 karakter";
+      toast.error("Password minimal 6 karakter!");
+    }
+
+    setErrors(newErrors);
+
+    // Show general validation error if any field is invalid
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Mohon periksa dan lengkapi form dengan benar!");
+      return false;
+    }
+
+    return true;
+  }; // Get user-friendly error message based on error type
+  const getErrorMessage = (error) => {
+    const errorMessage = error.message || "";
+    const errorResponse = error.response?.data;
+
+    if (errorResponse?.error_type) {
+      switch (errorResponse.error_type) {
+        case "invalid_credentials":
+          return "Email atau password salah. Periksa kembali data Anda.";
+        case "user_not_found":
+          return "Akun dengan email tersebut tidak ditemukan. Silakan daftar terlebih dahulu.";
+        case "email_not_confirmed":
+          return "Email belum diverifikasi. Silakan cek inbox email Anda dan klik link verifikasi.";
+        case "too_many_requests":
+          return "Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.";
+        case "invalid_email":
+          return "Format email tidak valid.";
+        case "validation_error":
+          return "Mohon lengkapi semua field yang diperlukan.";
+        default:
+          return (
+            errorResponse.message ||
+            "Login gagal. Periksa kembali email dan password Anda."
+          );
+      }
+    }
+
+    // Handle network and other errors
+    if (
+      errorMessage.includes("Network Error") ||
+      errorMessage.includes("fetch")
+    ) {
+      return "Koneksi internet bermasalah. Periksa koneksi Anda dan coba lagi.";
+    }
+
+    if (errorMessage.includes("timeout")) {
+      return "Koneksi timeout. Periksa koneksi internet Anda.";
+    }
+
+    // Default error message
+    return errorMessage || "Terjadi kesalahan saat login. Silakan coba lagi.";
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    // Clear previous errors
+    setErrors({});
+
+    // Validate form - akan menampilkan toast error jika ada yang salah
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await loginWithAPI(email, password);
-      console.log("✅ Login berhasil!");
-      console.log("Token:", response.access_token);
-
       toast.success("Login berhasil! Mengarahkan ke dashboard...");
 
       // Delay sedikit untuk menampilkan toast
@@ -28,9 +122,27 @@ const Login = () => {
         window.location.href = "/"; // Simple redirect to main page
       }, 1000);
     } catch (error) {
-      toast.error(
-        error.message || "Login gagal. Periksa email dan password Anda."
-      );
+      console.error("Login error:", error);
+
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
+
+      // Set specific field errors if applicable
+      const errorResponse = error.response?.data;
+      if (errorResponse?.error_type === "invalid_credentials") {
+        setErrors({
+          email: "Email atau password salah",
+          password: "Email atau password salah",
+        });
+      } else if (errorResponse?.error_type === "user_not_found") {
+        setErrors({
+          email: "Akun dengan email ini tidak ditemukan",
+        });
+      } else if (errorResponse?.error_type === "invalid_email") {
+        setErrors({
+          email: "Format email tidak valid",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +178,9 @@ const Login = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-400"
+                    className={`h-5 w-5 ${
+                      errors.email ? "text-red-400" : "text-gray-400"
+                    }`}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -80,13 +194,33 @@ const Login = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="pl-10 w-full py-3 border border-gray-200 rounded-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-200"
+                  className={`pl-10 w-full py-3 border rounded-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                    errors.email
+                      ? "border-red-300 focus:ring-red-100 focus:border-red-300"
+                      : "border-gray-200 focus:ring-orange-100 focus:border-orange-200"
+                  }`}
                   placeholder="email@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   disabled={loading}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             <div>
@@ -108,7 +242,9 @@ const Login = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-400"
+                    className={`h-5 w-5 ${
+                      errors.password ? "text-red-400" : "text-gray-400"
+                    }`}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -125,14 +261,34 @@ const Login = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="pl-10 w-full py-3 border border-gray-200 rounded-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-200"
+                  className={`pl-10 w-full py-3 border rounded-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                    errors.password
+                      ? "border-red-300 focus:ring-red-100 focus:border-red-300"
+                      : "border-gray-200 focus:ring-orange-100 focus:border-orange-200"
+                  }`}
                   placeholder="Masukkan password Anda"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   disabled={loading}
                   minLength="6"
                 />
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             <button

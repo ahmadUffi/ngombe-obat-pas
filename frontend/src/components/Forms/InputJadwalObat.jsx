@@ -3,6 +3,7 @@ import CompactInput from "./CompactInput";
 import CompactSelect from "./CompactSelect";
 import StepIndicator from "../UI/StepIndicator";
 import AllSlotsFullWarning from "../Common/AllSlotsFullWarning";
+import { toast } from "react-toastify";
 
 const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   // Form state - editing is now disabled
@@ -294,6 +295,9 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Mohon perbaiki data yang tidak valid");
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -327,8 +331,10 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       };
 
       await onSubmit(submitData);
+      toast.success("Jadwal obat berhasil disimpan!");
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast.error("Gagal menyimpan jadwal obat. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }

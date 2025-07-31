@@ -2,6 +2,7 @@ import React, { useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { logo, maskot } from "../../assets";
+import { toast } from "react-toastify";
 
 const initialState = {
   email: "",
@@ -45,6 +46,7 @@ const Register = () => {
 
     if (state.password !== state.confirmPassword) {
       dispatch({ type: "SET_ERROR", value: "Password tidak cocok" });
+      toast.error("Password tidak cocok!");
       setLoading(false);
       return;
     }
@@ -100,15 +102,19 @@ const Register = () => {
         value: "Registrasi berhasil! Mengarahkan ke halaman login...",
       });
 
+      toast.success("Registrasi berhasil! Mengarahkan ke halaman login...");
+
       // Delay untuk menampilkan success message
       setTimeout(() => {
         navigate("/login");
       }, 2000);
     } catch (err) {
+      const errorMessage = err.message || "Terjadi kesalahan saat registrasi";
       dispatch({
         type: "SET_ERROR",
-        value: err.message || "Terjadi kesalahan saat registrasi",
+        value: errorMessage,
       });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

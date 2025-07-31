@@ -35,10 +35,29 @@ export const AuthProvider = ({ children }) => {
       // Optional: You can still get user info from Supabase if needed
       return response;
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || err.response?.data?.error || err.message;
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      // Enhanced error handling
+      console.error("Login API Error:", err);
+
+      let errorToThrow = err;
+
+      // If it's an axios error with response data, preserve the structure
+      if (err.response?.data) {
+        // Keep the original error structure for better error handling in components
+        const errorMessage =
+          err.response.data.message || err.response.data.error || err.message;
+        setError(errorMessage);
+
+        // Create enhanced error object with response data
+        errorToThrow = new Error(errorMessage);
+        errorToThrow.response = err.response;
+      } else {
+        // Handle network or other errors
+        const errorMessage = err.message || "Terjadi kesalahan jaringan";
+        setError(errorMessage);
+        errorToThrow = new Error(errorMessage);
+      }
+
+      throw errorToThrow;
     } finally {
       setLoading(false);
     }

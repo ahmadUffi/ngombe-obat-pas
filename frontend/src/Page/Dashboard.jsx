@@ -3,6 +3,7 @@ import Layout from "../components/Layout/Layout";
 import { LoadingStats } from "../components/UI/LoadingSpinner";
 import { WelcomeCard } from "../components/UI/EmptyState";
 import { useJadwal, useControl, useHistory } from "../hooks/useApi";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -265,6 +266,9 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error("Error loading dashboard stats:", error);
+      toast.error(
+        "Gagal memuat data dashboard. Silakan coba refresh atau periksa koneksi internet."
+      );
       setError(
         "Gagal memuat data dashboard. Silakan coba refresh atau periksa koneksi internet."
       );

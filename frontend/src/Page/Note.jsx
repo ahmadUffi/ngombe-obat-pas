@@ -1,10 +1,12 @@
 import React from "react";
 import Layout from "../components/Layout/Layout";
 import AddButton from "../components/UI/AddButton";
+import { toast } from "react-toastify";
 
 const Note = () => {
   const handleAddNote = () => {
     // Logic untuk menambah catatan baru
+    toast.info("Fitur catatan akan segera hadir");
     console.log("Add new note");
   };
 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Layout from "../components/Layout/Layout";
 import LoadingSpinner from "../components/UI/LoadingSpinner";
+import { toast } from "react-toastify";
 
 const History = () => {
   const { token } = useAuth();
@@ -68,6 +69,7 @@ const History = () => {
           }
         } else {
           console.warn("Empty response from API");
+          toast.warning("Tidak ada data history yang ditemukan");
           setError("Tidak ada data yang diterima dari server");
           setHistories([]);
         }
@@ -77,6 +79,7 @@ const History = () => {
           err.response?.data?.message ||
           err.message ||
           "Failed to load history data";
+        toast.error("Gagal memuat data history. Silakan coba lagi.");
         setError(errorMessage);
         setHistories([]);
       } finally {
@@ -216,26 +219,6 @@ const History = () => {
         return "bg-gradient-to-r from-gray-500 to-slate-500";
     }
   };
-
-  const getActionIcon = (action) => {
-    switch (action) {
-      case "diambil":
-        return "✓";
-      case "diminum":
-        return "💊";
-      case "terlewat":
-        return "⚠";
-      case "missed":
-        return "❌";
-      case "dijadwalkan":
-        return "📅";
-      case "scheduled":
-        return "⏰";
-      default:
-        return "📋";
-    }
-  };
-
   // Get status badge color and text
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
@@ -385,6 +368,7 @@ const History = () => {
         err.response?.data?.message ||
         err.message ||
         "Failed to refresh history data";
+      toast.error("Gagal memperbarui data. Silakan coba lagi.");
       setError(errorMessage);
       setHistories([]);
     } finally {
