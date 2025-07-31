@@ -93,18 +93,25 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
 
   return (
     <div className="bg-white rounded-xl w-full max-w-md mx-auto max-h-[85vh] flex flex-col shadow-lg border border-gray-300">
-      {/* Header */}
-      <div className="p-4 bg-blue-500 text-white rounded-t-xl flex-shrink-0">
-        <h2 className="text-lg font-bold text-center flex items-center justify-center">
-          <span className="mr-2">🏥</span>
-          {initialData ? "Edit" : "Tambah"} Jadwal Kontrol
-        </h2>
-        <p className="text-blue-100 text-center mt-1 text-sm">
-          Lengkapi informasi jadwal kontrol dengan dokter
-        </p>
+      {/* Enhanced Header - Keep the new styling */}
+      <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-xl flex-shrink-0 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12"></div>
+        <div className="relative">
+          <div className="text-center mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mb-3 backdrop-blur-sm">
+              <span className="text-2xl">🏥</span>
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-center">
+            {initialData ? "Edit" : "Tambah"} Jadwal Kontrol
+          </h2>
+          <p className="text-blue-100 text-center mt-2 text-sm">
+            Lengkapi informasi jadwal kontrol dengan dokter
+          </p>
+        </div>
       </div>
 
-      {/* Form Content - Scrollable */}
+      {/* Form Content - Back to original styling */}
       <div className="flex-1 overflow-y-auto p-4">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -152,7 +159,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
               icon="⏰"
             />
 
-            {/* Summary with colorful design */}
+            {/* Summary with original styling */}
             {formData.nama_pasien &&
               formData.dokter &&
               formData.tanggal &&
@@ -202,7 +209,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
         </form>
       </div>
 
-      {/* Footer */}
+      {/* Footer - Back to original styling but fix the button function */}
       <div className="p-4 bg-gray-50 rounded-b-xl border-t border-gray-200 flex-shrink-0">
         <button
           type="submit"
@@ -237,7 +244,7 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
           ) : (
             <span className="flex items-center justify-center">
               <span className="mr-2">💾</span>
-              Simpan Jadwal Kontrol
+              {initialData ? "Update Jadwal Kontrol" : "Simpan Jadwal Kontrol"}
             </span>
           )}
         </button>

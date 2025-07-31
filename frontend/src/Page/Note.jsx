@@ -17,6 +17,11 @@ const Note = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({});
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    noteId: null,
+    noteTitle: "",
+  });
 
   const categories = [
     { value: "all", label: "🔍 Semua", color: "from-gray-100 to-gray-200" },
@@ -180,6 +185,11 @@ const Note = () => {
         toast.success("Catatan berhasil dihapus!");
         loadNotes();
         loadStats();
+        setDeleteConfirmation({
+          isOpen: false,
+          noteId: null,
+          noteTitle: "",
+        });
       }
     } catch (error) {
       console.error("Error deleting note:", error);
@@ -187,6 +197,23 @@ const Note = () => {
         error.response?.data?.message || "Gagal menghapus catatan";
       toast.error(errorMessage);
     }
+  };
+
+  const handleDeleteConfirmation = (note) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      noteId: note.note_id,
+      noteTitle:
+        note.message.substring(0, 50) + (note.message.length > 50 ? "..." : ""),
+    });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      noteId: null,
+      noteTitle: "",
+    });
   };
 
   const handleCategoryFilter = (category) => {
@@ -359,7 +386,7 @@ const Note = () => {
                     key={note.note_id}
                     note={note}
                     onEdit={handleEditNote}
-                    onDelete={handleDeleteNote}
+                    onDelete={handleDeleteConfirmation}
                   />
                 ))}
               </div>
@@ -462,6 +489,57 @@ const Note = () => {
           note={editingNote}
           isEditing={!!editingNote}
         />
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  Konfirmasi Hapus
+                </h3>
+                <p className="text-gray-600">
+                  Apakah Anda yakin ingin menghapus catatan ini?
+                </p>
+              </div>
+
+              {/* Note Preview */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-gray-700 text-sm">
+                  "{deleteConfirmation.noteTitle}"
+                </p>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                <p className="text-red-700 text-sm">
+                  <strong>Peringatan:</strong> Tindakan ini tidak dapat
+                  dibatalkan. Catatan akan dihapus secara permanen.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => handleDeleteNote(deleteConfirmation.noteId)}
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
