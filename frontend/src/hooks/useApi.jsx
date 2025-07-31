@@ -175,7 +175,13 @@ export const useHistory = () => {
   const token = apiService.getToken();
 
   const getAllHistory = useCallback(async () => {
-    return await callApi(apiService.getAllHistory, token);
+    try {
+      const response = await callApi(apiService.getAllHistory, token);
+      return response; // Return the complete response object
+    } catch (error) {
+      console.error("Error in getAllHistory:", error);
+      throw error;
+    }
   }, [callApi, token]);
 
   const addHistory = useCallback(

@@ -10,7 +10,6 @@ import Note from "../Page/Note";
 import History from "../Page/History";
 import Login from "../components/Auth/Login";
 import Register from "../components/Auth/Register";
-import MainPage from "../Page/MainPage";
 
 // Protected Route component
 export const ProtectedRoute = ({ children }) => {

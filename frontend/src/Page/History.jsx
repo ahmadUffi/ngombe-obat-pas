@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import Layout from "../components/Layout/Layout";
 import LoadingSpinner from "../components/UI/LoadingSpinner";
-import EmptyState from "../components/UI/EmptyState";
 
 const History = () => {
   const { token } = useAuth();
@@ -32,16 +31,53 @@ const History = () => {
       try {
         setLoading(true);
         setError(null);
+
+        console.log("Fetching history data...");
         const response = await apiService.getAllHistory(token);
-        if (response.success) {
-          setHistories(Array.isArray(response.data) ? response.data : []);
+        console.log("History API response:", response);
+
+        // Handle different response formats
+        if (response) {
+          if (response.success && response.data) {
+            // Format: { success: true, message: "...", data: [...] }
+            const historyData = Array.isArray(response.data)
+              ? response.data
+              : [];
+            console.log(
+              "Using response.data format:",
+              historyData.length,
+              "items"
+            );
+            setHistories(historyData);
+          } else if (Array.isArray(response)) {
+            // Format: [...]
+            console.log("Using direct array format:", response.length, "items");
+            setHistories(response);
+          } else if (response.data && Array.isArray(response.data)) {
+            // Format without success flag but with data property
+            console.log(
+              "Using response.data without success flag:",
+              response.data.length,
+              "items"
+            );
+            setHistories(response.data);
+          } else {
+            console.warn("Unexpected response format:", response);
+            setError("Format respons tidak sesuai");
+            setHistories([]);
+          }
         } else {
-          setError("Failed to fetch histories");
+          console.warn("Empty response from API");
+          setError("Tidak ada data yang diterima dari server");
           setHistories([]);
         }
       } catch (err) {
         console.error("Error fetching histories:", err);
-        setError("Failed to load history data");
+        const errorMessage =
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to load history data";
+        setError(errorMessage);
         setHistories([]);
       } finally {
         setLoading(false);
@@ -55,26 +91,39 @@ const History = () => {
 
   const filteredHistories = React.useMemo(() => {
     try {
-      if (!Array.isArray(histories) || histories.length === 0) {
+      if (!Array.isArray(histories)) {
+        console.warn("histories is not an array:", typeof histories);
         return [];
       }
 
-      return histories.filter((history) => {
-        if (!history) return false;
+      if (histories.length === 0) {
+        return [];
+      }
+
+      const filtered = histories.filter((history) => {
+        if (!history) {
+          return false;
+        }
+
+        // Safe property access
+        const historyStatus = history.status || "";
+        const historyNamaObat = history.nama_obat || "";
+        const historyWaktuMinum = history.waktu_minum || "";
 
         const matchesFilter =
           filter === "all" ||
-          history.status?.toLowerCase() === filter.toLowerCase();
+          historyStatus.toLowerCase() === filter.toLowerCase();
+
         const matchesSearch =
           !searchTerm ||
-          history.nama_obat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          history.waktu_minum
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          history.status?.toLowerCase().includes(searchTerm.toLowerCase());
+          historyNamaObat.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyWaktuMinum.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyStatus.toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesFilter && matchesSearch;
       });
+
+      return filtered;
     } catch (error) {
       console.error("Error filtering histories:", error);
       return [];
@@ -83,39 +132,68 @@ const History = () => {
 
   const sortedHistories = React.useMemo(() => {
     try {
-      if (!Array.isArray(filteredHistories) || filteredHistories.length === 0) {
+      if (!Array.isArray(filteredHistories)) {
+        console.warn(
+          "filteredHistories is not an array:",
+          typeof filteredHistories
+        );
         return [];
       }
 
-      return [...filteredHistories].sort((a, b) => {
-        try {
-          const dateA = new Date(a.created_at);
-          const dateB = new Date(b.created_at);
+      if (filteredHistories.length === 0) {
+        return [];
+      }
 
-          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+      const sorted = [...filteredHistories].sort((a, b) => {
+        try {
+          // Safe date parsing
+          if (!a || !b) return 0;
+
+          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+
+          // Check if dates are valid
+          if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) {
             return 0;
+          } else if (isNaN(dateA.getTime())) {
+            return 1; // Put invalid dates at the end
+          } else if (isNaN(dateB.getTime())) {
+            return -1; // Put invalid dates at the end
           }
 
           return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
         } catch (error) {
-          console.error("Error sorting histories:", error);
+          console.error("Error sorting individual items:", error);
           return 0;
         }
       });
+
+      return sorted;
     } catch (error) {
-      console.error("Error processing histories:", error);
+      console.error("Error processing histories for sorting:", error);
       return [];
     }
   }, [filteredHistories, sortOrder]);
 
   const formatDate = (dateString) => {
     try {
-      if (!dateString) return "Tanggal tidak tersedia";
+      if (!dateString) {
+        return "Tanggal tidak tersedia";
+      }
+
+      if (typeof dateString !== "string") {
+        return "Format tanggal tidak valid";
+      }
+
       const date = parseISO(dateString);
-      if (!isValid(date)) return "Format tanggal tidak valid";
+
+      if (!isValid(date)) {
+        return "Format tanggal tidak valid";
+      }
+
       return format(date, "dd MMMM yyyy, HH:mm", { locale: id });
     } catch (error) {
-      console.error("Error formatting date:", error);
+      console.error("Error formatting date:", error, "Input:", dateString);
       return "Error format tanggal";
     }
   };
@@ -260,17 +338,54 @@ const History = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log("Refreshing history data...");
       const response = await apiService.getAllHistory(token);
-      if (response.success) {
-        setHistories(Array.isArray(response.data) ? response.data : []);
-        setError(null);
+      console.log("Refresh API response:", response);
+
+      // Handle different response formats
+      if (response) {
+        if (response.success && response.data) {
+          const historyData = Array.isArray(response.data) ? response.data : [];
+          console.log(
+            "Refresh - using response.data format:",
+            historyData.length,
+            "items"
+          );
+          setHistories(historyData);
+          setError(null);
+        } else if (Array.isArray(response)) {
+          console.log(
+            "Refresh - using direct array format:",
+            response.length,
+            "items"
+          );
+          setHistories(response);
+          setError(null);
+        } else if (response.data && Array.isArray(response.data)) {
+          console.log(
+            "Refresh - using response.data without success flag:",
+            response.data.length,
+            "items"
+          );
+          setHistories(response.data);
+          setError(null);
+        } else {
+          console.warn("Refresh - unexpected response format:", response);
+          setError("Format respons tidak sesuai saat refresh");
+          setHistories([]);
+        }
       } else {
-        setError("Failed to refresh data");
+        console.warn("Refresh - empty response from API");
+        setError("Tidak ada data yang diterima dari server saat refresh");
         setHistories([]);
       }
     } catch (err) {
       console.error("Error refreshing data:", err);
-      setError("Failed to refresh history data");
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to refresh history data";
+      setError(errorMessage);
       setHistories([]);
     } finally {
       setLoading(false);
@@ -526,11 +641,18 @@ const History = () => {
               {sortedHistories.length === 0 ? (
                 <div className="text-center py-12">
                   {histories.length === 0 ? (
-                    <EmptyState
-                      icon={FileText}
-                      title="Tidak ada riwayat"
-                      description="Belum ada aktivitas obat yang tercatat. Mulai jadwalkan obat Anda untuk melihat riwayat di sini."
-                    />
+                    <div className="max-w-md mx-auto">
+                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full mb-6">
+                        <FileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-3">
+                        Tidak ada riwayat
+                      </h3>
+                      <p className="text-gray-500 mb-6">
+                        Belum ada aktivitas obat yang tercatat. Mulai jadwalkan
+                        obat Anda untuk melihat riwayat di sini.
+                      </p>
+                    </div>
                   ) : (
                     <div className="max-w-md mx-auto">
                       <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full mb-6">
@@ -593,70 +715,85 @@ const History = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedHistories.map((history, index) => (
-                        <tr
-                          key={history.id || index}
-                          className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200"
-                        >
-                          <td className="px-6 py-4 border border-purple-200">
-                            <div className="flex items-center space-x-3">
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                  getStatusBadge(history.status).className
-                                }`}
-                              >
-                                {getStatusBadge(history.status).icon}{" "}
-                                {getStatusBadge(history.status).text}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 border border-purple-200">
-                            <span className="font-medium text-gray-800">
-                              {history.nama_obat || "Nama obat tidak tersedia"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 border border-purple-200">
-                            <div className="flex items-center text-gray-600">
-                              <Clock className="w-4 h-4 mr-2 text-purple-500" />
-                              <span>
-                                {history.waktu_minum || "Waktu tidak tersedia"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 border border-purple-200">
-                            {history.dosis_obat ? (
-                              <div className="flex items-center text-gray-600">
-                                <Package className="w-4 h-4 mr-2 text-purple-500" />
-                                <span>{history.dosis_obat}</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Tidak ada
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 border border-purple-200">
-                            {history.sisa_obat ? (
-                              <div className="flex items-center text-gray-600">
-                                <Package className="w-4 h-4 mr-2 text-purple-500" />
-                                <span>{history.sisa_obat} pcs</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Tidak ada
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 border border-purple-200">
-                            <div className="flex items-center text-gray-600">
-                              <CalendarDays className="w-4 h-4 mr-2 text-purple-500" />
-                              <span className="text-sm">
-                                {formatDate(history.created_at)}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {sortedHistories
+                        .map((history, index) => {
+                          // Additional safety check for each history item
+                          if (!history) {
+                            console.warn(
+                              `Skipping null history item at index ${index}`
+                            );
+                            return null;
+                          }
+
+                          return (
+                            <tr
+                              key={history.id || `history-${index}`}
+                              className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200"
+                            >
+                              <td className="px-6 py-4 border border-purple-200">
+                                <div className="flex items-center space-x-3">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                      getStatusBadge(history.status).className
+                                    }`}
+                                  >
+                                    {getStatusBadge(history.status).icon}{" "}
+                                    {getStatusBadge(history.status).text}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 border border-purple-200">
+                                <span className="font-medium text-gray-800">
+                                  {history.nama_obat ||
+                                    "Nama obat tidak tersedia"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 border border-purple-200">
+                                <div className="flex items-center text-gray-600">
+                                  <Clock className="w-4 h-4 mr-2 text-purple-500" />
+                                  <span>
+                                    {history.waktu_minum ||
+                                      "Waktu tidak tersedia"}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 border border-purple-200">
+                                {history.dosis_obat ? (
+                                  <div className="flex items-center text-gray-600">
+                                    <Package className="w-4 h-4 mr-2 text-purple-500" />
+                                    <span>{history.dosis_obat}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 italic">
+                                    Tidak ada
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 border border-purple-200">
+                                {history.sisa_obat !== null &&
+                                history.sisa_obat !== undefined ? (
+                                  <div className="flex items-center text-gray-600">
+                                    <Package className="w-4 h-4 mr-2 text-purple-500" />
+                                    <span>{history.sisa_obat} pcs</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 italic">
+                                    Tidak ada
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 border border-purple-200">
+                                <div className="flex items-center text-gray-600">
+                                  <CalendarDays className="w-4 h-4 mr-2 text-purple-500" />
+                                  <span className="text-sm">
+                                    {formatDate(history.created_at)}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                        .filter(Boolean)}
                     </tbody>
                   </table>
                 </div>

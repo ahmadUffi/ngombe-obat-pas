@@ -35,26 +35,101 @@ const Dashboard = () => {
       let historyData = [];
 
       try {
-        jadwalData = await getAllJadwal();
-        jadwalData = Array.isArray(jadwalData) ? jadwalData : [];
+        const jadwalResponse = await getAllJadwal();
+        console.log("Raw jadwal response:", jadwalResponse);
+
+        if (jadwalResponse) {
+          if (jadwalResponse.data && Array.isArray(jadwalResponse.data)) {
+            jadwalData = jadwalResponse.data;
+          } else if (Array.isArray(jadwalResponse)) {
+            jadwalData = jadwalResponse;
+          } else {
+            console.warn("Unexpected jadwal response format:", jadwalResponse);
+            jadwalData = [];
+          }
+        } else {
+          jadwalData = [];
+        }
+
+        console.log("Final jadwalData:", jadwalData.length, "items");
       } catch (err) {
-        console.warn("Failed to fetch jadwal data:", err);
+        console.error("Failed to fetch jadwal data:", err);
         jadwalData = [];
       }
 
       try {
-        controlData = await getAllControl();
-        controlData = Array.isArray(controlData) ? controlData : [];
+        const controlResponse = await getAllControl();
+        console.log("Raw control response:", controlResponse);
+
+        if (controlResponse) {
+          if (controlResponse.data && Array.isArray(controlResponse.data)) {
+            controlData = controlResponse.data;
+          } else if (Array.isArray(controlResponse)) {
+            controlData = controlResponse;
+          } else {
+            console.warn(
+              "Unexpected control response format:",
+              controlResponse
+            );
+            controlData = [];
+          }
+        } else {
+          controlData = [];
+        }
+
+        console.log("Final controlData:", controlData.length, "items");
       } catch (err) {
-        console.warn("Failed to fetch control data:", err);
+        console.error("Failed to fetch control data:", err);
         controlData = [];
       }
 
       try {
-        historyData = await getAllHistory();
-        historyData = Array.isArray(historyData) ? historyData : [];
+        const historyResponse = await getAllHistory();
+        console.log("Raw history response:", historyResponse);
+
+        // Handle different response formats
+        if (historyResponse) {
+          if (historyResponse.data && Array.isArray(historyResponse.data)) {
+            // Format: { success: true, message: "...", data: [...] }
+            historyData = historyResponse.data;
+            console.log(
+              "Using historyResponse.data (array):",
+              historyData.length,
+              "items"
+            );
+          } else if (Array.isArray(historyResponse)) {
+            // Format: [...]
+            historyData = historyResponse;
+            console.log(
+              "Using direct historyResponse (array):",
+              historyData.length,
+              "items"
+            );
+          } else if (historyResponse.success && historyResponse.data) {
+            // Another possible format
+            historyData = Array.isArray(historyResponse.data)
+              ? historyResponse.data
+              : [];
+            console.log(
+              "Using historyResponse with success flag:",
+              historyData.length,
+              "items"
+            );
+          } else {
+            console.warn(
+              "Unexpected history response format:",
+              historyResponse
+            );
+            historyData = [];
+          }
+        } else {
+          console.warn("History response is null/undefined");
+          historyData = [];
+        }
+
+        console.log("Final historyData:", historyData);
       } catch (err) {
-        console.warn("Failed to fetch history data:", err);
+        console.error("Failed to fetch history data:", err);
         historyData = [];
       }
 
@@ -98,18 +173,56 @@ const Dashboard = () => {
       }).length;
 
       // Completed today
-      const completedToday = historyData.filter((item) => {
-        if (!item || !item.created_at) return false;
+      console.log("Processing completedToday calculation...");
+      console.log("Today date:", today);
+      console.log("Total history items:", historyData.length);
+
+      const completedToday = historyData.filter((item, index) => {
+        if (!item) {
+          console.warn(`History item ${index} is null/undefined`);
+          return false;
+        }
+
         try {
-          return (
-            item.created_at.startsWith(today) &&
-            (item.status === "diminum" || item.status === "diambil")
+          console.log(`Processing history item ${index}:`, {
+            id: item.id,
+            created_at: item.created_at,
+            status: item.status,
+            type: typeof item.created_at,
+          });
+
+          // Check if created_at exists and is a string
+          if (!item.created_at) {
+            console.warn(`History item ${index} has no created_at field`);
+            return false;
+          }
+
+          if (typeof item.created_at !== "string") {
+            console.warn(
+              `History item ${index} created_at is not a string:`,
+              typeof item.created_at,
+              item.created_at
+            );
+            return false;
+          }
+
+          const isToday = item.created_at.startsWith(today);
+          const isCompleted =
+            item.status === "diminum" || item.status === "diambil";
+
+          console.log(
+            `Item ${index}: isToday=${isToday}, isCompleted=${isCompleted}`
           );
+
+          return isToday && isCompleted;
         } catch (err) {
-          console.warn("Error processing history item:", err);
+          console.error(`Error processing history item ${index}:`, err);
+          console.error("Item data:", item);
           return false;
         }
       }).length;
+
+      console.log("Final completedToday count:", completedToday);
 
       // Stock alert: obat hampir habis (1-5 pills)
       const stockAlert = jadwalData.filter((item) => {
@@ -219,19 +332,6 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-
-        {/* Welcome Card for New Users */}
-        {!loading &&
-          !error &&
-          stats.totalSchedules === 0 &&
-          stats.upcomingControls === 0 && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-10 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 rounded-3xl"></div>
-              <div className="relative">
-                <WelcomeCard />
-              </div>
-            </div>
-          )}
 
         {/* Main Stats */}
         {loading ? (
