@@ -351,7 +351,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
             {/* Quick Actions */}
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 mb-2">Aksi Cepat</div>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-2 gap-1">
                 <button
                   onClick={() => onEditQuantity && onEditQuantity(data)}
                   className="bg-blue-100 hover:bg-blue-200 text-blue-700 py-1.5 px-1 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"

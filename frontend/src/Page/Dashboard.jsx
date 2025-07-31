@@ -49,7 +49,6 @@ const Dashboard = () => {
         } else {
           jadwalData = [];
         }
-
       } catch (err) {
         jadwalData = [];
       }
@@ -68,7 +67,6 @@ const Dashboard = () => {
         } else {
           controlData = [];
         }
-
       } catch (err) {
         controlData = [];
       }
@@ -95,7 +93,6 @@ const Dashboard = () => {
         } else {
           historyData = [];
         }
-
       } catch (err) {
         historyData = [];
       }
@@ -221,7 +218,6 @@ const Dashboard = () => {
         stockAlert,
         emptyStock,
       });
-
     } catch (error) {
       toast.error(
         "Gagal memuat data dashboard. Silakan coba refresh atau periksa koneksi internet."
@@ -447,48 +443,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* Today's Medication Schedule */}
-        {!loading && !error && stats.todayMedications > 0 && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
-                    <span className="text-2xl">⏰</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      Jadwal Obat Hari Ini
-                    </h2>
-                    <p className="text-gray-600 mt-1">
-                      Obat yang perlu diminum hari ini
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigateTo("/jadwal")}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
-                >
-                  Lihat Semua
-                </button>
-              </div>
-
-              <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-200/50">
-                <div className="text-center">
-                  <div className="text-3xl mb-2">💊</div>
-                  <div className="text-lg font-semibold text-blue-700">
-                    {stats.todayMedications} obat tersisa untuk hari ini
-                  </div>
-                  <div className="text-sm text-blue-600 mt-1">
-                    Jangan lupa minum obat sesuai jadwal!
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

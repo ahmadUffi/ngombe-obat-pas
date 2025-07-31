@@ -444,7 +444,7 @@ const Jadwal = () => {
       </div>
 
       {/* Cards Grid */}
-      <div className="flex flex-wrap justify-start gap-6 mb-20">
+      <div className="flex flex-wrap justify-center lg:justify-start gap-6 mb-20">
         {filteredData.map((data, index) => (
           <div key={data.id || index} className="flex-shrink-0">
             <BoxJadwal

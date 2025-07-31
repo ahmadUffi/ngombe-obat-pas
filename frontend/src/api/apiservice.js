@@ -416,4 +416,172 @@ export class apiService {
     const token = this.getToken();
     return !!token;
   }
+
+  // ===============================
+  // NOTES ENDPOINTS
+  // ===============================
+
+  /**
+   * Get all notes for authenticated user
+   * @param {string} category - Optional category filter
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Notes data
+   */
+  static async getAllNotes(category = null, token) {
+    try {
+      const url = category
+        ? `${BASE_URL}/v1/api/notes?category=${category}`
+        : `${BASE_URL}/v1/api/notes`;
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Get notes failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Get a specific note by ID
+   * @param {string} noteId - Note ID
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Note data
+   */
+  static async getNoteById(noteId, token) {
+    try {
+      const response = await axios.get(`${BASE_URL}/v1/api/notes/${noteId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Get note failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Create a new note
+   * @param {Object} noteData - {category, message}
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Created note data
+   */
+  static async createNote(noteData, token) {
+    try {
+      const response = await axios.post(`${BASE_URL}/v1/api/notes`, noteData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Create note failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Update an existing note
+   * @param {string} noteId - Note ID
+   * @param {Object} updateData - {category?, message?}
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Updated note data
+   */
+  static async updateNote(noteId, updateData, token) {
+    try {
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/notes/${noteId}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Update note failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Delete a note
+   * @param {string} noteId - Note ID
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Deleted note data
+   */
+  static async deleteNote(noteId, token) {
+    try {
+      const response = await axios.delete(
+        `${BASE_URL}/v1/api/notes/${noteId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Delete note failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Search notes
+   * @param {string} query - Search query
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Search results
+   */
+  static async searchNotes(query, token) {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/v1/api/notes/search?q=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Search notes failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Get notes statistics
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Notes statistics
+   */
+  static async getNotesStats(token) {
+    try {
+      const response = await axios.get(`${BASE_URL}/v1/api/notes/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Get notes stats failed:",
+        err.response?.data || err.message
+      );
+      throw err;
+    }
+  }
 }

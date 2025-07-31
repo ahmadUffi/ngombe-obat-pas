@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import CompactInput from "./CompactInput";
-import CompactSelect from "./CompactSelect";
+import CompactInput from "../Utility/CompactInput";
+import CompactSelect from "../Utility/CompactSelect";
 import StepIndicator from "../UI/StepIndicator";
 import AllSlotsFullWarning from "../Common/AllSlotsFullWarning";
 import { toast } from "react-toastify";
@@ -333,7 +333,10 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       await onSubmit(submitData);
       toast.success("Jadwal obat berhasil disimpan!");
     } catch (error) {
-      toast.error("Gagal menyimpan jadwal obat. Silakan coba lagi.");
+      const errorMessage =
+        error.response?.data?.message ||
+        "Gagal menyimpan jadwal obat. Silakan coba lagi.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -354,28 +357,28 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg w-full max-w-md mx-auto max-h-[85vh] flex flex-col">
+    <div className="bg-white/95 backdrop-blur-sm rounded-3xl w-full max-w-md mx-auto max-h-[85vh] flex flex-col shadow-2xl border border-white/50">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
-        <h2 className="text-lg font-semibold text-gray-800 text-center">
-          {initialData ? "Edit" : "Tambah"} Jadwal Obat
+      <div className="p-6 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-3xl">
+        <h2 className="text-xl font-bold text-gray-800 text-center mb-4">
+          {initialData ? "✏️ Edit" : "✨ Tambah"} Jadwal Obat
         </h2>
         <StepIndicator currentStep={currentStep} />
 
-        <p className="text-sm text-gray-600 text-center mt-2">
+        <p className="text-sm text-gray-600 text-center mt-3 font-medium">
           {getStepTitle(currentStep)}
         </p>
       </div>
 
       {/* Form Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-6">
         {/* All Slots Full Warning */}
         {allSlotsFull && <AllSlotsFullWarning />}
 
         <form onSubmit={handleSubmit}>
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
-            <div className="space-y-1">
+            <div className="space-y-4">
               <CompactInput
                 label="Nama Pasien"
                 name="nama_pasien"
@@ -396,7 +399,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                 required
               />
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <CompactInput
                   label="Dosis"
                   name="dosis_obat"
@@ -457,11 +460,9 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                   ]}
                   error={errors.slot_obat}
                 />
-
-                {/* Slot Status Indicator */}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <CompactSelect
                   label="Kategori"
                   name="kategori"
@@ -490,57 +491,63 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
 
           {/* Step 2: Schedule */}
           {currentStep === 2 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">
-                  Jadwal Minum Obat
+                <h3 className="text-base font-semibold text-gray-800">
+                  📅 Jadwal Minum Obat
                 </h3>
                 <button
                   type="button"
                   onClick={handleAddJadwal}
-                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={formData.jadwalMinum.length >= 4}
                 >
-                  + Tambah
+                  ➕ Tambah
                 </button>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                <p className="text-xs text-blue-700">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
+                <p className="text-sm text-blue-700">
                   💡 <strong>Tips:</strong> Durasi minum obat maksimal 3 jam.
                   Jam selesai akan otomatis disesuaikan jika melebihi batas ini.
                 </p>
               </div>
 
               {errors.jadwalMinum && (
-                <p className="text-red-500 text-xs">{errors.jadwalMinum}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-red-600 text-sm flex items-center gap-2">
+                    <span>⚠️</span>
+                    {errors.jadwalMinum}
+                  </p>
+                </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {formData.jadwalMinum.map((jadwal, index) => (
                   <div
                     key={jadwal.id}
-                    className="border border-gray-200 rounded-lg p-3"
+                    className="border-2 border-gray-100 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-white hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span>⏰</span>
                         Jadwal {index + 1}
                       </span>
                       {formData.jadwalMinum.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveJadwal(index)}
-                          className="text-red-500 hover:text-red-700 text-xs"
+                          className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors hover:bg-red-50 px-2 py-1 rounded-lg"
                         >
-                          Hapus
+                          🗑️ Hapus
                         </button>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Jam Mulai
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          🕐 Jam Mulai
                         </label>
                         <input
                           type="time"
@@ -552,7 +559,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                               e.target.value
                             )
                           }
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-colors"
                         />
                         {errors[`jadwal_${index}_awal`] && (
                           <p className="text-red-500 text-xs mt-1">
@@ -562,8 +569,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Jam Selesai
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          🕐 Jam Selesai
                         </label>
                         <input
                           type="time"
@@ -575,7 +582,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                               e.target.value
                             )
                           }
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-colors"
                         />
                         {errors[`jadwal_${index}_berakhir`] && (
                           <p className="text-red-500 text-xs mt-1">
@@ -585,16 +592,23 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       </div>
                     </div>
 
-                    {/* Duration and sequence error messages */}
-                    {errors[`jadwal_${index}_duration`] && (
-                      <p className="text-orange-500 text-xs mt-1 bg-orange-50 p-2 rounded border border-orange-200">
-                        ⚠️ {errors[`jadwal_${index}_duration`]}
-                      </p>
-                    )}
-                    {errors[`jadwal_${index}_sequence`] && (
-                      <p className="text-red-500 text-xs mt-1 bg-red-50 p-2 rounded border border-red-200">
-                        ❌ {errors[`jadwal_${index}_sequence`]}
-                      </p>
+                    {/* Duration and Sequence Errors */}
+                    {(errors[`jadwal_${index}_duration`] ||
+                      errors[`jadwal_${index}_sequence`]) && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        {errors[`jadwal_${index}_duration`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1 mb-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_duration`]}
+                          </p>
+                        )}
+                        {errors[`jadwal_${index}_sequence`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_sequence`]}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}

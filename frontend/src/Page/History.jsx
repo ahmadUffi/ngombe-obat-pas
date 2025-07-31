@@ -176,6 +176,44 @@ const History = () => {
     }
   };
 
+  // Format waktu minum untuk display yang lebih baik
+  const formatWaktuMinum = (waktuMinum) => {
+    if (!waktuMinum) return "Waktu tidak tersedia";
+
+    // Jika waktu_minum adalah string yang berisi waktu gabungan seperti "08:0012:00"
+    if (typeof waktuMinum === "string") {
+      // Split berdasarkan pattern waktu (HH:MM)
+      const timePattern = /(\d{1,2}:\d{2})/g;
+      const times = waktuMinum.match(timePattern);
+
+      if (times && times.length > 0) {
+        return times.join(", ");
+      }
+
+      // Fallback jika tidak match pattern, coba split manual
+      if (waktuMinum.length >= 10) {
+        // Asumsi format seperti "08:0012:00" - split setiap 5 karakter
+        const result = [];
+        for (let i = 0; i < waktuMinum.length; i += 5) {
+          const time = waktuMinum.substring(i, i + 5);
+          if (time.includes(":") && time.length >= 4) {
+            result.push(time);
+          }
+        }
+        if (result.length > 0) {
+          return result.join(", ");
+        }
+      }
+    }
+
+    // Jika waktu_minum adalah array
+    if (Array.isArray(waktuMinum)) {
+      return waktuMinum.join(", ");
+    }
+
+    return waktuMinum;
+  };
+
   const getActionColor = (action) => {
     switch (action) {
       case "diambil":
@@ -382,120 +420,6 @@ const History = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-6">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header Section */}
-          <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-50 via-white to-indigo-50 rounded-3xl opacity-90"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
-                    <Activity className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                      Riwayat Aktivitas
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                      Lacak semua aktivitas obat Anda
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={refreshData}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                >
-                  <RefreshCw className="w-5 h-5 mr-2" />
-                  Refresh
-                </button>
-              </div>
-
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="relative overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-600 text-sm font-medium">
-                        Obat Diminum
-                      </p>
-                      <p className="text-2xl font-bold text-green-700">
-                        {Array.isArray(histories)
-                          ? histories.filter(
-                              (h) =>
-                                h?.status?.toLowerCase() === "diminum" ||
-                                h?.status?.toLowerCase() === "diambil"
-                            ).length
-                          : 0}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                      <span className="text-white text-xl">✓</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative overflow-hidden bg-gradient-to-br from-red-100 to-rose-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-red-600 text-sm font-medium">
-                        Tidak Diminum
-                      </p>
-                      <p className="text-2xl font-bold text-red-700">
-                        {Array.isArray(histories)
-                          ? histories.filter(
-                              (h) =>
-                                h?.status?.toLowerCase() ===
-                                  "obat tidak diminum" ||
-                                h?.status?.toLowerCase() === "terlewat" ||
-                                h?.status?.toLowerCase() === "missed"
-                            ).length
-                          : 0}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl flex items-center justify-center">
-                      <span className="text-white text-xl">✗</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-yellow-600 text-sm font-medium">
-                        Stok Issue
-                      </p>
-                      <p className="text-2xl font-bold text-yellow-700">
-                        {Array.isArray(histories)
-                          ? histories.filter(
-                              (h) =>
-                                h?.status?.toLowerCase() === "stock menipis" ||
-                                h?.status?.toLowerCase() === "stock habis"
-                            ).length
-                          : 0}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                      <span className="text-white text-xl">⚠️</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-600 text-sm font-medium">
-                        Total
-                      </p>
-                      <p className="text-2xl font-bold text-purple-700">
-                        {Array.isArray(histories) ? histories.length : 0}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Filter and Search Section */}
           <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
@@ -633,22 +557,22 @@ const History = () => {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-gradient-to-r from-purple-100 to-indigo-100">
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 rounded-tl-xl">
+                        <th className="px-8 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 rounded-tl-xl w-1/4">
                           Status
                         </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
                           Nama Obat
                         </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
                           Waktu
                         </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
                           Dosis
                         </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
                           Sisa Obat
                         </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 rounded-tr-xl">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 rounded-tr-xl w-1/6">
                           Tanggal
                         </th>
                       </tr>
@@ -666,10 +590,10 @@ const History = () => {
                               key={history.id || `history-${index}`}
                               className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200"
                             >
-                              <td className="px-6 py-4 border border-purple-200">
+                              <td className="lg:px-8 lg:py-4 px-3 py-2 border border-purple-200">
                                 <div className="flex items-center space-x-3">
                                   <span
-                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${
                                       getStatusBadge(history.status).className
                                     }`}
                                   >
@@ -688,8 +612,7 @@ const History = () => {
                                 <div className="flex items-center text-gray-600">
                                   <Clock className="w-4 h-4 mr-2 text-purple-500" />
                                   <span>
-                                    {history.waktu_minum ||
-                                      "Waktu tidak tersedia"}
+                                    {formatWaktuMinum(history.waktu_minum)}
                                   </span>
                                 </div>
                               </td>

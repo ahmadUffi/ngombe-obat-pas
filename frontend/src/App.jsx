@@ -8,13 +8,6 @@ import "react-toastify/dist/ReactToastify.css";
 import LoadingScreen from "./components/UI/LoadingScreen";
 
 const App = () => {
-  const { loading } = useContext(AuthContext);
-
-  // Show loading screen while checking authentication
-  if (loading) {
-    return <LoadingScreen message="Memuat aplikasi..." />;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
