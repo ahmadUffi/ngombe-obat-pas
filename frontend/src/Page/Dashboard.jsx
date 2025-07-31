@@ -37,7 +37,6 @@ const Dashboard = () => {
 
       try {
         const jadwalResponse = await getAllJadwal();
-        console.log("Raw jadwal response:", jadwalResponse);
 
         if (jadwalResponse) {
           if (jadwalResponse.data && Array.isArray(jadwalResponse.data)) {
@@ -45,22 +44,18 @@ const Dashboard = () => {
           } else if (Array.isArray(jadwalResponse)) {
             jadwalData = jadwalResponse;
           } else {
-            console.warn("Unexpected jadwal response format:", jadwalResponse);
             jadwalData = [];
           }
         } else {
           jadwalData = [];
         }
 
-        console.log("Final jadwalData:", jadwalData.length, "items");
       } catch (err) {
-        console.error("Failed to fetch jadwal data:", err);
         jadwalData = [];
       }
 
       try {
         const controlResponse = await getAllControl();
-        console.log("Raw control response:", controlResponse);
 
         if (controlResponse) {
           if (controlResponse.data && Array.isArray(controlResponse.data)) {
@@ -68,69 +63,40 @@ const Dashboard = () => {
           } else if (Array.isArray(controlResponse)) {
             controlData = controlResponse;
           } else {
-            console.warn(
-              "Unexpected control response format:",
-              controlResponse
-            );
             controlData = [];
           }
         } else {
           controlData = [];
         }
 
-        console.log("Final controlData:", controlData.length, "items");
       } catch (err) {
-        console.error("Failed to fetch control data:", err);
         controlData = [];
       }
 
       try {
         const historyResponse = await getAllHistory();
-        console.log("Raw history response:", historyResponse);
 
         // Handle different response formats
         if (historyResponse) {
           if (historyResponse.data && Array.isArray(historyResponse.data)) {
             // Format: { success: true, message: "...", data: [...] }
             historyData = historyResponse.data;
-            console.log(
-              "Using historyResponse.data (array):",
-              historyData.length,
-              "items"
-            );
           } else if (Array.isArray(historyResponse)) {
             // Format: [...]
             historyData = historyResponse;
-            console.log(
-              "Using direct historyResponse (array):",
-              historyData.length,
-              "items"
-            );
           } else if (historyResponse.success && historyResponse.data) {
             // Another possible format
             historyData = Array.isArray(historyResponse.data)
               ? historyResponse.data
               : [];
-            console.log(
-              "Using historyResponse with success flag:",
-              historyData.length,
-              "items"
-            );
           } else {
-            console.warn(
-              "Unexpected history response format:",
-              historyResponse
-            );
             historyData = [];
           }
         } else {
-          console.warn("History response is null/undefined");
           historyData = [];
         }
 
-        console.log("Final historyData:", historyData);
       } catch (err) {
-        console.error("Failed to fetch history data:", err);
         historyData = [];
       }
 
@@ -256,16 +222,7 @@ const Dashboard = () => {
         emptyStock,
       });
 
-      console.log("Dashboard stats loaded successfully:", {
-        todayMedications,
-        upcomingControls,
-        completedToday,
-        totalSchedules: jadwalData.length,
-        stockAlert,
-        emptyStock,
-      });
     } catch (error) {
-      console.error("Error loading dashboard stats:", error);
       toast.error(
         "Gagal memuat data dashboard. Silakan coba refresh atau periksa koneksi internet."
       );

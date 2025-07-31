@@ -44,7 +44,6 @@ const Jadwal = () => {
   const loadJadwalData = async () => {
     try {
       const data = await getAllJadwal();
-      console.log("Jadwal API Response:", data); // Debug log
 
       // Ensure data is an array
       const dataArray = Array.isArray(data) ? data : [];
@@ -70,7 +69,6 @@ const Jadwal = () => {
       }));
       setJadwalData(transformedData);
     } catch (err) {
-      console.error("Error loading jadwal:", err);
       // Set empty array on error instead of dummy data
       setJadwalData([]);
       setError("Gagal memuat data jadwal. Silakan coba lagi.");
@@ -91,7 +89,6 @@ const Jadwal = () => {
     if (isOpen) {
       setEditingItem(null); // Reset editing item when closing
     }
-    console.log(isOpen);
   };
 
   const handleEditQuantity = (item) => {
@@ -111,8 +108,6 @@ const Jadwal = () => {
     setIsCreating(true);
 
     try {
-      console.log("Frontend jadwal data:", jadwalData);
-
       // Transform frontend data to API format - backend expects arrays for time fields
       const apiData = {
         nama_pasien: jadwalData.nama_pasien || "",
@@ -130,7 +125,6 @@ const Jadwal = () => {
         slot_obat: (jadwalData.slot_obat || "A").toString(),
       };
 
-      console.log("Data being sent to API:", apiData);
       await createJadwal(apiData);
       setIsOpen(false);
       loadJadwalData(); // Reload data
@@ -143,10 +137,6 @@ const Jadwal = () => {
         autoClose: 3000,
       });
     } catch (err) {
-      console.error("Error creating jadwal:", err);
-      console.error("Error response:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
@@ -184,8 +174,6 @@ const Jadwal = () => {
         autoClose: 3000,
       });
     } catch (err) {
-      console.error("Error updating stock:", err);
-
       // Update toast to error
       toast.update(loadingToastId, {
         render: "Gagal mengupdate stok: " + err.message,
@@ -220,8 +208,6 @@ const Jadwal = () => {
             autoClose: 3000,
           });
         } catch (err) {
-          console.error("Error deleting jadwal:", err);
-
           // Update toast to error
           toast.update(loadingToastId, {
             render: "Gagal menghapus jadwal: " + err.message,

@@ -333,7 +333,6 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       await onSubmit(submitData);
       toast.success("Jadwal obat berhasil disimpan!");
     } catch (error) {
-      console.error("Error submitting form:", error);
       toast.error("Gagal menyimpan jadwal obat. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);

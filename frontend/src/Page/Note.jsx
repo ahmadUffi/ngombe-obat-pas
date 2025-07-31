@@ -7,7 +7,6 @@ const Note = () => {
   const handleAddNote = () => {
     // Logic untuk menambah catatan baru
     toast.info("Fitur catatan akan segera hadir");
-    console.log("Add new note");
   };
 
   return (

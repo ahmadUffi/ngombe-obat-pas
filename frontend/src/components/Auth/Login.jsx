@@ -122,8 +122,6 @@ const Login = () => {
         window.location.href = "/"; // Simple redirect to main page
       }, 1000);
     } catch (error) {
-      console.error("Login error:", error);
-
       const errorMessage = getErrorMessage(error);
       toast.error(errorMessage);
 
