@@ -20,6 +20,49 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Fetch user profile from Supabase
+  const fetchUserProfile = async (email) => {
+    try {
+      console.log("Fetching user profile for email:", email);
+      const { data, error } = await supabase
+        .from("profile")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        return;
+      }
+
+      console.log("User profile fetched successfully:", data);
+      setUser(data);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  };
+
+  // Check for existing token and fetch user profile on mount
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      const existingToken = apiService.getToken();
+      console.log("Checking existing auth, token:", existingToken ? "exists" : "none", "user:", user ? "exists" : "none");
+      
+      if (existingToken && !user) {
+        // If we have a token but no user data, we need to get the user email somehow
+        // For now, let's store the email in localStorage during login
+        const storedEmail = localStorage.getItem("user_email");
+        console.log("Stored email:", storedEmail);
+        
+        if (storedEmail) {
+          await fetchUserProfile(storedEmail);
+        }
+      }
+    };
+
+    checkExistingAuth();
+  }, []); // Remove user dependency to prevent infinite loops, only run on mount
+
   // Login with backend API
   const loginWithAPI = async (email, password) => {
     setLoading(true);
@@ -31,8 +74,15 @@ export const AuthProvider = ({ children }) => {
 
       setToken(sessionToken);
       apiService.setToken(sessionToken);
+      
+      // Store email for persistent session
+      localStorage.setItem("user_email", email);
 
-      // Optional: You can still get user info from Supabase if needed
+      // Get user profile from Supabase after successful login
+      await fetchUserProfile(email);
+
+      console.log("Login successful, user data should be loaded");
+
       return response;
     } catch (err) {
       // Enhanced error handling
@@ -98,6 +148,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
       apiService.removeToken();
+      localStorage.removeItem("user_email"); // Remove stored email
     } catch (err) {
       console.error("Logout error:", err);
     } finally {

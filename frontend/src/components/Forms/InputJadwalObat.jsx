@@ -447,16 +447,6 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       label: "Slot F",
                       disabled: !!usedSlots["F"],
                     },
-                    {
-                      value: "G",
-                      label: "Slot G",
-                      disabled: !!usedSlots["G"],
-                    },
-                    {
-                      value: "H",
-                      label: "Slot H",
-                      disabled: !!usedSlots["H"],
-                    },
                   ]}
                   error={errors.slot_obat}
                 />

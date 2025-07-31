@@ -1,17 +1,47 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import CalendarIcon from "../Icons/CalendarIcon";
 import NoteIcon from "../Icons/NoteIcon";
 import ControlIcon from "../Icons/ControlIcon";
 import HistoryIcon from "../Icons/HistoryIcon";
 import { logo } from "../../assets";
+import { is } from "date-fns/locale";
 
 const NavbarLeft = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if current path is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
 
   // style css
-  const styles = {
-    icon: "icon flex flex-col gap-2 items-center justify-center cursor-pointer hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 group",
+  const getNavItemStyles = (path) => {
+    const baseStyles =
+      "icon flex flex-col gap-2 items-center justify-center cursor-pointer rounded-lg p-3 transition-all duration-200 group w-full";
+
+    if (isActive(path)) {
+      return `${baseStyles} bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg transform scale-105`;
+    }
+
+    return `${baseStyles} hover:bg-gray-100`;
+  };
+
+  const getTextStyles = (path) => {
+    if (isActive(path)) {
+      return "text-sm font-semibold text-white";
+    }
+
+    return "text-sm font-medium text-gray-700 group-hover:text-gray-900";
+  };
+
+  const getIconStyles = (path) => {
+    if (isActive(path)) {
+      return "w-6 h-6 text-white";
+    }
+
+    return "w-6 h-6 text-gray-600 group-hover:text-gray-900 transition-colors";
   };
 
   const handleNavClick = (path) => {
@@ -81,11 +111,11 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             <li className="w-full">
               <button
                 onClick={() => handleNavClick("/dashboard")}
-                className={`${styles.icon} w-full`}
+                className={getNavItemStyles("/dashboard")}
                 aria-label="Go to Dashboard"
               >
                 <svg
-                  className="w-6 h-6 text-gray-600 group-hover:text-gray-900 transition-colors"
+                  className={getIconStyles("/dashboard")}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -97,9 +127,7 @@ const NavbarLeft = ({ isOpen, onClose }) => {
                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2V7zm0 0a2 2 0 012-2h.01M3 7a2 2 0 012-2h.01M13 16H7v-4h6v4z"
                   />
                 </svg>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Dashboard
-                </span>
+                <span className={getTextStyles("/dashboard")}>Dashboard</span>
               </button>
             </li>
 
@@ -107,13 +135,13 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             <li className="w-full">
               <button
                 onClick={() => handleNavClick("/jadwal")}
-                className={`${styles.icon} w-full`}
+                className={getNavItemStyles("/jadwal")}
                 aria-label="Go to Schedule"
               >
-                <CalendarIcon />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Jadwal
-                </span>
+                <div className={isActive("/jadwal") ? "text-white" : ""}>
+                  <CalendarIcon isActive={isActive} />
+                </div>
+                <span className={getTextStyles("/jadwal")}>Jadwal</span>
               </button>
             </li>
 
@@ -121,13 +149,13 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             <li className="w-full">
               <button
                 onClick={() => handleNavClick("/control")}
-                className={`${styles.icon} w-full`}
+                className={getNavItemStyles("/control")}
                 aria-label="Go to Control"
               >
-                <ControlIcon />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Kontrol
-                </span>
+                <div className={isActive("/control") ? "text-white" : ""}>
+                  <ControlIcon isActive={isActive} />
+                </div>
+                <span className={getTextStyles("/control")}>Kontrol</span>
               </button>
             </li>
 
@@ -135,13 +163,13 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             <li className="w-full">
               <button
                 onClick={() => handleNavClick("/note")}
-                className={`${styles.icon} w-full`}
+                className={getNavItemStyles("/note")}
                 aria-label="Go to Notes"
               >
-                <NoteIcon />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Catatan
-                </span>
+                <div className={isActive("/note") ? "text-white" : ""}>
+                  <NoteIcon isActive={isActive} />
+                </div>
+                <span className={getTextStyles("/note")}>Catatan</span>
               </button>
             </li>
 
@@ -149,13 +177,13 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             <li className="w-full">
               <button
                 onClick={() => handleNavClick("/history")}
-                className={`${styles.icon} w-full`}
+                className={getNavItemStyles("/history")}
                 aria-label="Go to History"
               >
-                <HistoryIcon />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                  Riwayat
-                </span>
+                <div className={isActive("/history") ? "text-white" : ""}>
+                  <HistoryIcon isActive={isActive} />
+                </div>
+                <span className={getTextStyles("/history")}>Riwayat</span>
               </button>
             </li>
           </ul>

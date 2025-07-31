@@ -119,7 +119,7 @@ const Login = () => {
 
       // Delay sedikit untuk menampilkan toast
       setTimeout(() => {
-        window.location.href = "/"; // Simple redirect to main page
+        navigate("/dashboard"); // Use navigate instead of window.location.href
       }, 1000);
     } catch (error) {
       const errorMessage = getErrorMessage(error);

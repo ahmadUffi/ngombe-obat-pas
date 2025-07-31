@@ -69,6 +69,11 @@ const Note = () => {
 
   useEffect(() => {
     filterNotes();
+    // Recalculate stats when notes change
+    if (notes.length > 0) {
+      const calculatedStats = calculateStatsFromNotes(notes);
+      setStats(calculatedStats);
+    }
   }, [notes, selectedCategory, searchQuery]);
 
   const loadNotes = async () => {
@@ -98,12 +103,52 @@ const Note = () => {
       if (!token) return;
 
       const response = await apiService.getNotesStats(token);
-      if (response.success) {
-        setStats(response.data || {});
+      if (response.success && response.data) {
+        // Handle both backend format and client-side calculation
+        let statsData = {};
+
+        if (response.data.by_category) {
+          // Backend returned structured format
+          statsData = {
+            total: response.data.total || 0,
+            ...response.data.by_category,
+          };
+        } else {
+          // Fallback: calculate from notes array
+          statsData = calculateStatsFromNotes(notes);
+        }
+
+        setStats(statsData);
+      } else {
+        // Fallback: calculate from notes array
+        setStats(calculateStatsFromNotes(notes));
       }
     } catch (error) {
       console.error("Error loading stats:", error);
+      // Fallback: calculate from notes array
+      setStats(calculateStatsFromNotes(notes));
     }
+  };
+
+  const calculateStatsFromNotes = (notesArray) => {
+    const stats = {
+      total: notesArray.length,
+      kontrol: 0,
+      pengingat: 0,
+      jadwal: 0,
+      efek_samping: 0,
+      perubahan_dosis: 0,
+      pesan_dokter: 0,
+      lainnya: 0,
+    };
+
+    notesArray.forEach((note) => {
+      if (note.category && stats.hasOwnProperty(note.category)) {
+        stats[note.category]++;
+      }
+    });
+
+    return stats;
   };
 
   const filterNotes = () => {
@@ -151,16 +196,16 @@ const Note = () => {
         );
         if (response.success) {
           toast.success("Catatan berhasil diupdate!");
-          loadNotes();
-          loadStats();
+          await loadNotes();
+          // Stats will be recalculated automatically via useEffect
         }
       } else {
         // Create new note
         const response = await apiService.createNote(noteData, token);
         if (response.success) {
           toast.success("Catatan berhasil dibuat!");
-          loadNotes();
-          loadStats();
+          await loadNotes();
+          // Stats will be recalculated automatically via useEffect
         }
       }
     } catch (error) {
@@ -183,8 +228,8 @@ const Note = () => {
       const response = await apiService.deleteNote(noteId, token);
       if (response.success) {
         toast.success("Catatan berhasil dihapus!");
-        loadNotes();
-        loadStats();
+        await loadNotes();
+        // Stats will be recalculated automatically via useEffect
         setDeleteConfirmation({
           isOpen: false,
           noteId: null,
@@ -262,50 +307,136 @@ const Note = () => {
             </p>
           </div>
         </div>
-
-        {/* Stats Section */}
+        {/* Combined Stats and Filter Section */}
         {!isLoading && notes.length > 0 && (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg border border-white/50 p-6 mb-8">
+            {/* Statistics Header */}
             <div className="flex items-center gap-3 mb-4">
               <BarChart3 className="text-purple-600" size={24} />
               <h3 className="text-lg font-bold text-gray-800">
-                Statistik Catatan
+                Statistik & Filter Catatan
               </h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
-                <div className="text-2xl font-bold text-blue-600">
+
+            {/* Clickable Statistics Grid as Filters */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+              <button
+                onClick={() => handleCategoryFilter("all")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "all"
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-300 scale-105"
+                    : "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:border-blue-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-blue-600">
                   {stats.total || 0}
                 </div>
-                <div className="text-sm text-blue-700">Total Catatan</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-xs text-blue-700">🔍 Total</div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("kontrol")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "kontrol"
+                    ? "bg-gradient-to-r from-green-50 to-green-100 border-green-300 scale-105"
+                    : "bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:border-green-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-green-600">
                   {stats.kontrol || 0}
                 </div>
-                <div className="text-sm text-green-700">Kontrol</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl">
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-xs text-green-700">🏥 Kontrol</div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("pengingat")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "pengingat"
+                    ? "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-300 scale-105"
+                    : "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 hover:border-yellow-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-yellow-600">
                   {stats.pengingat || 0}
                 </div>
-                <div className="text-sm text-yellow-700">Pengingat</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-xs text-yellow-700">⏰ Pengingat</div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("jadwal")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "jadwal"
+                    ? "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-300 scale-105"
+                    : "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200 hover:border-emerald-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-emerald-600">
+                  {stats.jadwal || 0}
+                </div>
+                <div className="text-xs text-emerald-700">📅 Jadwal</div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("efek_samping")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "efek_samping"
+                    ? "bg-gradient-to-r from-red-50 to-red-100 border-red-300 scale-105"
+                    : "bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:border-red-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-red-600">
+                  {stats.efek_samping || 0}
+                </div>
+                <div className="text-xs text-red-700">⚠️ Efek Samping</div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("perubahan_dosis")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "perubahan_dosis"
+                    ? "bg-gradient-to-r from-purple-50 to-purple-100 border-purple-300 scale-105"
+                    : "bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 hover:border-purple-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-purple-600">
+                  {stats.perubahan_dosis || 0}
+                </div>
+                <div className="text-xs text-purple-700">
+                  📊 Perubahan Dosis
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleCategoryFilter("pesan_dokter")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "pesan_dokter"
+                    ? "bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-300 scale-105"
+                    : "bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-200 hover:border-indigo-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-indigo-600">
                   {stats.pesan_dokter || 0}
                 </div>
-                <div className="text-sm text-purple-700">Pesan Dokter</div>
-              </div>
-            </div>
-          </div>
-        )}
+                <div className="text-xs text-indigo-700">👨‍⚕️ Pesan Dokter</div>
+              </button>
 
-        {/* Search and Filter Section */}
-        {!isLoading && notes.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg border border-white/50 p-6 mb-8">
+              <button
+                onClick={() => handleCategoryFilter("lainnya")}
+                className={`text-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border ${
+                  selectedCategory === "lainnya"
+                    ? "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-300 scale-105"
+                    : "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="text-xl font-bold text-gray-600">
+                  {stats.lainnya || 0}
+                </div>
+                <div className="text-xs text-gray-700">📝 Lainnya</div>
+              </button>
+            </div>
+
             {/* Search Bar */}
-            <div className="mb-6">
+            <div className="mb-0">
               <div className="relative">
                 <input
                   type="text"
@@ -327,31 +458,8 @@ const Note = () => {
                 </button>
               </div>
             </div>
-
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-3">
-              {categories.map((category) => (
-                <button
-                  key={category.value}
-                  onClick={() => handleCategoryFilter(category.value)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg border ${
-                    selectedCategory === category.value
-                      ? `bg-gradient-to-r ${category.color} border-gray-300 text-gray-800 scale-105`
-                      : "bg-white hover:bg-gray-50 border-gray-200 text-gray-600"
-                  }`}
-                >
-                  {category.label}
-                  {category.value !== "all" && stats[category.value] && (
-                    <span className="ml-2 px-2 py-1 bg-white/80 rounded-full text-xs">
-                      {stats[category.value]}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
           </div>
-        )}
-
+        )}{" "}
         {/* Notes Section */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-10 relative overflow-hidden">
           {/* Background Pattern */}
@@ -477,10 +585,8 @@ const Note = () => {
             )}
           </div>
         </div>
-
         {/* Add Button */}
         <AddButton clickHandler={handleAddNote} />
-
         {/* Note Modal */}
         <NoteModal
           isOpen={isModalOpen}
@@ -489,7 +595,6 @@ const Note = () => {
           note={editingNote}
           isEditing={!!editingNote}
         />
-
         {/* Delete Confirmation Modal */}
         {deleteConfirmation.isOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

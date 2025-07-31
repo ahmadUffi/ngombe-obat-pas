@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { parseISO, isValid } from "date-fns";
+import ReactPaginate from "react-paginate";
 import {
   Clock,
   CalendarDays,
@@ -13,6 +14,8 @@ import {
   FileText,
   Package,
   Activity,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Layout from "../components/Layout/Layout";
 import LoadingSpinner from "../components/UI/LoadingSpinner";
@@ -26,6 +29,8 @@ const History = () => {
   const [filter, setFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 25;
 
   useEffect(() => {
     const fetchHistories = async () => {
@@ -153,6 +158,21 @@ const History = () => {
       return [];
     }
   }, [filteredHistories, sortOrder]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedHistories.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentHistories = sortedHistories.slice(startIndex, endIndex);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, filter]);
+
+  const handlePageChange = (selectedItem) => {
+    setCurrentPage(selectedItem.selected);
+  };
 
   const formatDate = (dateString) => {
     try {
@@ -499,6 +519,14 @@ const History = () => {
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                   Daftar Riwayat ({sortedHistories.length})
                 </h2>
+                {sortedHistories.length > 0 && (
+                  <div className="ml-auto text-sm text-gray-600">
+                    Halaman {currentPage + 1} dari {totalPages} (
+                    {startIndex + 1}-
+                    {Math.min(endIndex, sortedHistories.length)} dari{" "}
+                    {sortedHistories.length} data)
+                  </div>
+                )}
               </div>
 
               {sortedHistories.length === 0 ? (
@@ -578,7 +606,7 @@ const History = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedHistories
+                      {currentHistories
                         .map((history, index) => {
                           // Additional safety check for each history item
                           if (!history) {
@@ -655,6 +683,45 @@ const History = () => {
                         .filter(Boolean)}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {sortedHistories.length > itemsPerPage && (
+                <div className="flex justify-center mt-8">
+                  <ReactPaginate
+                    previousLabel={
+                      <div className="flex items-center px-3 py-2">
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        <span>Sebelumnya</span>
+                      </div>
+                    }
+                    nextLabel={
+                      <div className="flex items-center px-3 py-2">
+                        <span>Selanjutnya</span>
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </div>
+                    }
+                    breakLabel="..."
+                    pageCount={totalPages}
+                    marginPagesDisplayed={2}
+                    pageRangeDisplayed={3}
+                    onPageChange={handlePageChange}
+                    forcePage={currentPage}
+                    containerClassName="flex items-center space-x-1 bg-white rounded-xl shadow-lg border border-purple-200 overflow-hidden"
+                    pageClassName="border-r border-purple-200 last:border-r-0"
+                    pageLinkClassName="block px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all duration-200 font-medium"
+                    previousClassName="border-r border-purple-200"
+                    previousLinkClassName="text-gray-600 hover:bg-purple-50 hover:text-purple-600 transition-all duration-200 font-medium"
+                    nextClassName="border-l border-purple-200"
+                    nextLinkClassName="text-gray-600 hover:bg-purple-50 hover:text-purple-600 transition-all duration-200 font-medium"
+                    breakClassName="border-r border-purple-200"
+                    breakLinkClassName="block px-4 py-3 text-gray-400"
+                    activeClassName="bg-gradient-to-r from-purple-500 to-indigo-500"
+                    activeLinkClassName="text-white hover:text-white hover:bg-transparent"
+                    disabledClassName="opacity-50 cursor-not-allowed"
+                    disabledLinkClassName="hover:bg-transparent hover:text-gray-400"
+                  />
                 </div>
               )}
             </div>

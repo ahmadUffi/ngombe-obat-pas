@@ -1,11 +1,11 @@
 import React from "react";
 
-const HistoryIcon = () => {
+const HistoryIcon = ({ isActive }) => {
   return (
     <svg
       className="w-6 h-6 text-gray-600 group-hover:text-gray-900 transition-colors"
       fill="none"
-      stroke="currentColor"
+      stroke={isActive("/history") ? "#FFFFFF" : "#000"}
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
     >

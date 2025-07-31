@@ -3,13 +3,24 @@ import { useNavigate } from "react-router-dom";
 import SearchIcon from "../Icons/SearchIcon";
 import BellIcon from "../Icons/BellIcon";
 import { AuthContext } from "../../hooks/useAuth";
+import { maskot } from "../../assets";
 
 const NavbarTop = ({ onToggleSidebar }) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { logout } = useContext(AuthContext);
+  const [profileImageError, setProfileImageError] = useState(false);
+  const { logout, user } = useContext(AuthContext);
+  console.log("User in NavbarTop:", user);
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
+
+  // Get profile image URL from user context or use mascot as default
+  const getProfileImageSrc = () => {
+    if (profileImageError || !user?.img_profile) {
+      return maskot;
+    }
+    return user.img_profile;
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -81,39 +92,6 @@ const NavbarTop = ({ onToggleSidebar }) => {
 
         <div className="flex items-center gap-3 lg:gap-5">
           {/* search */}
-          <div className="search hidden sm:block">
-            <form onSubmit={handleSearchSubmit}>
-              <div className="from-control bg-[var(--pink)] flex w-[250px] md:w-[300px] lg:w-[411px] h-[49px] rounded-full items-center gap-2.5">
-                <label htmlFor="search" className="ms-2.5">
-                  <SearchIcon />
-                </label>
-                <input
-                  type="text"
-                  id="search"
-                  name="search"
-                  placeholder="Cari Jadwal Minum Obat..."
-                  className="w-full bg-transparent outline-none pr-4 text-sm lg:text-base"
-                />
-              </div>
-            </form>
-          </div>
-
-          {/* Search icon for mobile */}
-          <button
-            className="sm:hidden flex items-center justify-center w-[45px] h-[45px] rounded-full bg-[var(--pink)] cursor-pointer hover:bg-opacity-80 transition-all"
-            aria-label="Search"
-            onClick={handleMobileSearch}
-          >
-            <SearchIcon />
-          </button>
-
-          {/* notification */}
-          <button
-            className="nontif w-[45px] h-[45px] rounded-full bg-[#CCFBF1] flex justify-center items-center cursor-pointer hover:bg-[#A7F3D0] transition-colors"
-            aria-label="Notifications"
-          >
-            <BellIcon />
-          </button>
 
           {/* profile */}
           <div className="relative" ref={userMenuRef}>
@@ -123,14 +101,13 @@ const NavbarTop = ({ onToggleSidebar }) => {
               aria-label="Profile menu"
             >
               <img
-                src=""
+                src={getProfileImageSrc()}
                 alt="Profile"
                 className="w-[45px] h-[45px] rounded-full object-cover"
                 onError={(e) => {
-                  e.target.style.display = "none";
+                  setProfileImageError(true);
                 }}
               />
-              <span className="text-white text-sm font-medium">U</span>
             </button>
 
             {/* User Dropdown Menu */}
@@ -138,7 +115,9 @@ const NavbarTop = ({ onToggleSidebar }) => {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
                   <p className="text-sm text-gray-600">Selamat datang</p>
-                  <p className="text-sm font-semibold text-gray-800">User</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {user?.username || user?.name || user?.email || "User"}
+                  </p>
                 </div>
 
                 <button

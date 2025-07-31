@@ -218,6 +218,7 @@ const Register = () => {
                   type="text"
                   name="username"
                   id="username"
+                  max={20}
                   placeholder="Username"
                   className="pl-10 w-full py-3 border border-gray-200 rounded-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-200"
                   onChange={handleChange}

@@ -75,15 +75,13 @@ const NoteCard = ({ note, onEdit, onDelete }) => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Yakin ingin menghapus catatan ini?")) {
-      setIsDeleting(true);
-      try {
-        await onDelete(note.note_id);
-      } catch (error) {
-        console.error("Error deleting note:", error);
-      } finally {
-        setIsDeleting(false);
-      }
+    setIsDeleting(true);
+    try {
+      await onDelete(note);
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
