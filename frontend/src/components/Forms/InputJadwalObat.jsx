@@ -461,7 +461,6 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                   options={[
                     { value: "sebelum makan", label: "Sebelum Makan" },
                     { value: "sesudah makan", label: "Sesudah Makan" },
-                    { value: "bersamaan makan", label: "Bersamaan Makan" },
                   ]}
                   error={errors.kategori}
                 />

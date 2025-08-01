@@ -1,6 +1,41 @@
 import React from "react";
 
 const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
+  // Fungsi untuk format tanggal yang user-friendly
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return diffMinutes <= 1 ? "Baru saja" : `${diffMinutes} menit lalu`;
+      } else if (diffHours < 24) {
+        return `${diffHours} jam lalu`;
+      } else if (diffDays < 7) {
+        return `${diffDays} hari lalu`;
+      } else {
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: diffDays > 365 ? "numeric" : undefined,
+        });
+      }
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const createdDate = formatDate(data.created_at);
+  const updatedDate = formatDate(data.updated_at);
+  const isRecentlyUpdated =
+    data.updated_at && data.created_at && data.updated_at !== data.created_at;
+
   // Format tanggal ke bahasa Indonesia
   const formatTanggal = (tanggal) => {
     const date = new Date(tanggal);
@@ -125,10 +160,30 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
           <div className="absolute top-3 right-3">{getStatusBadge()}</div>
 
           <div className="flex items-center justify-between mb-2 pr-20">
-            <h3 className="text-lg font-bold text-gray-800 truncate flex items-center">
-              <span className="mr-2">👤</span>
-              {data.nama_pasien}
-            </h3>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-800 truncate flex items-center">
+                <span className="mr-2">👤</span>
+                {data.nama_pasien}
+              </h3>
+              {/* Informasi Waktu - Subtle */}
+              {(createdDate || updatedDate) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {isRecentlyUpdated && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-blue-600 font-medium">
+                        Diperbarui {updatedDate}
+                      </span>
+                    </div>
+                  )}
+                  {!isRecentlyUpdated && createdDate && (
+                    <span className="text-xs text-gray-500">
+                      Dibuat {createdDate}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div
             className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDoctorColor()} shadow-sm`}
@@ -277,6 +332,51 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
                 <span>ℹ️</span>
                 Kontrol sudah selesai - tidak dapat diedit atau dihapus
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Informasi Waktu Detail */}
+        {(createdDate || updatedDate) && (
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="pt-3">
+              <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Riwayat Waktu
+              </div>
+              <div className="space-y-1">
+                {createdDate && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Dibuat:</span>
+                    <span className="text-gray-800 font-medium">
+                      {createdDate}
+                    </span>
+                  </div>
+                )}
+                {updatedDate && isRecentlyUpdated && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Terakhir diperbarui:</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-blue-700 font-medium">
+                        {updatedDate}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

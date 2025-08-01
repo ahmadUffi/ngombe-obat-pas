@@ -14,6 +14,8 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
     catatan = "",
     kategori = "sebelum makan",
     slot_obat: slotObat = 1,
+    created_at: createdAt = null,
+    updated_at: updatedAt = null,
   } = data || {};
 
   // Konversi kategori ke format yang digunakan sebelumnya
@@ -86,8 +88,42 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
   const nextSchedule = getNextSchedule();
   const statusInfo = getStatusInfo();
 
+  // Fungsi untuk format tanggal yang user-friendly
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return diffMinutes <= 1 ? "Baru saja" : `${diffMinutes} menit lalu`;
+      } else if (diffHours < 24) {
+        return `${diffHours} jam lalu`;
+      } else if (diffDays < 7) {
+        return `${diffDays} hari lalu`;
+      } else {
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: diffDays > 365 ? "numeric" : undefined,
+        });
+      }
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const createdDate = formatDate(createdAt);
+  const updatedDate = formatDate(updatedAt);
+  const isRecentlyUpdated = updatedAt && createdAt && updatedAt !== createdAt;
+
   const styles = {
-    title: "text-gray-600 text-xs font-medium",
+    title: "text-gray-600 text-sm font-medium",
     value: "text-gray-800 text-sm font-medium",
     compactBox:
       "bg-gray-50 px-2.5 py-1 rounded-md text-xs border border-gray-100 shadow-sm",
@@ -130,13 +166,32 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
           </div>
 
           <div className="flex items-center justify-between mt-5 pr-16">
-            {" "}
-            <h2 className="text-lg font-bold text-gray-800 line-clamp-2 hover:text-blue-700 transition-colors flex-1">
-              {namaObat}
-            </h2>{" "}
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-gray-800 line-clamp-2 hover:text-blue-700 transition-colors">
+                {namaObat}
+              </h2>
+              {/* Informasi Waktu - Subtle */}
+              {(createdDate || updatedDate) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {isRecentlyUpdated && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-blue-600 font-medium">
+                        Diperbarui {updatedDate}
+                      </span>
+                    </div>
+                  )}
+                  {!isRecentlyUpdated && createdDate && (
+                    <span className="text-xs text-gray-500">
+                      Dibuat {createdDate}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               onClick={toggleExpanded}
-              className="ml-2 p-1.5 rounded-full hover:bg-white/80 hover:shadow-sm active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="ml-2 p-1.5 rounded-full hover:bg-white/80 hover:shadow-sm  active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
               aria-label={isExpanded ? "Tutup detail" : "Lihat detail"}
             >
               <svg
@@ -227,6 +282,39 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                 {jadwalLengkap.map((jadwal, idx) => {
                   const isCurrentlyActive =
                     currentStatus.isActive && currentStatus.activeIndex === idx;
+                  // Function to calculate duration between two time strings (HH:MM format)
+                  const calculateDuration = (startTime, endTime) => {
+                    // Parse times to minutes since midnight
+                    const [startHours, startMinutes] = startTime
+                      .split(":")
+                      .map(Number);
+                    const [endHours, endMinutes] = endTime
+                      .split(":")
+                      .map(Number);
+
+                    let startTotalMinutes = startHours * 60 + startMinutes;
+                    let endTotalMinutes = endHours * 60 + endMinutes;
+
+                    // Handle case where end time is on the next day
+                    if (endTotalMinutes < startTotalMinutes) {
+                      endTotalMinutes += 24 * 60; // Add a day in minutes
+                    }
+
+                    const diffMinutes = endTotalMinutes - startTotalMinutes;
+
+                    // Format result
+                    const hours = Math.floor(diffMinutes / 60);
+                    const minutes = diffMinutes % 60;
+
+                    if (hours === 0) {
+                      return `${minutes} menit`;
+                    } else if (minutes === 0) {
+                      return `${hours} jam`;
+                    } else {
+                      return `${hours} jam ${minutes} menit`;
+                    }
+                  };
+
                   return (
                     <div
                       key={idx}
@@ -279,7 +367,8 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                         </div>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Durasi: {jadwal.awal} - {jadwal.berakhir}
+                        Durasi:{" "}
+                        {calculateDuration(jadwal.awal, jadwal.berakhir)}
                         {isCurrentlyActive && (
                           <span className="ml-2 text-green-600 font-medium">
                             • Waktunya minum obat!
@@ -294,7 +383,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
 
             {/* Sisa Obat */}
             <div className="p-3 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center  justify-between mb-2">
                 <span className={styles.title}>Sisa Obat</span>
                 <div className="flex items-center gap-2">
                   <div
@@ -378,6 +467,51 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                 </button>
               </div>
             </div>
+
+            {/* Informasi Waktu Detail - Hanya tampil di expanded */}
+            {(createdDate || updatedDate) && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Riwayat Waktu
+                </div>
+                <div className="space-y-1">
+                  {createdDate && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Dibuat:</span>
+                      <span className="text-gray-800 font-medium">
+                        {createdDate}
+                      </span>
+                    </div>
+                  )}
+                  {updatedDate && isRecentlyUpdated && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">
+                        Terakhir diperbarui:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        <span className="text-blue-700 font-medium">
+                          {updatedDate}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
