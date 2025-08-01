@@ -196,7 +196,7 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
         </div>
 
         {/* Actions */}
-        <div className="px-4 pb-4 flex justify-between gap-2">
+        <div className="px-4 pb-4 flex justify-between gap-2 flex-wrap">
           <button
             onClick={() => onEdit && onEdit(data)}
             disabled={data.isDone}
@@ -222,28 +222,6 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
             {data.isDone ? "Tidak dapat diedit" : "Edit"}
           </button>
 
-          {!data.isDone && onMarkDone && (
-            <button
-              onClick={() => onMarkDone(data)}
-              className="flex-1 px-4 py-2 text-sm font-medium text-green-700 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border border-green-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Selesai
-            </button>
-          )}
-
           <button
             onClick={() => onDelete && onDelete(data)}
             disabled={data.isDone}
@@ -268,6 +246,27 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
             </svg>
             {data.isDone ? "Tidak dapat dihapus" : "Hapus"}
           </button>
+          {!data.isDone && onMarkDone && (
+            <button
+              onClick={() => onMarkDone(data)}
+              className="flex-1 px-4 py-2 text-sm font-medium text-green-700 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border border-green-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Selesai
+            </button>
+          )}
         </div>
 
         {/* Info message for completed controls */}

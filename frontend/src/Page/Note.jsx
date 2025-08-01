@@ -4,6 +4,7 @@ import AddButton from "../components/UI/AddButton";
 import NoteModal from "../components/Utility/NoteModal";
 import NoteCard from "../components/Utility/NoteCard";
 import LoadingSpinner from "../components/UI/LoadingSpinner";
+import ConfirmModal from "../components/UI/ConfirmModal";
 import { apiService } from "../api/apiservice";
 import { toast } from "react-toastify";
 import { Search, Filter, BarChart3 } from "lucide-react";
@@ -20,7 +21,6 @@ const Note = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
     noteId: null,
-    noteTitle: "",
   });
 
   const categories = [
@@ -217,7 +217,7 @@ const Note = () => {
     }
   };
 
-  const handleDeleteNote = async (noteId) => {
+  const handleDeleteNote = async () => {
     try {
       const token = apiService.getToken();
       if (!token) {
@@ -225,7 +225,10 @@ const Note = () => {
         return;
       }
 
-      const response = await apiService.deleteNote(noteId, token);
+      const response = await apiService.deleteNote(
+        deleteConfirmation.noteId,
+        token
+      );
       if (response.success) {
         toast.success("Catatan berhasil dihapus!");
         await loadNotes();
@@ -233,7 +236,6 @@ const Note = () => {
         setDeleteConfirmation({
           isOpen: false,
           noteId: null,
-          noteTitle: "",
         });
       }
     } catch (error) {
@@ -248,8 +250,6 @@ const Note = () => {
     setDeleteConfirmation({
       isOpen: true,
       noteId: note.note_id,
-      noteTitle:
-        note.message.substring(0, 50) + (note.message.length > 50 ? "..." : ""),
     });
   };
 
@@ -257,7 +257,6 @@ const Note = () => {
     setDeleteConfirmation({
       isOpen: false,
       noteId: null,
-      noteTitle: "",
     });
   };
 
@@ -541,21 +540,6 @@ const Note = () => {
                         <span>Buat Catatan Pertama</span>
                       </span>
                     </button>
-
-                    <div className="flex justify-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <span>💡</span>
-                        <span>Tips & Saran</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span>🔒</span>
-                        <span>Data Aman</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span>📱</span>
-                        <span>Mudah Diakses</span>
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -596,55 +580,16 @@ const Note = () => {
           isEditing={!!editingNote}
         />
         {/* Delete Confirmation Modal */}
-        {deleteConfirmation.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
-              {/* Header */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-                  <span className="text-2xl">⚠️</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  Konfirmasi Hapus
-                </h3>
-                <p className="text-gray-600">
-                  Apakah Anda yakin ingin menghapus catatan ini?
-                </p>
-              </div>
-
-              {/* Note Preview */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-gray-700 text-sm">
-                  "{deleteConfirmation.noteTitle}"
-                </p>
-              </div>
-
-              {/* Warning */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
-                <p className="text-red-700 text-sm">
-                  <strong>Peringatan:</strong> Tindakan ini tidak dapat
-                  dibatalkan. Catatan akan dihapus secara permanen.
-                </p>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCancelDelete}
-                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={() => handleDeleteNote(deleteConfirmation.noteId)}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
-                >
-                  Hapus
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={deleteConfirmation.isOpen}
+          onClose={handleCancelDelete}
+          onConfirm={handleDeleteNote}
+          title="Hapus Catatan"
+          message="Apakah Anda yakin ingin menghapus catatan ini? Tindakan ini tidak dapat dibatalkan."
+          confirmText="Hapus"
+          cancelText="Batal"
+          type="danger"
+        />
       </div>
     </Layout>
   );

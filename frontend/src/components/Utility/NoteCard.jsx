@@ -103,7 +103,7 @@ const NoteCard = ({ note, onEdit, onDelete }) => {
 
       <div className="relative">
         {/* Category Badge */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <div
             className={`inline-flex items-center px-3 py-1 bg-gradient-to-r ${categoryInfo.color} text-white rounded-full text-sm font-medium shadow-lg`}
           >
