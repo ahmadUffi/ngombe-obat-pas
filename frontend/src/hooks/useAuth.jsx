@@ -46,14 +46,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkExistingAuth = async () => {
       const existingToken = apiService.getToken();
-      console.log("Checking existing auth, token:", existingToken ? "exists" : "none", "user:", user ? "exists" : "none");
-      
+      console.log(
+        "Checking existing auth, token:",
+        existingToken ? "exists" : "none",
+        "user:",
+        user ? "exists" : "none"
+      );
+
       if (existingToken && !user) {
         // If we have a token but no user data, we need to get the user email somehow
         // For now, let's store the email in localStorage during login
         const storedEmail = localStorage.getItem("user_email");
         console.log("Stored email:", storedEmail);
-        
+
         if (storedEmail) {
           await fetchUserProfile(storedEmail);
         }
@@ -74,7 +79,7 @@ export const AuthProvider = ({ children }) => {
 
       setToken(sessionToken);
       apiService.setToken(sessionToken);
-      
+
       // Store email for persistent session
       localStorage.setItem("user_email", email);
 
