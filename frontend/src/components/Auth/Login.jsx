@@ -155,7 +155,7 @@ const Login = () => {
           <div className="text-center md:text-left mb-8">
             <img
               src={logo}
-              alt="SmedBox Logo"
+              alt="Ngompas Logo"
               className="h-12 md:h-16 mb-8 mx-auto md:mx-0"
             />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
@@ -332,7 +332,7 @@ const Login = () => {
         <div className="relative z-10 p-8 flex items-center justify-center">
           <img
             src={maskot}
-            alt="Maskot SmedBox"
+            alt="Maskot Ngompas"
             className="max-w-md w-full h-auto object-contain"
           />
         </div>

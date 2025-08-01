@@ -97,7 +97,7 @@ const NavbarLeft = ({ isOpen, onClose }) => {
         <div className="icon mt-8 lg:mt-0">
           <img
             src={logo}
-            alt="Logo Smedbox"
+            alt="Logo Ngompas"
             width={100}
             height={100}
             className="drop-shadow-sm"

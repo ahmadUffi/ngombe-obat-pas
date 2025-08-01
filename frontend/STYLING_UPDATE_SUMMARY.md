@@ -1,8 +1,8 @@
-# SmedBox Styling Update - Consistent UX Design
+# Ngompas Styling Update - Consistent UX Design
 
 ## Overview
 
-Telah dilakukan comprehensive styling update untuk menciptakan konsistensi UX/UI di seluruh aplikasi SmedBox. Semua halaman kini menggunakan design system yang seragam dengan modern gradient styling, consistent spacing, dan improved visual hierarchy.
+Telah dilakukan comprehensive styling update untuk menciptakan konsistensi UX/UI di seluruh aplikasi Ngompas. Semua halaman kini menggunakan design system yang seragam dengan modern gradient styling, consistent spacing, dan improved visual hierarchy.
 
 ## Pages Updated
 

@@ -1,6 +1,6 @@
 # Components Structure
 
-This document describes the organized component structure of the SmedBox frontend application.
+This document describes the organized component structure of the Ngompas frontend application.
 
 ## Directory Structure
 

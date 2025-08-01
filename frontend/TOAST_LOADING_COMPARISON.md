@@ -168,7 +168,7 @@ Toast loading lebih baik untuk mobile karena:
 
 ## 💡 Kesimpulan
 
-**Toast Loading adalah pilihan yang EXCELLENT** untuk aplikasi SmedBox karena:
+**Toast Loading adalah pilihan yang EXCELLENT** untuk aplikasi Ngompas karena:
 
 1. **Better UX** - Non-intrusive, modern, smooth
 2. **Consistent** - Semua feedback dalam satu system

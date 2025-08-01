@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-Aplikasi SmedBox sekarang menggunakan **react-toastify** sebagai sistem notifikasi, menggantikan sistem toast custom yang sebelumnya dibuat.
+Aplikasi Ngompas sekarang menggunakan **react-toastify** sebagai sistem notifikasi, menggantikan sistem toast custom yang sebelumnya dibuat.
 
 ## 📦 Setup
 
