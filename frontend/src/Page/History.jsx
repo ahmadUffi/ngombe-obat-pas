@@ -30,7 +30,7 @@ const History = () => {
   const [sortOrder, setSortOrder] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 25;
+  const itemsPerPage = 20;
 
   useEffect(() => {
     const fetchHistories = async () => {
@@ -100,6 +100,9 @@ const History = () => {
         const historyStatus = history.status || "";
         const historyNamaObat = history.nama_obat || "";
         const historyWaktuMinum = history.waktu_minum || "";
+        const historyPasienName = history.pasien_name || "";
+        const historyControlInfo = history.control_info || "";
+        const historyDokter = history.dokter || "";
 
         const matchesFilter =
           filter === "all" ||
@@ -109,7 +112,10 @@ const History = () => {
           !searchTerm ||
           historyNamaObat.toLowerCase().includes(searchTerm.toLowerCase()) ||
           historyWaktuMinum.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyStatus.toLowerCase().includes(searchTerm.toLowerCase());
+          historyStatus.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyPasienName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyControlInfo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          historyDokter.toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesFilter && matchesSearch;
       });
@@ -172,6 +178,36 @@ const History = () => {
 
   const handlePageChange = (selectedItem) => {
     setCurrentPage(selectedItem.selected);
+  };
+
+  // Fungsi untuk format tanggal yang user-friendly
+  const formatDateUserFriendly = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return diffMinutes <= 1 ? "Baru saja" : `${diffMinutes} menit lalu`;
+      } else if (diffHours < 24) {
+        return `${diffHours} jam lalu`;
+      } else if (diffDays < 7) {
+        return `${diffDays} hari lalu`;
+      } else {
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: diffDays > 365 ? "numeric" : undefined,
+        });
+      }
+    } catch (error) {
+      return null;
+    }
   };
 
   const formatDate = (dateString) => {
@@ -341,6 +377,35 @@ const History = () => {
           text: "Scheduled",
           icon: "⏰",
         };
+      // Control actions
+      case "control_created":
+      case "kontrol_dibuat":
+        return {
+          className: "bg-blue-100 text-blue-800 border border-blue-200",
+          text: "Kontrol Dibuat",
+          icon: "👨‍⚕️",
+        };
+      case "control_edited":
+      case "kontrol_diedit":
+        return {
+          className: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+          text: "Kontrol Diedit",
+          icon: "✏️",
+        };
+      case "control_deleted":
+      case "kontrol_dihapus":
+        return {
+          className: "bg-red-100 text-red-800 border border-red-200",
+          text: "Kontrol Dihapus",
+          icon: "🗑️",
+        };
+      case "control_completed":
+      case "kontrol_selesai":
+        return {
+          className: "bg-green-100 text-green-800 border border-green-200",
+          text: "Kontrol Selesai",
+          icon: "✅",
+        };
       default:
         return {
           className: "bg-gray-100 text-gray-800 border border-gray-300",
@@ -476,19 +541,27 @@ const History = () => {
                     className="w-full pl-12 pr-4 py-4 bg-white/70 border border-purple-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 shadow-lg appearance-none cursor-pointer"
                   >
                     <option value="all">Semua Aktivitas</option>
-                    <option value="jadwal baru dibuat">
-                      Jadwal Baru Dibuat
-                    </option>
-                    <option value="diminum">Diminum</option>
-                    <option value="obat tidak diminum">
-                      Obat Tidak Diminum
-                    </option>
-                    <option value="mencoba membuka obat">
-                      Mencoba Membuka Obat
-                    </option>
-                    <option value="jadwal dihapus">Jadwal Dihapus</option>
-                    <option value="stock ditambah">Stok Ditambah</option>
-                    <option value="stock dikurangi">Stok Dikurangi</option>
+                    <optgroup label="Aktivitas Jadwal">
+                      <option value="jadwal baru dibuat">
+                        Jadwal Baru Dibuat
+                      </option>
+                      <option value="diminum">Diminum</option>
+                      <option value="obat tidak diminum">
+                        Obat Tidak Diminum
+                      </option>
+                      <option value="mencoba membuka obat">
+                        Mencoba Membuka Obat
+                      </option>
+                      <option value="jadwal dihapus">Jadwal Dihapus</option>
+                      <option value="stock ditambah">Stok Ditambah</option>
+                      <option value="stock dikurangi">Stok Dikurangi</option>
+                    </optgroup>
+                    <optgroup label="Aktivitas Kontrol">
+                      <option value="control_created">Kontrol Dibuat</option>
+                      <option value="control_edited">Kontrol Diedit</option>
+                      <option value="control_completed">Kontrol Selesai</option>
+                      <option value="control_deleted">Kontrol Dihapus</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -589,13 +662,13 @@ const History = () => {
                           Status
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
-                          Nama Obat
+                          Nama Obat / Pasien
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
-                          Waktu
+                          Waktu / Jadwal
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
-                          Dosis
+                          Dosis / Dokter
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
                           Sisa Obat
@@ -633,22 +706,35 @@ const History = () => {
                               <td className="px-6 py-4 border border-purple-200">
                                 <span className="font-medium text-gray-800">
                                   {history.nama_obat ||
-                                    "Nama obat tidak tersedia"}
+                                    history.pasien_name ||
+                                    (history.control_info
+                                      ? `Kontrol: ${history.control_info}`
+                                      : null) ||
+                                    "Informasi tidak tersedia"}
                                 </span>
                               </td>
                               <td className="px-6 py-4 border border-purple-200">
                                 <div className="flex items-center text-gray-600">
                                   <Clock className="w-4 h-4 mr-2 text-purple-500" />
                                   <span>
-                                    {formatWaktuMinum(history.waktu_minum)}
+                                    {formatWaktuMinum(
+                                      history.waktu_minum ||
+                                        history.waktu_kontrol ||
+                                        history.schedule_time ||
+                                        "Waktu tidak tersedia"
+                                    )}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 border border-purple-200">
-                                {history.dosis_obat ? (
+                                {history.dosis_obat || history.dokter ? (
                                   <div className="flex items-center text-gray-600">
                                     <Package className="w-4 h-4 mr-2 text-purple-500" />
-                                    <span>{history.dosis_obat}</span>
+                                    <span>
+                                      {history.dosis_obat ||
+                                        `Dr. ${history.dokter}` ||
+                                        "Tidak ada"}
+                                    </span>
                                   </div>
                                 ) : (
                                   <span className="text-gray-400 italic">
@@ -672,9 +758,20 @@ const History = () => {
                               <td className="px-6 py-4 border border-purple-200">
                                 <div className="flex items-center text-gray-600">
                                   <CalendarDays className="w-4 h-4 mr-2 text-purple-500" />
-                                  <span className="text-sm">
-                                    {formatDate(history.created_at)}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm">
+                                      {formatDate(history.created_at)}
+                                    </span>
+                                    {formatDateUserFriendly(
+                                      history.created_at
+                                    ) && (
+                                      <span className="text-xs text-blue-600">
+                                        {formatDateUserFriendly(
+                                          history.created_at
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                             </tr>

@@ -5,6 +5,7 @@ import {
   updateControl,
   deleteControl,
 } from "../services/controlService.js";
+import { createControlHistory } from "../services/historyService.js";
 import { supabase } from "../config/supabaseClient.js";
 
 // ✅ Create Kontrol
@@ -19,6 +20,24 @@ export const createKontrol = async (req, res) => {
       waktu,
       nama_pasien,
     });
+
+    // Track the creation in history
+    try {
+      await createControlHistory(
+        user_id,
+        {
+          nama_pasien,
+          tanggal,
+          dokter,
+          waktu,
+        },
+        "control_created"
+      );
+    } catch (historyError) {
+      console.warn("Failed to create history entry:", historyError.message);
+      // Continue execution even if history fails
+    }
+
     return res.status(201).json({
       success: true,
       message: "Kontrol berhasil dibuat",
@@ -56,9 +75,48 @@ export const getAllKontrol = async (req, res) => {
 // Update isDone Status
 export const setKontrolIsDone = async (req, res) => {
   const { id, isDone } = req.body;
+  const user_id = req.user.id;
 
   try {
+    // Get control data before updating for history tracking
+    const { data: controlData, error: fetchError } = await supabase
+      .from("kontrol")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", user_id)
+      .single();
+
+    if (fetchError || !controlData) {
+      return res.status(404).json({
+        success: false,
+        message: "Kontrol tidak ditemukan atau Anda tidak memiliki akses",
+      });
+    }
+
     const updated = await updateIsDone(id, isDone);
+
+    // Track completion in history if marking as done
+    if (isDone) {
+      try {
+        await createControlHistory(
+          user_id,
+          {
+            nama_pasien: controlData.nama_pasien,
+            tanggal: controlData.tanggal,
+            dokter: controlData.dokter,
+            waktu: controlData.waktu,
+          },
+          "control_completed"
+        );
+      } catch (historyError) {
+        console.warn(
+          "Failed to create completion history entry:",
+          historyError.message
+        );
+        // Continue execution even if history fails
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: "Status isDone berhasil diupdate",
@@ -77,20 +135,21 @@ export const setKontrolIsDone = async (req, res) => {
 export const editKontrol = async (req, res) => {
   const { id } = req.params;
   const { tanggal, dokter, waktu, nama_pasien } = req.body;
+  const user_id = req.user.id;
 
   try {
-    // First check if the control is already done
+    // First check if the control is already done and belongs to user
     const { data: existingControl, error: checkError } = await supabase
       .from("kontrol")
-      .select("isDone")
+      .select("*")
       .eq("id", id)
+      .eq("user_id", user_id)
       .single();
 
-    if (checkError) {
+    if (checkError || !existingControl) {
       return res.status(404).json({
         success: false,
-        message: "Kontrol tidak ditemukan",
-        error: checkError.message,
+        message: "Kontrol tidak ditemukan atau Anda tidak memiliki akses",
       });
     }
 
@@ -108,6 +167,27 @@ export const editKontrol = async (req, res) => {
       waktu,
       nama_pasien,
     });
+
+    // Track the edit in history
+    try {
+      await createControlHistory(
+        user_id,
+        {
+          nama_pasien,
+          tanggal,
+          dokter,
+          waktu,
+        },
+        "control_edited"
+      );
+    } catch (historyError) {
+      console.warn(
+        "Failed to create edit history entry:",
+        historyError.message
+      );
+      // Continue execution even if history fails
+    }
+
     return res.status(200).json({
       success: true,
       message: "Kontrol berhasil diupdate",
@@ -131,7 +211,7 @@ export const deleteKontrol = async (req, res) => {
     // First check if the control exists and belongs to the user
     const { data: existingControl, error: checkError } = await supabase
       .from("kontrol")
-      .select("isDone")
+      .select("*")
       .eq("id", id)
       .eq("user_id", user_id)
       .single();
@@ -149,6 +229,26 @@ export const deleteKontrol = async (req, res) => {
         success: false,
         message: "Kontrol yang sudah selesai tidak dapat dihapus",
       });
+    }
+
+    // Track the deletion in history before deleting
+    try {
+      await createControlHistory(
+        user_id,
+        {
+          nama_pasien: existingControl.nama_pasien,
+          tanggal: existingControl.tanggal,
+          dokter: existingControl.dokter,
+          waktu: existingControl.waktu,
+        },
+        "control_deleted"
+      );
+    } catch (historyError) {
+      console.warn(
+        "Failed to create deletion history entry:",
+        historyError.message
+      );
+      // Continue execution even if history fails
     }
 
     await deleteControl(id, user_id);
