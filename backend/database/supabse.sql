@@ -93,3 +93,21 @@ CREATE TABLE public.notes (
   CONSTRAINT fk_notes_profile
     FOREIGN KEY (profile_id) REFERENCES public.profile(id)
 );
+
+-- Tabel dengan array untuk multiple reminder IDs
+CREATE TABLE public.jadwal_wa_reminders (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  jadwal_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  jam_reminders text[] NOT NULL,        -- Array jam: ["08:00", "12:00", "16:00", "20:00"]
+  wablas_reminder_ids text[] NOT NULL,  -- Array IDs: ["id1", "id2", "id3", "id4"]
+  is_active boolean DEFAULT true,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),
+
+  CONSTRAINT fk_jadwal_wa_reminders_jadwal
+    FOREIGN KEY (jadwal_id) REFERENCES public.jadwal(id) ON DELETE CASCADE,
+
+  CONSTRAINT fk_jadwal_wa_reminders_user
+    FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);

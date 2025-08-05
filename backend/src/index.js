@@ -21,6 +21,8 @@ app.use("/v1/api/kontrol", controlRoutes);
 app.use("/v1/api/peringatan", peringatanRoutes);
 app.use("/v1/api/notes", notesRoutes);
 
-app.listen(5000, "0.0.0.0", () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });

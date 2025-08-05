@@ -1,13 +1,37 @@
 import { supabase } from "../config/supabaseClient.js";
 import { createHistory } from "./historyService.js";
+import {
+  createWablasReminder,
+  deleteWablasReminder,
+  generateReminderMessage,
+  formatStartDate,
+  formatPhoneNumber,
+} from "./wablasService.js";
+import {
+  createWaReminder,
+  getWaRemindersByJadwal,
+  deleteWaRemindersByJadwal,
+} from "./waReminderService.js";
 
 export const createJadwal = async (user_id, data) => {
+  // Get user profile with phone number
   const { data: profile, error: profileError } = await supabase
     .from("profile")
-    .select("id")
+    .select("id, no_hp, username")
     .eq("user_id", user_id)
     .single();
+
   if (profileError || !profile) throw new Error("Gagal mengambil profile_id");
+  if (!profile.no_hp)
+    throw new Error(
+      "Nomor HP tidak ditemukan. Mohon lengkapi profile terlebih dahulu."
+    );
+
+  // Format phone number
+  const formattedPhone = formatPhoneNumber(profile.no_hp);
+  if (!formattedPhone) {
+    throw new Error("Format nomor HP tidak valid");
+  }
 
   const { data: existSlot, error: cekSlotError } = await supabase
     .from("jadwal")
@@ -32,20 +56,96 @@ export const createJadwal = async (user_id, data) => {
     slot_obat: data.slot_obat || "",
   };
 
-  const { data: result, error: errorInput } = await supabase
-    .from("jadwal")
-    .insert([insertData])
-    .select()
-    .single();
+  // Start transaction-like process
+  let jadwalResult;
+  let reminderIds = []; // Array to collect reminder IDs for cleanup
 
-  if (errorInput) throw new Error(errorInput.message);
-
-  // Create history record for new jadwal
   try {
-    await createHistory(user_id, result.id, "jadwal baru dibuat");
-  } catch (historyError) {
-    console.error("Failed to create history for new jadwal:", historyError);
-    // Continue with the function even if history creation fails
+    // 1. Insert jadwal to database
+    const { data: result, error: errorInput } = await supabase
+      .from("jadwal")
+      .insert([insertData])
+      .select()
+      .single();
+
+    if (errorInput) throw new Error(errorInput.message);
+    jadwalResult = result;
+
+    // 2. Create WhatsApp reminders for each jam_awal
+    if (data.jam_awal && Array.isArray(data.jam_awal)) {
+      const jamReminders = [];
+
+      for (const jam of data.jam_awal) {
+        // Generate reminder message
+        const message = generateReminderMessage(insertData, jam);
+        const startDate = formatStartDate(jam);
+
+        // Create reminder in Wablas
+        const wablasResponse = await createWablasReminder({
+          phone: formattedPhone,
+          start_date: startDate,
+          message: message,
+          title: `Reminder ${insertData.nama_obat} - ${jam}`,
+        });
+
+        // Collect reminder data
+        jamReminders.push(jam);
+        reminderIds.push(wablasResponse.reminder_id);
+      }
+
+      // Save all reminder IDs to database in one record
+      await createWaReminder({
+        jadwal_id: result.id,
+        user_id: user_id,
+        jam_reminders: jamReminders, // ["08:00", "12:00", "16:00", "20:00"]
+        wablas_reminder_ids: reminderIds, // ["id1", "id2", "id3", "id4"]
+      });
+
+      console.log(
+        `Created ${reminderIds.length} WhatsApp reminders for jadwal:`,
+        result.id
+      );
+    }
+
+    // 3. Create history record for new jadwal
+    try {
+      await createHistory(user_id, result.id, "jadwal baru dibuat");
+    } catch (historyError) {
+      console.error("Failed to create history for new jadwal:", historyError);
+      // Continue with the function even if history creation fails
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error creating jadwal with WA reminders:", error);
+
+    // Cleanup: Delete jadwal if it was created
+    if (jadwalResult) {
+      try {
+        await supabase.from("jadwal").delete().eq("id", jadwalResult.id);
+      } catch (cleanupError) {
+        console.error("Failed to cleanup jadwal:", cleanupError);
+      }
+    }
+
+    // Cleanup: Delete created Wablas reminders from the collected array
+    if (typeof reminderIds !== "undefined" && Array.isArray(reminderIds)) {
+      for (const reminderId of reminderIds) {
+        try {
+          await deleteWablasReminder(reminderId);
+        } catch (cleanupError) {
+          console.error(
+            "Failed to cleanup Wablas reminder:",
+            reminderId,
+            cleanupError
+          );
+        }
+      }
+    }
+
+    throw new Error(
+      "Gagal membuat jadwal dan notifikasi WhatsApp: " + error.message
+    );
   }
 };
 
@@ -160,30 +260,60 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
     throw new Error("Jadwal tidak ditemukan atau Anda tidak memiliki akses");
   }
 
-  // Create history record before deleting the jadwal
   try {
-    // We'll use the existing data to create a comprehensive history entry
-    const historyData = {
-      user_id: user_id,
-      profile_id: jadwal.profile_id,
-      nama_obat: jadwal.nama_obat,
-      dosis_obat: jadwal.dosis_obat,
-      sisa_obat: jadwal.jumlah_obat,
-      status: "jadwal dihapus",
-      waktu_minum: jadwal.jam_awal,
-    };
+    // 1. Get all WA reminders for this jadwal
+    const waReminders = await getWaRemindersByJadwal(id_jadwal);
 
-    // Insert history record directly since we're about to delete the jadwal
-    // and createHistory function wouldn't be able to find it
-    const { data: profile, error: profileError } = await supabase
-      .from("profile")
-      .select("id")
-      .eq("user_id", user_id)
-      .single();
+    // 2. Delete all Wablas reminders by mapping through the arrays
+    for (const reminderRecord of waReminders) {
+      const { wablas_reminder_ids } = reminderRecord;
 
-    if (profileError || !profile) {
-      console.error("Profile not found when creating deletion history");
-    } else {
+      if (wablas_reminder_ids && Array.isArray(wablas_reminder_ids)) {
+        for (const reminderId of wablas_reminder_ids) {
+          try {
+            const deleteResult = await deleteWablasReminder(reminderId);
+            if (deleteResult.success) {
+              console.log("✅ Deleted Wablas reminder:", reminderId);
+            } else {
+              console.warn(
+                "⚠️ Failed to delete Wablas reminder:",
+                deleteResult.error
+              );
+            }
+          } catch (wablasError) {
+            console.error(
+              "❌ Error deleting Wablas reminder:",
+              reminderId,
+              wablasError.message
+            );
+            // Continue with other reminders even if one fails
+          }
+        }
+      }
+    }
+
+    // 3. Delete WA reminder records from database
+    if (waReminders.length > 0) {
+      await deleteWaRemindersByJadwal(id_jadwal);
+      const totalReminders = waReminders.reduce(
+        (sum, record) => sum + (record.wablas_reminder_ids?.length || 0),
+        0
+      );
+      console.log(`🗑️ Deleted ${totalReminders} WA reminder records`);
+    }
+
+    // 4. Create history record before deleting the jadwal
+    try {
+      const historyData = {
+        user_id: user_id,
+        profile_id: jadwal.profile_id,
+        nama_obat: jadwal.nama_obat,
+        dosis_obat: jadwal.dosis_obat,
+        sisa_obat: jadwal.jumlah_obat,
+        status: "jadwal dihapus",
+        waktu_minum: jadwal.jam_awal,
+      };
+
       const { error: createError } = await supabase
         .from("history")
         .insert([historyData]);
@@ -194,19 +324,28 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
           createError.message
         );
       }
+    } catch (historyError) {
+      console.error("Failed to create history before deletion:", historyError);
     }
-  } catch (historyError) {
-    console.error("Failed to create history before deletion:", historyError);
-    // Continue with deletion even if history creation fails
+
+    // 5. Finally delete the jadwal (CASCADE will handle WA reminders if any remain)
+    const { data, error: errorDelete } = await supabase
+      .from("jadwal")
+      .delete()
+      .eq("id", id_jadwal)
+      .eq("user_id", user_id);
+
+    if (errorDelete) {
+      throw new Error("Gagal menghapus data jadwal: " + errorDelete.message);
+    }
+
+    console.log(
+      "Jadwal and all associated reminders deleted successfully:",
+      id_jadwal
+    );
+    return data;
+  } catch (error) {
+    console.error("Error in deleteJadwal:", error);
+    throw new Error(`Gagal menghapus jadwal dan notifikasi: ${error.message}`);
   }
-
-  // Now delete the jadwal
-  const { data, error: errorDelete } = await supabase
-    .from("jadwal")
-    .delete()
-    .eq("id", id_jadwal)
-    .eq("user_id", user_id);
-
-  if (errorDelete)
-    throw new Error("Gagal menghapus data jadwal: " + errorDelete.message);
 };

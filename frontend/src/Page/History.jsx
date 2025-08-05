@@ -377,35 +377,6 @@ const History = () => {
           text: "Scheduled",
           icon: "⏰",
         };
-      // Control actions
-      case "control_created":
-      case "kontrol_dibuat":
-        return {
-          className: "bg-blue-100 text-blue-800 border border-blue-200",
-          text: "Kontrol Dibuat",
-          icon: "👨‍⚕️",
-        };
-      case "control_edited":
-      case "kontrol_diedit":
-        return {
-          className: "bg-yellow-100 text-yellow-800 border border-yellow-200",
-          text: "Kontrol Diedit",
-          icon: "✏️",
-        };
-      case "control_deleted":
-      case "kontrol_dihapus":
-        return {
-          className: "bg-red-100 text-red-800 border border-red-200",
-          text: "Kontrol Dihapus",
-          icon: "🗑️",
-        };
-      case "control_completed":
-      case "kontrol_selesai":
-        return {
-          className: "bg-green-100 text-green-800 border border-green-200",
-          text: "Kontrol Selesai",
-          icon: "✅",
-        };
       default:
         return {
           className: "bg-gray-100 text-gray-800 border border-gray-300",
@@ -555,12 +526,6 @@ const History = () => {
                       <option value="jadwal dihapus">Jadwal Dihapus</option>
                       <option value="stock ditambah">Stok Ditambah</option>
                       <option value="stock dikurangi">Stok Dikurangi</option>
-                    </optgroup>
-                    <optgroup label="Aktivitas Kontrol">
-                      <option value="control_created">Kontrol Dibuat</option>
-                      <option value="control_edited">Kontrol Diedit</option>
-                      <option value="control_completed">Kontrol Selesai</option>
-                      <option value="control_deleted">Kontrol Dihapus</option>
                     </optgroup>
                   </select>
                 </div>
