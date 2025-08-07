@@ -6,8 +6,8 @@ CREATE TABLE public.history (
   user_id uuid NOT NULL,
   profile_id uuid NOT NULL,
   nama_obat text NOT NULL,
-  dosis_obat integer NOT NULL,
-  sisa_obat integer NOT NULL,
+  dosis_obat text NOT NULL,
+  sisa_obat text NOT NULL,
   status text NOT NULL,
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
@@ -32,8 +32,21 @@ CREATE TABLE public.jadwal (
   jam_awal ARRAY,
   jam_berakhir ARRAY,
   CONSTRAINT jadwal_pkey PRIMARY KEY (id),
-  CONSTRAINT jadwal_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES public.profile(id),
-  CONSTRAINT jadwal_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+  CONSTRAINT jadwal_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT jadwal_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES public.profile(id)
+);
+CREATE TABLE public.jadwal_wa_reminders (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  jadwal_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  jam_reminders ARRAY NOT NULL,
+  wablas_reminder_ids ARRAY NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT jadwal_wa_reminders_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_jadwal_wa_reminders_jadwal FOREIGN KEY (jadwal_id) REFERENCES public.jadwal(id),
+  CONSTRAINT fk_jadwal_wa_reminders_user FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.kontrol (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -46,9 +59,36 @@ CREATE TABLE public.kontrol (
   waktu text,
   isDone boolean NOT NULL DEFAULT false,
   nama_pasien text,
+  wablas_schedule_id ARRAY,
   CONSTRAINT kontrol_pkey PRIMARY KEY (id),
   CONSTRAINT kontrol_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT kontrol_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES public.profile(id)
+);
+CREATE TABLE public.kontrol_wa_reminders (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  kontrol_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  reminder_types ARRAY NOT NULL,
+  reminder_times ARRAY NOT NULL,
+  wablas_schedule_ids ARRAY NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT kontrol_wa_reminders_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_kontrol_wa_reminders_kontrol FOREIGN KEY (kontrol_id) REFERENCES public.kontrol(id),
+  CONSTRAINT fk_kontrol_wa_reminders_user FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.notes (
+  note_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  profile_id uuid NOT NULL,
+  category text NOT NULL,
+  message text NOT NULL,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT notes_pkey PRIMARY KEY (note_id),
+  CONSTRAINT fk_notes_user FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT fk_notes_profile FOREIGN KEY (profile_id) REFERENCES public.profile(id)
 );
 CREATE TABLE public.peringatan (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -76,38 +116,4 @@ CREATE TABLE public.profile (
   updated_at timestamp without time zone DEFAULT now(),
   CONSTRAINT profile_pkey PRIMARY KEY (id),
   CONSTRAINT profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
-);
-
-CREATE TABLE public.notes (
-  note_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  profile_id uuid NOT NULL,
-  category text NOT NULL,         -- contoh: 'kontrol', 'pengingat', 'lainnya'
-  message text NOT NULL,
-  created_at timestamp DEFAULT now(),
-  updated_at timestamp DEFAULT now(),
-
-  CONSTRAINT fk_notes_user
-    FOREIGN KEY (user_id) REFERENCES auth.users(id),
-
-  CONSTRAINT fk_notes_profile
-    FOREIGN KEY (profile_id) REFERENCES public.profile(id)
-);
-
--- Tabel dengan array untuk multiple reminder IDs
-CREATE TABLE public.jadwal_wa_reminders (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  jadwal_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  jam_reminders text[] NOT NULL,        -- Array jam: ["08:00", "12:00", "16:00", "20:00"]
-  wablas_reminder_ids text[] NOT NULL,  -- Array IDs: ["id1", "id2", "id3", "id4"]
-  is_active boolean DEFAULT true,
-  created_at timestamp DEFAULT now(),
-  updated_at timestamp DEFAULT now(),
-
-  CONSTRAINT fk_jadwal_wa_reminders_jadwal
-    FOREIGN KEY (jadwal_id) REFERENCES public.jadwal(id) ON DELETE CASCADE,
-
-  CONSTRAINT fk_jadwal_wa_reminders_user
-    FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );

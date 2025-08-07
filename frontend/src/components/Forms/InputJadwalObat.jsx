@@ -47,7 +47,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   // Auto-select first available slot if current slot is used - Optimized
   useEffect(() => {
     if (usedSlots[formData.slot_obat] && !initialData) {
-      const availableSlots = ["A", "B", "C", "D", "E", "F", "G", "H"];
+      const availableSlots = ["A", "B", "C", "D", "E", "F"];
       const firstAvailable = availableSlots.find((slot) => !usedSlots[slot]);
 
       if (firstAvailable) {

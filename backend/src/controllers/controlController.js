@@ -10,14 +10,21 @@ import { supabase } from "../config/supabaseClient.js";
 // ✅ Create Kontrol
 export const createKontrol = async (req, res) => {
   const user_id = req.user.id;
-  const { tanggal, dokter, waktu, nama_pasien } = req.body;
+  const {
+    tanggal,
+    waktu,
+    dokter,
+    nama_pasien,
+    enableReminder = true,
+  } = req.body;
 
   try {
     const newKontrol = await createControl(user_id, {
       tanggal,
-      dokter,
       waktu,
+      dokter,
       nama_pasien,
+      enableReminder,
     });
 
     return res.status(201).json({

@@ -367,11 +367,19 @@ curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
 
 ## 🎛️ **Control Endpoints**
 
-All control endpoints require authentication.
+All control endpoints require authentication. Control appointments now include automatic dual WhatsApp reminder system.
 
 ### POST `/v1/api/kontrol/create-kontrol`
 
-Membuat kontrol baru. **Requires Authentication**
+Membuat kontrol baru dengan dual WhatsApp reminders otomatis. **Requires Authentication**
+
+**Features:**
+
+- Creates control appointment record
+- Automatically schedules 2 WhatsApp reminders:
+  1. **24 hours before** at same time as appointment
+  2. **4 hours before** the appointment time
+- Stores array of Wablas schedule IDs for tracking
 
 **Headers:**
 
@@ -383,10 +391,12 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "title": "Kontrol Tekanan Darah",
-  "description": "Cek tekanan darah rutin",
-  "scheduled_date": "2025-01-28",
-  "type": "medical_checkup"
+  "jadwal_tanggal": "2025-01-28",
+  "jam_mulai": "10:00",
+  "rumah_sakit": "RS Example",
+  "dokter": "Dr. Example",
+  "catatan": "Kontrol rutin tekanan darah",
+  "phone": "628123456789"
 }
 ```
 
@@ -394,9 +404,24 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "message": "Kontrol berhasil dibuat"
+  "id": "uuid-123",
+  "user_id": "uuid-456",
+  "jadwal_tanggal": "2025-01-28",
+  "jam_mulai": "10:00",
+  "rumah_sakit": "RS Example",
+  "dokter": "Dr. Example",
+  "catatan": "Kontrol rutin tekanan darah",
+  "wablas_schedule_ids": ["wbl_001", "wbl_002"],
+  "isDone": false,
+  "created_at": "2025-01-27T10:00:00Z",
+  "message": "Kontrol berhasil dibuat dengan 2 pengingat WhatsApp"
 }
 ```
+
+**WhatsApp Reminder Schedule:**
+
+- **Reminder 1:** 2025-01-27 10:00 (24 hours before)
+- **Reminder 2:** 2025-01-28 06:00 (4 hours before)
 
 **Example cURL:**
 
@@ -405,16 +430,18 @@ curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your_jwt_token>" \
   -d '{
-    "title": "Kontrol Tekanan Darah",
-    "description": "Cek tekanan darah rutin",
-    "scheduled_date": "2025-01-28",
-    "type": "medical_checkup"
+    "jadwal_tanggal": "2025-01-28",
+    "jam_mulai": "10:00",
+    "rumah_sakit": "RS Example",
+    "dokter": "Dr. Example",
+    "catatan": "Kontrol rutin tekanan darah",
+    "phone": "628123456789"
   }'
 ```
 
 ### GET `/v1/api/kontrol/get-all-kontrol`
 
-Mendapatkan semua kontrol user. **Requires Authentication**
+Mendapatkan semua kontrol user dengan informasi schedule reminder. **Requires Authentication**
 
 **Headers:**
 
@@ -427,17 +454,24 @@ Authorization: Bearer <jwt_token>
 ```json
 [
   {
-    "id": 1,
-    "user_id": "uuid-123",
-    "title": "Kontrol Tekanan Darah",
-    "description": "Cek tekanan darah rutin",
-    "scheduled_date": "2025-01-28",
-    "type": "medical_checkup",
-    "is_done": false,
+    "id": "uuid-123",
+    "user_id": "uuid-456",
+    "jadwal_tanggal": "2025-01-28",
+    "jam_mulai": "10:00",
+    "rumah_sakit": "RS Example",
+    "dokter": "Dr. Example",
+    "catatan": "Kontrol rutin tekanan darah",
+    "wablas_schedule_ids": ["wbl_001", "wbl_002"],
+    "isDone": false,
     "created_at": "2025-01-27T10:00:00Z"
   }
 ]
 ```
+
+**Response Fields:**
+
+- `wablas_schedule_ids`: Array of Wablas schedule IDs (2 reminders per control)
+- `null` if no WhatsApp reminders were created
 
 **Example cURL:**
 
@@ -523,6 +557,87 @@ curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
     "description": "Cek tekanan darah rutin - updated",
     "scheduled_date": "2025-01-29",
     "type": "medical_checkup"
+  }'
+```
+
+---
+
+## 📱 **WhatsApp Schedule Endpoints**
+
+Manual schedule management for control reminders.
+
+### POST `/api/schedule/control-reminder`
+
+Membuat manual WhatsApp schedule reminder untuk kontrol. **Requires Authentication**
+
+**Headers:**
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "user_id": "uuid-456",
+  "jadwal_tanggal": "2025-01-28",
+  "jam_mulai": "10:00",
+  "phone": "628123456789",
+  "rumah_sakit": "RS Example",
+  "dokter": "Dr. Example",
+  "catatan": "Kontrol rutin"
+}
+```
+
+**Response Success (200):**
+
+```json
+{
+  "message": "WhatsApp schedule reminders created successfully",
+  "schedules": [
+    {
+      "id": "wbl_001",
+      "type": "1_day_before",
+      "scheduledFor": "2025-01-27T10:00:00.000Z",
+      "message": "🏥 *Pengingat Jadwal Kontrol*\n\nHalo! Ini pengingat untuk jadwal kontrol Anda besok..."
+    },
+    {
+      "id": "wbl_002",
+      "type": "4_hours_before",
+      "scheduledFor": "2025-01-28T06:00:00.000Z",
+      "message": "🏥 *Pengingat Jadwal Kontrol*\n\nHalo! Ini pengingat untuk jadwal kontrol Anda..."
+    }
+  ],
+  "reminder_times": [
+    {
+      "date": "2025-01-27",
+      "time": "10:00",
+      "type": "1_day_before"
+    },
+    {
+      "date": "2025-01-28",
+      "time": "06:00",
+      "type": "4_hours_before"
+    }
+  ]
+}
+```
+
+**Example cURL:**
+
+```bash
+curl -X POST http://163.53.195.57:5000/api/schedule/control-reminder \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -d '{
+    "user_id": "uuid-456",
+    "jadwal_tanggal": "2025-01-28",
+    "jam_mulai": "10:00",
+    "phone": "628123456789",
+    "rumah_sakit": "RS Example",
+    "dokter": "Dr. Example",
+    "catatan": "Kontrol rutin"
   }'
 ```
 
