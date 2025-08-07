@@ -75,6 +75,73 @@ export const createWablasSchedule = async (scheduleData) => {
 };
 
 /**
+ * Delete WhatsApp scheduled message by schedule ID
+ * Used when control is deleted or marked as completed
+ */
+export const deleteWablasSchedule = async (scheduleId) => {
+  try {
+    console.log(`Attempting to delete Wablas schedule: ${scheduleId}`);
+
+    // Delete the schedule directly
+    const deleteResponse = await axios.delete(
+      `${WABLAS_BASE_URL}/schedule/${scheduleId}`,
+      {
+        headers: {
+          Authorization: `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`,
+        },
+      }
+    );
+
+    console.log(
+      `✅ Successfully deleted schedule ${scheduleId}:`,
+      deleteResponse.data
+    );
+
+    return {
+      success: true,
+      message: "Schedule deleted successfully",
+      data: deleteResponse.data,
+    };
+  } catch (error) {
+    console.error(
+      `⚠️ Failed to delete schedule ${scheduleId}:`,
+      error.response?.data || error.message
+    );
+
+    // Even if delete fails, we still return success for database cleanup
+    return {
+      success: false,
+      message: `Could not delete schedule ${scheduleId}: ${
+        error.response?.data?.message || error.message
+      }`,
+      error: error.response?.data || error.message,
+    };
+  }
+};
+
+/**
+ * Delete multiple WhatsApp schedules
+ */
+export const deleteMultipleWablasSchedules = async (scheduleIds) => {
+  const results = [];
+
+  for (const scheduleId of scheduleIds) {
+    try {
+      const result = await deleteWablasSchedule(scheduleId);
+      results.push({ scheduleId, ...result });
+    } catch (error) {
+      results.push({
+        scheduleId,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  return results;
+};
+
+/**
  * Generate reminder message for control appointment with timing info
  */
 export const generateControlReminderMessageWithTiming = (

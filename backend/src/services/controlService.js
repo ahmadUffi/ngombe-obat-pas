@@ -5,6 +5,7 @@ import {
   generateControlReminderMessageWithTiming,
   formatPhoneNumber,
   calculateControlReminderTimes,
+  deleteMultipleWablasSchedules,
 } from "./wablasScheduleService.js";
 
 // Create control reminders in separate table
@@ -186,14 +187,73 @@ export const getControl = async (user_id) => {
 
 // update isDone at table control kolom isDOne
 export const updateIsDone = async (id, isDone) => {
-  const { data, error } = await supabase
-    .from("kontrol")
-    .update({ isDone })
-    .eq("id", id)
-    .select();
+  try {
+    // If marking as done (completed), delete any pending WhatsApp schedules
+    if (isDone === true) {
+      console.log(
+        `Marking control ${id} as completed, checking for pending schedules...`
+      );
 
-  if (error) throw new Error("Error updating data");
-  return data;
+      // Get reminder data first
+      const { data: reminders } = await supabase
+        .from("kontrol_wa_reminders")
+        .select("wablas_schedule_ids, reminder_types")
+        .eq("kontrol_id", id)
+        .eq("is_active", true);
+
+      if (reminders && reminders.length > 0) {
+        for (const reminder of reminders) {
+          if (
+            reminder.wablas_schedule_ids &&
+            reminder.wablas_schedule_ids.length > 0
+          ) {
+            console.log(
+              `Found ${reminder.wablas_schedule_ids.length} pending schedules for control ${id}`
+            );
+
+            // Delete Wablas schedules
+            const deleteResults = await deleteMultipleWablasSchedules(
+              reminder.wablas_schedule_ids
+            );
+
+            // Log results
+            deleteResults.forEach((result) => {
+              if (result.success) {
+                console.log(`✅ Deleted schedule ${result.scheduleId}`);
+              } else {
+                console.log(
+                  `⚠️ Failed to delete schedule ${result.scheduleId}: ${result.message}`
+                );
+              }
+            });
+
+            // Deactivate reminder record regardless of Wablas delete success
+            await supabase
+              .from("kontrol_wa_reminders")
+              .update({ is_active: false })
+              .eq("kontrol_id", id);
+
+            console.log(`✅ Deactivated reminder records for control ${id}`);
+          }
+        }
+      }
+    }
+
+    // Update the control record
+    const { data, error } = await supabase
+      .from("kontrol")
+      .update({ isDone, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select();
+
+    if (error) throw new Error("Error updating control data: " + error.message);
+
+    console.log(`✅ Control ${id} updated - isDone: ${isDone}`);
+    return data;
+  } catch (error) {
+    console.error("Error updating control isDone:", error);
+    throw error;
+  }
 };
 
 // update supabse
@@ -223,33 +283,42 @@ export const deleteControl = async (id, user_id) => {
   }
 
   try {
-    // 1. Get and log WhatsApp schedule data from separate table
+    // 1. Get WhatsApp schedule data from separate table and try to delete
     const { data: reminders } = await supabase
       .from("kontrol_wa_reminders")
       .select("wablas_schedule_ids, reminder_types")
-      .eq("kontrol_id", id);
+      .eq("kontrol_id", id)
+      .eq("is_active", true);
 
     if (reminders && reminders.length > 0) {
-      reminders.forEach((reminder) => {
+      for (const reminder of reminders) {
         if (
           reminder.wablas_schedule_ids &&
           reminder.wablas_schedule_ids.length > 0
         ) {
           console.log(
-            `Control has ${reminder.wablas_schedule_ids.length} WhatsApp schedule IDs:`,
-            reminder.wablas_schedule_ids
-          );
-          console.log(
-            "Note: Wablas doesn't provide cancel endpoint, schedules may continue to run"
+            `Deleting control ${id} - Found ${reminder.wablas_schedule_ids.length} WhatsApp schedules to delete`
           );
 
-          // Log each schedule ID for potential manual cleanup
-          reminder.wablas_schedule_ids.forEach((scheduleId, index) => {
-            const type = reminder.reminder_types[index] || "unknown";
-            console.log(`  ${index + 1}. ${type}: ${scheduleId}`);
+          // Delete Wablas schedules
+          const deleteResults = await deleteMultipleWablasSchedules(
+            reminder.wablas_schedule_ids
+          );
+
+          // Log results
+          deleteResults.forEach((result) => {
+            if (result.success) {
+              console.log(`✅ Deleted schedule ${result.scheduleId}`);
+            } else {
+              console.log(
+                `⚠️ Failed to delete schedule ${result.scheduleId}: ${result.message}`
+              );
+            }
           });
         }
-      });
+      }
+    } else {
+      console.log(`Control ${id} has no active WhatsApp schedules to delete`);
     }
 
     // 2. Delete control record (reminders will be deleted automatically via CASCADE)
