@@ -11,6 +11,8 @@ import History from "../Page/History";
 import Login from "../components/Auth/Login";
 import Register from "../components/Auth/Register";
 import EmailCallback from "../components/Auth/EmailCallback";
+import ForgotPassword from "../components/Auth/ForgotPassword";
+import ResetPassword from "../components/Auth/ResetPassword";
 
 // Protected Route component
 export const ProtectedRoute = ({ children }) => {
@@ -46,6 +48,18 @@ export const routes = [
     element: <EmailCallback />,
     isProtected: false,
     title: "Email Verification",
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
+    isProtected: false,
+    title: "Forgot Password",
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
+    isProtected: false,
+    title: "Reset Password",
   },
 
   // Protected Routes

@@ -8,6 +8,7 @@ import controlRoutes from "./routes/controlRoutes.js";
 import peringatanRoutes from "./routes/peringatanRoutes.js";
 import notesRoutes from "./routes/notesRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import forgotPasswordRoutes from "./routes/forgotPasswordRoutes.js";
 // import scheduleRoutes from "./routes/scheduleRoutes.js"; // Commented out temporarily
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use("/v1/api/kontrol", controlRoutes);
 app.use("/v1/api/peringatan", peringatanRoutes);
 app.use("/v1/api/notes", notesRoutes);
 app.use("/v1/api/message", messageRoutes);
+app.use("/v1/api/forgot-password", forgotPasswordRoutes);
 // app.use("/v1/api/schedule", scheduleRoutes); // Commented out temporarily
 
 const PORT = process.env.PORT || 5000;

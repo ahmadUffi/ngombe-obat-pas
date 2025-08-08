@@ -229,9 +229,7 @@ const Login = () => {
                 <button
                   type="button"
                   className="text-sm text-orange-500 hover:text-orange-600"
-                  onClick={() =>
-                    toast.info("Fitur lupa password akan segera tersedia!")
-                  }
+                  onClick={() => navigate("/forgot-password")}
                 >
                   Forgot Password?
                 </button>

@@ -31,6 +31,32 @@ export class apiService {
     }
   }
 
+  /**
+   * Mengirim email reset password
+   * @param {Object} data - {email}
+   * @returns {Promise<Object>} - Response message
+   */
+  static async forgotPassword(data) {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/v1/api/forgot-password`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Forgot password failed:",
+        err.response?.data || err.message
+      );
+      throw err;
+    }
+  }
+
   // ===============================
   // JADWAL ENDPOINTS
   // ===============================
