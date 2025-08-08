@@ -195,6 +195,14 @@ export const AuthProvider = ({ children }) => {
     return apiService.isAuthenticated();
   };
 
+  // Refresh user data - useful after profile updates
+  const refreshUser = async () => {
+    const storedEmail = localStorage.getItem("user_email");
+    if (storedEmail && apiService.isAuthenticated()) {
+      await fetchUserProfile(storedEmail);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -204,6 +212,7 @@ export const AuthProvider = ({ children }) => {
         loginWithAPI,
         logout,
         isAuthenticated,
+        refreshUser,
         loading,
         error,
         setError,

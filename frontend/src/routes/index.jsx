@@ -13,6 +13,7 @@ import Register from "../components/Auth/Register";
 import EmailCallback from "../components/Auth/EmailCallback";
 import ForgotPassword from "../components/Auth/ForgotPassword";
 import ResetPassword from "../components/Auth/ResetPassword";
+import { Profile, ChangePassword } from "../components/Profile";
 
 // Protected Route component
 export const ProtectedRoute = ({ children }) => {
@@ -108,6 +109,18 @@ export const routes = [
     title: "Riwayat",
     icon: "📊",
     showInNav: true,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
+    isProtected: true,
+    title: "Edit Profile",
+  },
+  {
+    path: "/change-password",
+    element: <ChangePassword />,
+    isProtected: true,
+    title: "Ubah Password",
   },
 ];
 
