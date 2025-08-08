@@ -10,6 +10,7 @@ import Note from "../Page/Note";
 import History from "../Page/History";
 import Login from "../components/Auth/Login";
 import Register from "../components/Auth/Register";
+import EmailCallback from "../components/Auth/EmailCallback";
 
 // Protected Route component
 export const ProtectedRoute = ({ children }) => {
@@ -39,6 +40,12 @@ export const routes = [
     element: <Register />,
     isProtected: false,
     title: "Register",
+  },
+  {
+    path: "/auth/callback",
+    element: <EmailCallback />,
+    isProtected: false,
+    title: "Email Verification",
   },
 
   // Protected Routes

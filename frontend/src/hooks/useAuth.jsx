@@ -74,6 +74,35 @@ export const AuthProvider = ({ children }) => {
     setError(null);
 
     try {
+      // First check if user email is verified via Supabase Auth
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        // If Supabase auth fails, could be unverified email or wrong credentials
+        if (authError.message.includes("Email not confirmed")) {
+          throw new Error(
+            "Silakan verifikasi email Anda terlebih dahulu. Cek kotak masuk email Anda."
+          );
+        }
+        throw authError;
+      }
+
+      // Check if email is confirmed
+      if (user && !user.email_confirmed_at) {
+        // Sign out from supabase since email not confirmed
+        await supabase.auth.signOut();
+        throw new Error(
+          "Silakan verifikasi email Anda terlebih dahulu. Cek kotak masuk email Anda."
+        );
+      }
+
+      // If email is verified, proceed with backend API login
       const response = await apiService.login({ email, password });
       const sessionToken = response.access_token;
 

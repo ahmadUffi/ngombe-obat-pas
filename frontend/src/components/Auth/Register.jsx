@@ -57,6 +57,57 @@ const Register = () => {
     }
   };
 
+  // Function untuk handle post signup setelah email verification
+  const handlePostSignUp = async (user, normalizedPhone) => {
+    console.log("📝 Creating user profile after email verification...");
+
+    // Upload profile image (opsional)
+    let profileImgUrl = null;
+    if (state.profile) {
+      try {
+        const fileExt = state.profile.name.split(".").pop();
+        const filePath = `profile_${user.id}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("profile-images")
+          .upload(filePath, state.profile);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("profile-images")
+            .getPublicUrl(filePath);
+          profileImgUrl = publicUrlData.publicUrl;
+        }
+      } catch (uploadErr) {
+        console.warn("Profile upload failed:", uploadErr);
+      }
+    }
+
+    // Save profile to table
+    const { error: dbError } = await supabase.from("profile").insert([
+      {
+        user_id: user.id,
+        email: state.email,
+        username: state.username,
+        no_hp: normalizedPhone,
+        img_profile: profileImgUrl,
+      },
+    ]);
+
+    if (dbError) throw dbError;
+
+    dispatch({
+      type: "SET_SUCCESS",
+      value: "Registrasi berhasil! Mengarahkan ke halaman login...",
+    });
+
+    toast.success("Registrasi berhasil! Mengarahkan ke halaman login...");
+
+    // Delay untuk menampilkan success message
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
+  };
+
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -129,65 +180,48 @@ const Register = () => {
     console.log("🚀 All validations passed, proceeding to create user...");
 
     try {
-      // Sign up
+      // Sign up dengan email verification
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email: state.email,
           password: state.password,
-          email_confirm: true,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              username: state.username,
+              phone: phoneValidation.normalizedPhone,
+            },
+          },
         });
 
       if (signUpError) throw signUpError;
 
       const user = signUpData.user;
 
-      console.log(user);
+      console.log("User signup result:", user);
 
-      // Upload profile image (opsional)
-      let profileImgUrl = null;
-      if (state.profile) {
-        const fileExt = state.profile.name.split(".").pop();
-        const filePath = `profile_${user.id}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from("profile-images")
-          .upload(filePath, state.profile);
+      // Jika user perlu konfirmasi email (yang selalu terjadi dengan email verification)
+      if (user && !user.email_confirmed_at) {
+        dispatch({
+          type: "SET_SUCCESS",
+          value:
+            "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi sebelum login.",
+        });
 
-        if (uploadError) throw uploadError;
+        toast.success(
+          "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.",
+          {
+            autoClose: 8000,
+          }
+        );
 
-        const { data: publicUrlData } = supabase.storage
-          .from("profile-images")
-          .getPublicUrl(filePath);
-
-        profileImgUrl = publicUrlData.publicUrl;
+        // Jangan lanjut ke create profile, tunggu email verification dulu
+        setLoading(false);
+        return;
       }
 
-      // Get normalized phone number
-      const normalizedPhone = phoneValidation.normalizedPhone;
-
-      // Save profile to table
-      const { error: dbError } = await supabase.from("profile").insert([
-        {
-          user_id: user.id,
-          email: state.email,
-          username: state.username,
-          no_hp: normalizedPhone, // Use normalized phone
-          img_profile: profileImgUrl,
-        },
-      ]);
-
-      if (dbError) throw dbError;
-
-      dispatch({
-        type: "SET_SUCCESS",
-        value: "Registrasi berhasil! Mengarahkan ke halaman login...",
-      });
-
-      toast.success("Registrasi berhasil! Mengarahkan ke halaman login...");
-
-      // Delay untuk menampilkan success message
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      // Jika sudah confirmed (handle fallback)
+      await handlePostSignUp(user, phoneValidation.normalizedPhone);
     } catch (err) {
       const errorMessage = err.message || "Terjadi kesalahan saat registrasi";
       dispatch({
