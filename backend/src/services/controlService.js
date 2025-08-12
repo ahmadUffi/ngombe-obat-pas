@@ -256,16 +256,84 @@ export const updateIsDone = async (id, isDone) => {
   }
 };
 
-// update supabse
+// update control in supabase and also in wablas if needed
 export const updateControl = async (id, updatedData) => {
-  const { data, error } = await supabase
-    .from("kontrol")
-    .update(updatedData)
-    .eq("id", id)
-    .select();
+  try {
+    // First, get the current control data with user ID and profile
+    const { data: controlData, error: controlError } = await supabase
+      .from("kontrol")
+      .select(`*, profile:profile_id(no_hp)`)
+      .eq("id", id)
+      .single();
 
-  if (error) throw new Error("Failed to update control data");
-  return data;
+    if (controlError || !controlData) {
+      throw new Error("Failed to fetch control data for update");
+    }
+
+    // Get existing reminder data
+    const { data: reminders } = await supabase
+      .from("kontrol_wa_reminders")
+      .select("id, wablas_schedule_ids, reminder_types, is_active")
+      .eq("kontrol_id", id)
+      .eq("is_active", true);
+
+    // If there are active reminders, we need to update the Wablas schedules too
+    if (reminders && reminders.length > 0 && controlData.profile?.no_hp) {
+      // 1. Delete existing Wablas schedules
+      for (const reminder of reminders) {
+        if (
+          reminder.wablas_schedule_ids &&
+          reminder.wablas_schedule_ids.length > 0
+        ) {
+          console.log(
+            `Updating control ${id} - Deleting ${reminder.wablas_schedule_ids.length} existing WhatsApp schedules`
+          );
+
+          await deleteMultipleWablasSchedules(reminder.wablas_schedule_ids);
+
+          // Mark reminders as inactive
+          await supabase
+            .from("kontrol_wa_reminders")
+            .update({ is_active: false })
+            .eq("id", reminder.id);
+        }
+      }
+
+      // 2. Create new Wablas schedules with updated data
+      const phone = formatPhoneNumber(controlData.profile.no_hp);
+      if (phone) {
+        // Create new reminders with updated data
+        await createControlReminders(
+          id,
+          controlData.user_id,
+          {
+            tanggal: updatedData.tanggal || controlData.tanggal,
+            waktu: updatedData.waktu || controlData.waktu,
+            dokter: updatedData.dokter || controlData.dokter,
+            nama_pasien: updatedData.nama_pasien || controlData.nama_pasien,
+          },
+          phone
+        );
+
+        console.log(
+          `✅ Created new WhatsApp reminders for updated control ${id}`
+        );
+      }
+    }
+
+    // Finally, update the control record in database
+    const { data, error } = await supabase
+      .from("kontrol")
+      .update(updatedData)
+      .eq("id", id)
+      .select();
+
+    if (error) throw new Error("Failed to update control data");
+    return data;
+  } catch (error) {
+    console.error("Error updating control with Wablas integration:", error);
+    throw error;
+  }
 };
 
 // Delete control by ID with WhatsApp schedule cleanup
