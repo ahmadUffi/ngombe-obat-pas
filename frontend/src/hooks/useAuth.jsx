@@ -197,9 +197,41 @@ export const AuthProvider = ({ children }) => {
 
   // Refresh user data - useful after profile updates
   const refreshUser = async () => {
+    console.log("refreshUser called");
     const storedEmail = localStorage.getItem("user_email");
+    console.log("Stored email:", storedEmail);
+    console.log("Is authenticated:", apiService.isAuthenticated());
+    console.log("Current user:", user);
+
     if (storedEmail && apiService.isAuthenticated()) {
+      // First try to get user profile using the current user ID if available
+      // This ensures we get the freshest data after an update
+      if (user && user.id) {
+        try {
+          console.log("Refreshing user with ID:", user.id);
+          const { data, error } = await supabase
+            .from("profile")
+            .select("*")
+            .eq("user_id", user.id)
+            .single();
+
+          if (data && !error) {
+            console.log("Refreshed user profile by ID:", data);
+            setUser(data);
+            return;
+          } else {
+            console.warn("No data found when refreshing by ID", { error });
+          }
+        } catch (err) {
+          console.error("Error refreshing user profile by ID:", err);
+        }
+      }
+
+      // Fallback to using email
+      console.log("Falling back to email refresh");
       await fetchUserProfile(storedEmail);
+    } else {
+      console.warn("Cannot refresh: no email stored or not authenticated");
     }
   };
 

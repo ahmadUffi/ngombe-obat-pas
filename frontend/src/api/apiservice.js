@@ -610,4 +610,106 @@ export class apiService {
       throw err;
     }
   }
+
+  // ===============================
+  // PROFILE ENDPOINTS
+  // ===============================
+
+  /**
+   * Update user profile
+   * @param {Object} profileData - {username, no_hp}
+   * @param {string} token - JWT token (optional, will get from localStorage if not provided)
+   * @returns {Promise<Object>} - Updated profile data
+   */
+  static async updateProfile(profileData, token = null) {
+    try {
+      const authToken = token || this.getToken();
+      console.log("updateProfile API call with:", {
+        profileData,
+        authToken,
+      });
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/update`,
+        profileData,
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error(
+        "Update profile failed:",
+        err.response?.data || err.message
+      );
+      throw err;
+    }
+  }
+
+  /**
+   * Update user avatar
+   * @param {string} avatarUrl - Avatar URL
+   * @param {string} userId - User ID
+   * @param {string} token - JWT token (optional, will get from localStorage if not provided)
+   * @returns {Promise<Object>} - Updated avatar data
+   */
+  static async updatePhoneNumber(phoneNumber, userId, token = null) {
+    try {
+      const authToken = token || this.getToken();
+      console.log("updatePhoneNumber API call with:", {
+        phoneNumber,
+        userId,
+        authToken,
+      });
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/phone`,
+        { no_hp: phoneNumber, user_id: userId },
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Update phone failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * @deprecated Use updatePhoneNumber instead
+   */
+  static async updateAvatar(avatarUrl, userId, token = null) {
+    try {
+      const authToken = token || this.getToken();
+      console.log("updateAvatar API call with:", {
+        avatarUrl,
+        userId,
+        authToken,
+      });
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/avatar`,
+        { avatar_url: avatarUrl, user_id: userId },
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            "Content-Type": "application/json",
+            "x-user-id": userId, // Add user_id to headers as backup
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.error("Update avatar failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
 }

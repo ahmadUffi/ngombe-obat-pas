@@ -9,16 +9,26 @@ const NavbarTop = ({ onToggleSidebar }) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [profileImageError, setProfileImageError] = useState(false);
+  const [profileImageKey, setProfileImageKey] = useState(Date.now());
   const { logout, user } = useContext(AuthContext);
   console.log("User in NavbarTop:", user);
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
 
+  // Reset the profile image error and update image key when user changes
+  useEffect(() => {
+    console.log("NavbarTop detected user change:", user);
+    setProfileImageError(false);
+    setProfileImageKey(Date.now());
+  }, [user]);
+
   // Get profile image URL from user context or use mascot as default
   const getProfileImageSrc = () => {
     if (profileImageError || !user?.img_profile) {
+      console.log("Using default profile image (maskot)");
       return maskot;
     }
+    console.log("Using user profile image:", user.img_profile);
     return user.img_profile;
   };
 
@@ -104,6 +114,8 @@ const NavbarTop = ({ onToggleSidebar }) => {
                 src={getProfileImageSrc()}
                 alt="Profile"
                 className="w-[45px] h-[45px] rounded-full object-cover"
+                // Force image reload when user updates
+                key={`profile-${profileImageKey}`}
                 onError={(e) => {
                   setProfileImageError(true);
                 }}
