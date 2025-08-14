@@ -11,6 +11,9 @@ import messageRoutes from "./routes/messageRoutes.js";
 import forgotPasswordRoutes from "./routes/forgotPasswordRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 // import scheduleRoutes from "./routes/scheduleRoutes.js"; // Commented out temporarily
+import cron from "node-cron";
+import { checkAllJadwalStockAndNotify } from "./services/stockCronService.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -27,6 +30,7 @@ app.use("/v1/api/notes", notesRoutes);
 app.use("/v1/api/message", messageRoutes);
 app.use("/v1/api/forgot-password", forgotPasswordRoutes);
 app.use("/v1/api/profile", profileRoutes);
+app.use("/v1/api/admin", adminRoutes);
 // app.use("/v1/api/schedule", scheduleRoutes); // Commented out temporarily
 
 const PORT = process.env.PORT || 5000;
@@ -34,3 +38,24 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Cron: stock checker (env-controlled)
+const CRON_ENABLED =
+  (process.env.CRON_ENABLED || "false").toLowerCase() === "true";
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 7,19 * * *"; // default 07:00 & 19:00
+
+if (CRON_ENABLED) {
+  console.log("StockCron enabled with schedule:", CRON_SCHEDULE);
+  cron.schedule(
+    CRON_SCHEDULE,
+    async () => {
+      try {
+        const res = await checkAllJadwalStockAndNotify();
+        console.log("StockCron result:", res);
+      } catch (e) {
+        console.error("StockCron failed:", e?.message || e);
+      }
+    },
+    { timezone: "Asia/Jakarta" }
+  );
+}

@@ -12,6 +12,7 @@ import {
   getWaRemindersByJadwal,
   deleteWaRemindersByJadwal,
 } from "./waReminderService.js";
+import { sendWhatsAppMessage } from "./messageService.js";
 
 export const createJadwal = async (user_id, data) => {
   // Get user profile with phone number
@@ -188,9 +189,12 @@ export const getJadwalByIDProfile = async (user_id) => {
 };
 
 export const updateObatByID = async (id_jadwal, own, newStock) => {
+  // Fetch necessary fields for decisions and messages
   const { data: result, error: errorJumlahObat } = await supabase
     .from("jadwal")
-    .select("jumlah_obat, user_id")
+    .select(
+      "id, user_id, profile_id, jumlah_obat, nama_obat, dosis_obat, nama_pasien, jam_awal"
+    )
     .eq("id", id_jadwal)
     .single();
 
@@ -238,14 +242,174 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
     } catch (historyError) {
       console.error("Failed to create 'stock habis' history:", historyError);
     }
+    try {
+      // Pause reminders and notify user when stock just ran out
+      await handleOutOfStock(id_jadwal, result.user_id, result);
+    } catch (notifyErr) {
+      console.error("Out-of-stock handling failed:", notifyErr);
+    }
   } else if (stockObat <= 5) {
     try {
       await createHistory(result.user_id, id_jadwal, "stock menipis");
     } catch (historyError) {
       console.error("Failed to create 'stock menipis' history:", historyError);
     }
+    try {
+      await maybeNotifyLowStock(result, stockObat);
+    } catch (lowStockErr) {
+      console.error("Low-stock notification failed:", lowStockErr);
+    }
+  }
+
+  // Detect refill: previous stock <= 0 and now > 0 → recreate reminders and notify
+  if ((result.jumlah_obat || 0) <= 0 && stockObat > 0) {
+    try {
+      await recreateWaRemindersForJadwal(id_jadwal, result.user_id);
+      const phone = await getFormattedPhoneByUserId(result.user_id);
+      if (phone) {
+        const msg = `✅ Stok obat terisi ulang\n\nObat: ${result.nama_obat}\nStok baru: ${stockObat}\n\nPengingat minum obat telah diaktifkan kembali.`;
+        await sendWhatsAppMessage(phone, msg, "text");
+      }
+      try {
+        await createHistory(result.user_id, id_jadwal, "stock diisi ulang");
+      } catch (e) {
+        console.warn("Create history refill failed:", e?.message || e);
+      }
+    } catch (e) {
+      console.error("Refill handling failed:", e?.message || e);
+    }
   }
 };
+
+// --- Helpers for stock state handling ---
+
+// Send low-stock notification once when crossing threshold; simple implementation without dedup store
+async function maybeNotifyLowStock(jadwalRow, stockObat) {
+  try {
+    // Determine doses per day from jam_awal array
+    const dosesPerDay = Array.isArray(jadwalRow.jam_awal)
+      ? jadwalRow.jam_awal.length || 1
+      : 1;
+    // Threshold: <= 3 days of doses left
+    const threshold = dosesPerDay * 3;
+    if (stockObat > 0 && stockObat <= threshold) {
+      const phone = await getFormattedPhoneByUserId(jadwalRow.user_id);
+      if (!phone) return;
+      const daysLeft = Math.max(
+        0,
+        Math.floor(stockObat / Math.max(1, dosesPerDay))
+      );
+      const msg = `⚠️ Stok obat menipis\n\nObat: ${jadwalRow.nama_obat}\nSisa: ${stockObat} butir\nPerkiraan cukup: ${daysLeft} hari\n\nSilakan isi ulang stok melalui SmedBox.`;
+      await sendWhatsAppMessage(phone, msg, "text");
+    }
+  } catch (e) {
+    console.warn("maybeNotifyLowStock error:", e?.message || e);
+  }
+}
+
+// Handle out-of-stock: pause reminders for this jadwal and notify user
+async function handleOutOfStock(jadwal_id, user_id, jadwalRow) {
+  try {
+    await pauseJadwalReminders(jadwal_id);
+  } catch (e) {
+    console.warn("pauseJadwalReminders error:", e?.message || e);
+  }
+
+  try {
+    const phone = await getFormattedPhoneByUserId(user_id);
+    if (phone) {
+      const msg = `⛔ Stok obat habis\n\nObat: ${jadwalRow.nama_obat}\nPasien: ${jadwalRow.nama_pasien}\n\nPengingat minum obat dihentikan sementara. Isi ulang stok di SmedBox untuk mengaktifkan kembali.`;
+      await sendWhatsAppMessage(phone, msg, "text");
+    }
+  } catch (e) {
+    console.warn("WhatsApp notify out-of-stock error:", e?.message || e);
+  }
+}
+
+// Pause (delete) all Wablas reminders for a specific jadwal and remove DB records
+async function pauseJadwalReminders(jadwal_id) {
+  const waReminders = await getWaRemindersByJadwal(jadwal_id);
+  for (const reminderRecord of waReminders) {
+    const { wablas_reminder_ids } = reminderRecord;
+    if (Array.isArray(wablas_reminder_ids)) {
+      for (const reminderId of wablas_reminder_ids) {
+        try {
+          await deleteWablasReminder(reminderId);
+        } catch (e) {
+          console.warn(
+            "Failed deleting Wablas reminder:",
+            reminderId,
+            e?.message || e
+          );
+        }
+      }
+    }
+  }
+  if (waReminders.length > 0) {
+    await deleteWaRemindersByJadwal(jadwal_id);
+  }
+}
+
+// Recreate WA reminders for one jadwal after refill
+async function recreateWaRemindersForJadwal(jadwal_id, user_id) {
+  // Fetch jadwal
+  const { data: jadwal, error } = await supabase
+    .from("jadwal")
+    .select("id, nama_obat, nama_pasien, dosis_obat, jam_awal, jam_berakhir")
+    .eq("id", jadwal_id)
+    .single();
+  if (error || !jadwal)
+    throw new Error("Jadwal tidak ditemukan untuk recreate reminder");
+
+  const phone = await getFormattedPhoneByUserId(user_id);
+  if (!phone) throw new Error("Nomor HP tidak ditemukan untuk user");
+
+  const jamReminders = [];
+  const reminderIds = [];
+
+  if (Array.isArray(jadwal.jam_awal)) {
+    for (const jam of jadwal.jam_awal) {
+      try {
+        const message = generateReminderMessage(jadwal, jam);
+        const startDate = formatStartDate(jam);
+        const wablasResponse = await createWablasReminder({
+          phone,
+          start_date: startDate,
+          message,
+          title: `Reminder ${jadwal.nama_obat} - ${jam}`,
+        });
+        jamReminders.push(jam);
+        reminderIds.push(wablasResponse.reminder_id);
+      } catch (e) {
+        console.error(
+          "Failed to create reminder for jam",
+          jam,
+          e?.message || e
+        );
+      }
+    }
+  }
+
+  if (reminderIds.length > 0) {
+    await createWaReminder({
+      jadwal_id,
+      user_id,
+      jam_reminders: jamReminders,
+      wablas_reminder_ids: reminderIds,
+    });
+  }
+}
+
+// Helper: get user phone formatted for Wablas (62…)
+async function getFormattedPhoneByUserId(user_id) {
+  const { data: profile, error } = await supabase
+    .from("profile")
+    .select("no_hp")
+    .eq("user_id", user_id)
+    .single();
+  if (error || !profile?.no_hp) return null;
+  return formatPhoneNumber(profile.no_hp);
+}
 
 export const deleteJadwal = async (id_jadwal, user_id) => {
   // First check if the jadwal belongs to the user
