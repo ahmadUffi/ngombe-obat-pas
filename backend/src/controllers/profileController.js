@@ -34,14 +34,28 @@ export const updateProfile = asyncHandler(async (req, res) => {
   }
 
   try {
+    // Get current profile to check if phone number is changing
+    const { data: currentProfile, error: profileError } = await supabase
+      .from("profile")
+      .select("no_hp")
+      .eq("user_id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching current profile:", profileError);
+      throw new Error("Failed to fetch current profile");
+    }
+
     // Prepare update data
     const updateData = {
       username: username.trim(),
     };
 
-    // Add formatted phone if provided
+    // Format and add phone if provided
+    let formattedPhone = null;
     if (no_hp) {
-      updateData.no_hp = formatPhoneNumber(no_hp);
+      formattedPhone = formatPhoneNumber(no_hp);
+      updateData.no_hp = formattedPhone;
     }
 
     // Get current profile first to detect phone changes
@@ -85,6 +99,44 @@ export const updateProfile = asyncHandler(async (req, res) => {
         success: false,
         message: "Profile tidak ditemukan",
       });
+    }
+
+    // Check if phone number was changed and needs to be updated in Wablas schedules
+    if (
+      formattedPhone &&
+      currentProfile &&
+      formattedPhone !== currentProfile.no_hp
+    ) {
+      // Update all Wablas schedules and reminders for this user with the new phone number
+      // We do this asynchronously so we don't block the response
+
+      // Update control appointment schedules
+      updateUserWablasSchedules(userId, formattedPhone)
+        .then(() => {
+          console.log(
+            `Successfully updated control schedules for user ${userId}`
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Failed to update control schedules for user ${userId}:`,
+            error
+          );
+        });
+
+      // Update medication reminders
+      updateUserMedicationReminders(userId, formattedPhone)
+        .then(() => {
+          console.log(
+            `Successfully updated medication reminders for user ${userId}`
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `Failed to update medication reminders for user ${userId}:`,
+            error
+          );
+        });
     }
 
     // If phone changed, recreate all Wablas reminders
