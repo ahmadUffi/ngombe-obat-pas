@@ -208,12 +208,23 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
   let status;
 
   if (own == "iot") {
-    stockObat = result.jumlah_obat - 1;
+    // Jangan kurangi jika stok sudah 0
+    if ((result.jumlah_obat || 0) <= 0) {
+      return {
+        success: false,
+        message: "Stock obat sudah 0. Tidak bisa dikurangi lagi.",
+        id_jadwal,
+        currentStock: result.jumlah_obat || 0,
+      };
+    }
+    stockObat = Math.max(0, (result.jumlah_obat || 0) - 1);
     status = "diminum";
   }
 
   if (own == "web") {
-    stockObat = newStock;
+    // Pastikan tidak pernah kurang dari 0
+    const parsed = Number(newStock);
+    stockObat = isNaN(parsed) ? result.jumlah_obat || 0 : Math.max(0, parsed);
     status =
       newStock > result.jumlah_obat ? "stock ditambah" : "stock dikurangi";
   }
@@ -279,6 +290,14 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
       console.error("Refill handling failed:", e?.message || e);
     }
   }
+
+  return {
+    success: true,
+    id_jadwal,
+    previousStock: result.jumlah_obat || 0,
+    newStock: stockObat,
+    status,
+  };
 };
 
 // --- Helpers for stock state handling ---

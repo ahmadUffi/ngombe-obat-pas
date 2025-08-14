@@ -15,7 +15,8 @@ import cron from "node-cron";
 import { checkAllJadwalStockAndNotify } from "./services/stockCronService.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
-dotenv.config();
+// Load .env and override any existing env vars from the shell, so .env wins
+dotenv.config({ override: true });
 
 const app = express();
 app.use(cors());
@@ -44,6 +45,14 @@ const CRON_ENABLED =
   (process.env.CRON_ENABLED || "false").toLowerCase() === "true";
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 7,19 * * *"; // default 07:00 & 19:00
 
+console.log(
+  "CRON config:",
+  JSON.stringify({
+    CRON_ENABLED: process.env.CRON_ENABLED,
+    CRON_SCHEDULE: process.env.CRON_SCHEDULE,
+  })
+);
+
 if (CRON_ENABLED) {
   console.log("StockCron enabled with schedule:", CRON_SCHEDULE);
   cron.schedule(
@@ -58,4 +67,6 @@ if (CRON_ENABLED) {
     },
     { timezone: "Asia/Jakarta" }
   );
+} else {
+  console.log("StockCron disabled. Set CRON_ENABLED=true in .env to enable.");
 }
