@@ -1,7 +1,3 @@
-
-
-
-
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -15,6 +11,7 @@ const char* ssid = "@AhmadUffi";
 const char* password = "12345678";
 const char* loginURL = "http://163.53.195.57:5000/v1/api/login";
 const char* dataURL = "http://163.53.195.57:5000/v1/api/jadwal/get-for-iot";
+const char* updateStockURL = "http://163.53.195.57:5000/v1/api/jadwal/update-stock-obat-iot"; // NEW
 const char* email = "ahmaduffi45@gmail.com";
 const char* passwd = "123456789";
 
@@ -64,6 +61,90 @@ bool sudahSelesaiDicatat = false;
 String statusObat = "Menunggu...";
 int menitSebelumnya = -1;
 unsigned long waktuSelesai = 0;
+
+// --- Pending update queue (simple ring buffer) ---
+#define PENDING_MAX 20
+String pendingIds[PENDING_MAX];
+int pendingHead = 0, pendingTail = 0, pendingCount = 0;
+
+void enqueuePendingUpdate(const String &id) {
+  if (pendingCount >= PENDING_MAX) {
+    Serial.println("Pending queue full, dropping event");
+    return;
+  }
+  pendingIds[pendingTail] = id;
+  pendingTail = (pendingTail + 1) % PENDING_MAX;
+  pendingCount++;
+}
+
+bool dequeuePendingUpdate(String &out) {
+  if (pendingCount == 0) return false;
+  out = pendingIds[pendingHead];
+  pendingHead = (pendingHead + 1) % PENDING_MAX;
+  pendingCount--;
+  return true;
+}
+
+bool sendStockUpdate(const String &jadwalId) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("sendStockUpdate: WiFi not connected");
+    return false;
+  }
+  HTTPClient http;
+  http.begin(updateStockURL);
+  http.addHeader("Content-Type", "application/json");
+  if (accessToken.length() > 0) {
+    http.addHeader("Authorization", "Bearer " + accessToken);
+  }
+  StaticJsonDocument<128> body;
+  body["id_obat"] = jadwalId;
+  String payload;
+  serializeJson(body, payload);
+  http.setTimeout(10000);
+
+  Serial.print("Updating stock for jadwal id: ");
+  Serial.println(jadwalId);
+  int code = http.sendRequest("PUT", payload);
+
+  if (code == 401) {
+    // Try re-login once
+    Serial.println("401 on update. Re-login and retry...");
+    http.end();
+    loginToApi();
+    if (accessToken.length() == 0) return false;
+    HTTPClient http2;
+    http2.begin(updateStockURL);
+    http2.addHeader("Content-Type", "application/json");
+    http2.addHeader("Authorization", "Bearer " + accessToken);
+    int code2 = http2.sendRequest("PUT", payload);
+    String resp2 = http2.getString();
+    Serial.printf("Retry update code: %d, resp: %s\n", code2, resp2.c_str());
+    http2.end();
+    return code2 >= 200 && code2 < 300;
+  }
+
+  String resp = http.getString();
+  Serial.printf("Update code: %d, resp: %s\n", code, resp.c_str());
+  http.end();
+  return code >= 200 && code < 300;
+}
+
+void flushPendingUpdates() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (pendingCount == 0) return;
+  Serial.printf("Flushing %d pending updates...\n", pendingCount);
+  int tries = pendingCount; // limit to current size to avoid infinite loop
+  for (int i = 0; i < tries; i++) {
+    String id;
+    if (!dequeuePendingUpdate(id)) break;
+    if (!sendStockUpdate(id)) {
+      // push back if failed
+      enqueuePendingUpdate(id);
+      break; // stop early, network might be unstable
+    }
+    delay(100);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -410,6 +491,13 @@ void refreshDataIfNeeded() {
     checkWiFiConnection();
     lastWiFiCheck = currentTime;
   }
+
+  // Try flush pending updates every minute
+  static unsigned long lastFlush = 0;
+  if (currentTime - lastFlush > 60000) {
+    flushPendingUpdates();
+    lastFlush = currentTime;
+  }
   
   // Print debug info every 5 minutes
   if (currentTime - lastDebugPrint > 5 * 60 * 1000) {
@@ -439,35 +527,6 @@ void refreshDataIfNeeded() {
   }
 }
 
-// Function to print debug information about current schedules
-void printScheduleDebug() {
-  Serial.println("=== Current Schedule Debug Info ===");
-  Serial.printf("Total schedules loaded: %d\n", jumlahJadwal);
-  
-  DateTime now = rtc.now();
-  int currentMinutes = now.hour() * 60 + now.minute();
-  
-  for (int i = 0; i < jumlahJadwal; i++) {
-    JadwalObat& sched = daftarJadwal[i];
-    int startMinutes = sched.startJam * 60 + sched.startMenit;
-    int endMinutes = sched.endJam * 60 + sched.endMenit;
-    
-    Serial.printf("Schedule %d: %s\n", i, sched.namaObat.c_str());
-    Serial.printf("  Time: %02d:%02d - %02d:%02d (Slot %c)\n", 
-                 sched.startJam, sched.startMenit, sched.endJam, sched.endMenit, sched.slotObat);
-    Serial.printf("  Status: Processed=%s, Diminum=%s\n", 
-                 jadwalSudahDiproses[i] ? "Yes" : "No", sched.sudahDiminum ? "Yes" : "No");
-    Serial.printf("  Remaining: %d, Dose: %d\n", sched.tersisaObat, sched.dosisObat);
-    
-    if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
-      Serial.printf("  >>> ACTIVE NOW <<<\n");
-    }
-    Serial.println();
-  }
-  Serial.println("================================");
-}
-
-// Function to handle network reconnection
 void checkWiFiConnection() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected, attempting to reconnect...");
@@ -483,6 +542,7 @@ void checkWiFiConnection() {
     
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println("WiFi reconnected successfully");
+      flushPendingUpdates();
     } else {
       Serial.println("WiFi reconnection failed");
     }
@@ -559,56 +619,72 @@ void loop() {
   if (statusSistem == AKTIF && jadwalAktif != -1) {
     JadwalObat& currentSchedule = daftarJadwal[jadwalAktif];
     
-    // Check if still within time window
-    if (waktuDalamRentang(sekarang,
-                          currentSchedule.startJam,
-                          currentSchedule.startMenit,
-                          currentSchedule.endJam,
-                          currentSchedule.endMenit)) {
-
-      int slotIndex = currentSchedule.slotObat - 'A';
-      
-      // Validate slot index
-      if (slotIndex >= 0 && slotIndex < jumlahSensor) {
-        nilaiSensor[slotIndex] = digitalRead(pinSensor[slotIndex]);
-        
-        // Check if slot was opened (sensor triggered)
-        if (nilaiSensor[slotIndex] == HIGH) {
-          slotSudahDibuka[slotIndex] = true;
-        }
-
-        if (slotSudahDibuka[slotIndex]) {
-          statusObat = "Obat berhasil diminum!";
-          statusSistem = SELESAI;
-          waktuSelesai = sekarangMillis;
-          sudahSelesaiDicatat = true;
-          jadwalSudahDiproses[jadwalAktif] = true;
-          currentSchedule.sudahDiminum = true;
-          
-          // Update remaining medication count
-          if (currentSchedule.tersisaObat > 0) {
-            currentSchedule.tersisaObat -= currentSchedule.dosisObat;
-          }
-          
-          Serial.printf("Obat %s berhasil diminum. Tersisa: %d\n", 
-                       currentSchedule.namaObat.c_str(), currentSchedule.tersisaObat);
-        } else {
-          statusObat = "Buka slot " + String(currentSchedule.slotObat);
-        }
-      } else {
-        Serial.printf("Invalid slot index: %d for slot %c\n", slotIndex, currentSchedule.slotObat);
-        statusObat = "Error: Slot tidak valid";
-      }
-
-    } else {
-      // Time window has passed
-      statusObat = "Waktu habis - obat terlewat!";
+    // If local stock shows zero, just show habis and skip
+    if (currentSchedule.tersisaObat <= 0) {
+      statusObat = "Stok habis - lewati";
       statusSistem = SELESAI;
       waktuSelesai = sekarangMillis;
       sudahSelesaiDicatat = true;
       jadwalSudahDiproses[jadwalAktif] = true;
-      
-      Serial.printf("Jadwal %s terlewat waktu\n", currentSchedule.namaObat.c_str());
+    } else {
+      // Check if still within time window
+      if (waktuDalamRentang(sekarang,
+                            currentSchedule.startJam,
+                            currentSchedule.startMenit,
+                            currentSchedule.endJam,
+                            currentSchedule.endMenit)) {
+
+        int slotIndex = currentSchedule.slotObat - 'A';
+        
+        // Validate slot index
+        if (slotIndex >= 0 && slotIndex < jumlahSensor) {
+          nilaiSensor[slotIndex] = digitalRead(pinSensor[slotIndex]);
+          
+          // Check if slot was opened (sensor triggered)
+          if (nilaiSensor[slotIndex] == HIGH) {
+            slotSudahDibuka[slotIndex] = true;
+          }
+
+          if (slotSudahDibuka[slotIndex]) {
+            statusObat = "Obat berhasil diminum!";
+            statusSistem = SELESAI;
+            waktuSelesai = sekarangMillis;
+            sudahSelesaiDicatat = true;
+            jadwalSudahDiproses[jadwalAktif] = true;
+            currentSchedule.sudahDiminum = true;
+            
+            // Try to update backend stock
+            bool updated = sendStockUpdate(currentSchedule.id);
+            if (!updated) {
+              enqueuePendingUpdate(currentSchedule.id);
+            }
+            
+            // Update remaining medication count locally (best effort)
+            if (currentSchedule.tersisaObat > 0) {
+              currentSchedule.tersisaObat -= currentSchedule.dosisObat;
+              if (currentSchedule.tersisaObat < 0) currentSchedule.tersisaObat = 0;
+            }
+            
+            Serial.printf("Obat %s diminum. Update backend: %s. Tersisa: %d\n", 
+                         currentSchedule.namaObat.c_str(), updated ? "OK" : "PENDING", currentSchedule.tersisaObat);
+          } else {
+            statusObat = "Buka slot " + String(currentSchedule.slotObat);
+          }
+        } else {
+          Serial.printf("Invalid slot index: %d for slot %c\n", slotIndex, currentSchedule.slotObat);
+          statusObat = "Error: Slot tidak valid";
+        }
+
+      } else {
+        // Time window has passed
+        statusObat = "Waktu habis - obat terlewat!";
+        statusSistem = SELESAI;
+        waktuSelesai = sekarangMillis;
+        sudahSelesaiDicatat = true;
+        jadwalSudahDiproses[jadwalAktif] = true;
+        
+        Serial.printf("Jadwal %s terlewat waktu\n", currentSchedule.namaObat.c_str());
+      }
     }
   }
 
