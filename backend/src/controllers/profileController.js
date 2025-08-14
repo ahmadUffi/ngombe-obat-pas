@@ -63,7 +63,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
     // If image is provided, upload to Supabase Storage and set img_profile
     if (req.file) {
-      const bucket = process.env.SUPABASE_STORAGE_BUCKET || "avatars";
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET;
       const fileExt = req.file.originalname.split(".").pop();
       const filePath = `profiles/${userId}/${Date.now()}.${fileExt}`;
       const { error: upErr } = await supabase.storage

@@ -111,7 +111,6 @@ const Profile = () => {
         no_hp: formData.no_hp || null,
         image: formData.image || null,
       };
-
       const response = await apiService.updateProfile(updateData);
       if (response.success) {
         toast.success("Profile berhasil diperbarui!");
@@ -156,9 +155,6 @@ const Profile = () => {
                 <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
                   {editMode ? "Edit Profil" : "Profil"}
                 </h2>
-                <p className="text-xs text-gray-100/90 -mt-5 pb-2 hidden">
-                  header spacer
-                </p>
                 <p className="text-sm text-gray-500">{user?.email || ""}</p>
               </div>
             </div>
@@ -172,8 +168,8 @@ const Profile = () => {
                   {/* Username */}
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Username</div>
-                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
+                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3 min-w-0 overflow-hidden">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4"
@@ -187,14 +183,16 @@ const Profile = () => {
                           />
                         </svg>
                       </span>
-                      <span>{user?.username || "-"}</span>
+                      <span className="truncate max-w-full">
+                        {user?.username || "-"}
+                      </span>
                     </div>
                   </div>
                   {/* Email */}
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Email</div>
-                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
+                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3 min-w-0 overflow-hidden">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4"
@@ -205,7 +203,9 @@ const Profile = () => {
                           <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                         </svg>
                       </span>
-                      <span>{user?.email || "-"}</span>
+                      <span className="truncate max-w-full">
+                        {user?.email || "-"}
+                      </span>
                     </div>
                   </div>
                   {/* Nomor HP */}
@@ -213,8 +213,8 @@ const Profile = () => {
                     <div className="text-xs text-gray-500 mb-1">
                       Nomor HP (WhatsApp)
                     </div>
-                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
+                    <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 flex items-center gap-3 min-w-0 overflow-hidden">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4"
@@ -224,7 +224,9 @@ const Profile = () => {
                           <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                         </svg>
                       </span>
-                      <span>{user?.no_hp || "-"}</span>
+                      <span className="truncate max-w-full">
+                        {user?.no_hp || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
