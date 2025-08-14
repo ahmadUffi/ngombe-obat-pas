@@ -625,17 +625,25 @@ export class apiService {
     try {
       const authToken = token || this.getToken();
       console.log("updateProfile API call with:", {
-        profileData,
+        hasImage: !!profileData?.image,
         authToken,
       });
 
+      // Build FormData to support optional image upload
+      const form = new FormData();
+      if (profileData?.username !== undefined)
+        form.append("username", profileData.username);
+      if (profileData?.no_hp !== undefined && profileData.no_hp !== null)
+        form.append("no_hp", profileData.no_hp);
+      if (profileData?.image) form.append("image", profileData.image);
+
       const response = await axios.put(
         `${BASE_URL}/v1/api/profile/update`,
-        profileData,
+        form,
         {
           headers: {
             Authorization: authToken ? `Bearer ${authToken}` : "",
-            "Content-Type": "application/json",
+            // Do NOT set Content-Type manually; let the browser set the multipart boundary
           },
         }
       );

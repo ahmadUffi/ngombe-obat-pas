@@ -61,6 +61,31 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
     const oldPhone = current.no_hp || null;
 
+    // If image is provided, upload to Supabase Storage and set img_profile
+    if (req.file) {
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET || "avatars";
+      const fileExt = req.file.originalname.split(".").pop();
+      const filePath = `profiles/${userId}/${Date.now()}.${fileExt}`;
+      const { error: upErr } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true,
+        });
+      if (upErr) {
+        console.error("Upload image failed:", upErr.message);
+        return res
+          .status(500)
+          .json({ success: false, message: "Gagal upload gambar" });
+      }
+      const { data: pub } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      if (pub?.publicUrl) {
+        updateData.img_profile = pub.publicUrl;
+      }
+    }
+
     // Update the profile
     const { data, error } = await supabase
       .from("profile")
@@ -125,6 +150,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
         user_id: data.user_id,
         username: data.username,
         no_hp: data.no_hp,
+        img_profile: data.img_profile,
         updated_at: data.updated_at,
         recreate_summary: recreateSummary,
       },
