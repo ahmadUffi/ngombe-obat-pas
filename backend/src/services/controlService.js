@@ -337,3 +337,114 @@ export const deleteControl = async (id, user_id) => {
     throw error;
   }
 };
+
+/**
+ * Recreate WhatsApp schedules for all ACTIVE controls of the user with the new phone
+ * - Delete existing Wablas schedules for these controls
+ * - Create new schedules targeting the new phone
+ */
+export const recreateActiveControlSchedulesForUser = async (
+  user_id,
+  newPhone
+) => {
+  const phone = formatPhoneNumber(newPhone);
+  if (!phone) throw new Error("Format nomor HP tidak valid");
+
+  // 1) Fetch active controls (not done)
+  const { data: controls, error } = await supabase
+    .from("kontrol")
+    .select("id, tanggal, waktu, dokter, nama_pasien")
+    .eq("user_id", user_id)
+    .eq("isDone", false);
+
+  if (error) throw new Error("Gagal mengambil data kontrol: " + error.message);
+
+  let totalDeleted = 0;
+  let totalCreated = 0;
+
+  for (const kontrol of controls || []) {
+    try {
+      // 2) Get previous reminder records for this control
+      const { data: reminders } = await supabase
+        .from("kontrol_wa_reminders")
+        .select("id, wablas_schedule_ids")
+        .eq("kontrol_id", kontrol.id)
+        .eq("is_active", true);
+
+      // 3) Delete Wablas schedules and deactivate DB records
+      for (const reminder of reminders || []) {
+        if (Array.isArray(reminder.wablas_schedule_ids)) {
+          const results = await deleteMultipleWablasSchedules(
+            reminder.wablas_schedule_ids
+          );
+          results.forEach((r) => {
+            if (r.success) totalDeleted += 1;
+          });
+        }
+      }
+
+      if ((reminders || []).length > 0) {
+        await supabase
+          .from("kontrol_wa_reminders")
+          .update({ is_active: false })
+          .eq("kontrol_id", kontrol.id);
+      }
+
+      // 4) Recreate fresh schedules for this control using helper
+      const { scheduleIds } = await createControlReminders(
+        kontrol.id,
+        user_id,
+        {
+          tanggal: kontrol.tanggal,
+          waktu: kontrol.waktu,
+          dokter: kontrol.dokter,
+          nama_pasien: kontrol.nama_pasien,
+        },
+        phone
+      );
+      totalCreated += scheduleIds.length;
+    } catch (err) {
+      console.error(
+        "Gagal recreate WA schedules untuk kontrol:",
+        kontrol?.id,
+        err?.message
+      );
+      // continue with next control
+    }
+  }
+
+  return { totalDeleted, totalCreated, totalKontrol: controls?.length || 0 };
+};
+
+/**
+ * Get kontrol details by ID
+ * @param {string} kontrol_id - Kontrol ID
+ * @returns {Object|null} Kontrol details or null if not found
+ */
+export const getKontrolById = async (kontrol_id) => {
+  try {
+    const { data, error } = await supabase
+      .from("kontrol")
+      .select(
+        `
+        *,
+        profile:user_id (
+          username,
+          no_hp
+        )
+      `
+      )
+      .eq("id", kontrol_id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching kontrol details:", error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getKontrolById:", error);
+    return null;
+  }
+};

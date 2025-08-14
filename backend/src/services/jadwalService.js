@@ -349,3 +349,107 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
     throw new Error(`Gagal menghapus jadwal dan notifikasi: ${error.message}`);
   }
 };
+
+// Recreate all WA reminders for all jadwal of a user with a new phone number
+export const recreateAllWaRemindersForUser = async (user_id, newPhone) => {
+  // Validate and format new phone using existing helper
+  const formattedPhone = formatPhoneNumber(newPhone);
+  if (!formattedPhone) {
+    throw new Error("Format nomor HP tidak valid untuk regenerasi reminder");
+  }
+
+  // 1) Fetch all jadwal for this user (we need nama_obat, jam_awal, etc.)
+  const { data: jadwalList, error: jadwalError } = await supabase
+    .from("jadwal")
+    .select(
+      "id, user_id, profile_id, nama_obat, dosis_obat, jumlah_obat, nama_pasien, jam_awal, jam_berakhir, catatan, kategori, slot_obat"
+    )
+    .eq("user_id", user_id);
+
+  if (jadwalError) {
+    throw new Error("Gagal mengambil data jadwal: " + jadwalError.message);
+  }
+
+  let totalDeleted = 0;
+  let totalCreated = 0;
+
+  // 2) For each jadwal: delete existing Wablas reminders, then recreate with the new phone
+  for (const jadwal of jadwalList || []) {
+    try {
+      // Get any existing reminder records for this jadwal
+      const waReminders = await getWaRemindersByJadwal(jadwal.id);
+
+      // Delete existing reminders in Wablas
+      for (const reminderRecord of waReminders) {
+        const { wablas_reminder_ids } = reminderRecord;
+        if (Array.isArray(wablas_reminder_ids)) {
+          for (const reminderId of wablas_reminder_ids) {
+            try {
+              const result = await deleteWablasReminder(reminderId);
+              if (result?.success) totalDeleted += 1;
+            } catch (e) {
+              // Continue deleting other reminders even if one fails
+              console.warn(
+                "Gagal menghapus Wablas reminder:",
+                reminderId,
+                e?.message
+              );
+            }
+          }
+        }
+      }
+
+      // Remove reminder records for this jadwal in our DB
+      if (waReminders.length > 0) {
+        await deleteWaRemindersByJadwal(jadwal.id);
+      }
+
+      // Recreate reminders if jadwal has jam_awal array
+      if (Array.isArray(jadwal.jam_awal) && jadwal.jam_awal.length > 0) {
+        const jamReminders = [];
+        const reminderIds = [];
+
+        for (const jam of jadwal.jam_awal) {
+          try {
+            const message = generateReminderMessage(jadwal, jam);
+            const startDate = formatStartDate(jam);
+            const wablasResponse = await createWablasReminder({
+              phone: formattedPhone,
+              start_date: startDate,
+              message,
+              title: `Reminder ${jadwal.nama_obat} - ${jam}`,
+            });
+            jamReminders.push(jam);
+            reminderIds.push(wablasResponse.reminder_id);
+            totalCreated += 1;
+          } catch (e) {
+            console.error(
+              "Gagal membuat ulang Wablas reminder untuk jadwal:",
+              jadwal.id,
+              e?.message
+            );
+          }
+        }
+
+        // Save new reminder record for this jadwal
+        if (reminderIds.length > 0) {
+          await createWaReminder({
+            jadwal_id: jadwal.id,
+            user_id,
+            jam_reminders: jamReminders,
+            wablas_reminder_ids: reminderIds,
+          });
+        }
+      }
+    } catch (err) {
+      console.error(
+        "Gagal recreate WA reminders untuk jadwal:",
+        jadwal.id,
+        err?.message
+      );
+      // Continue other jadwal
+    }
+  }
+
+  return { totalDeleted, totalCreated, totalJadwal: jadwalList?.length || 0 };
+};

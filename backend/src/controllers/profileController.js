@@ -1,5 +1,7 @@
 import { supabase } from "../config/supabaseClient.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
+import { recreateAllWaRemindersForUser } from "../services/jadwalService.js";
+import { recreateActiveControlSchedulesForUser } from "../services/controlService.js";
 
 /**
  * Update user's profile (username and phone)
@@ -42,6 +44,21 @@ export const updateProfile = asyncHandler(async (req, res) => {
       updateData.no_hp = formatPhoneNumber(no_hp);
     }
 
+    // Get current profile first to detect phone changes
+    const { data: current, error: currentErr } = await supabase
+      .from("profile")
+      .select("id, user_id, no_hp")
+      .eq("user_id", userId)
+      .single();
+
+    if (currentErr || !current) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Profile tidak ditemukan" });
+    }
+
+    const oldPhone = current.no_hp || null;
+
     // Update the profile
     const { data, error } = await supabase
       .from("profile")
@@ -70,6 +87,33 @@ export const updateProfile = asyncHandler(async (req, res) => {
       });
     }
 
+    // If phone changed, recreate all Wablas reminders
+    let recreateSummary = null;
+    const phoneChanged = !!updateData.no_hp && updateData.no_hp !== oldPhone;
+    if (phoneChanged) {
+      try {
+        // 1) Recreate jadwal reminders (delete all then create new)
+        const jadwalResult = await recreateAllWaRemindersForUser(
+          userId,
+          updateData.no_hp
+        );
+
+        // 2) Recreate kontrol schedules for ACTIVE controls only
+        const kontrolResult = await recreateActiveControlSchedulesForUser(
+          userId,
+          updateData.no_hp
+        );
+
+        recreateSummary = { jadwal: jadwalResult, kontrol: kontrolResult };
+      } catch (recreateErr) {
+        console.error(
+          "Gagal recreate Wablas reminders setelah update no_hp:",
+          recreateErr
+        );
+        // Continue; don't fail the profile update response
+      }
+    }
+
     // Return success
     return res.status(200).json({
       success: true,
@@ -80,6 +124,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
         username: data.username,
         no_hp: data.no_hp,
         updated_at: data.updated_at,
+        recreate_summary: recreateSummary,
       },
     });
   } catch (error) {
