@@ -46,12 +46,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkExistingAuth = async () => {
       const existingToken = apiService.getToken();
-      console.log(
-        "Checking existing auth, token:",
-        existingToken ? "exists" : "none",
-        "user:",
-        user ? "exists" : "none"
-      );
 
       if (existingToken && !user) {
         // If we have a token but no user data, we need to get the user email somehow
