@@ -1,773 +1,182 @@
-# API Documentation - Ngompas Backend
+# SmedBox Backend API Documentation
 
-## Base URL
+Base URL: http://163.53.195.57:5000
+All routes are prefixed with /v1/api
 
-```
-http://163.53.195.57:5000
-```
+Auth: Most routes require a Supabase JWT in the Authorization header.
 
-## Authentication
+- Authorization: Bearer <access_token>
+- Content-Type: application/json unless otherwise noted
 
-Most endpoints require authentication using Supabase JWT token. Include the token in the Authorization header:
+Note: Database timestamps created_at and updated_at are managed automatically by Supabase.
 
-```
-Authorization: Bearer <your_jwt_token>
-```
+## Auth
 
----
+POST /v1/api/login
 
-## 📋 **Authentication Endpoints**
+- Body: { email: string, password: string }
+- Response: { access_token: string, ... }
 
-### POST `/v1/api/login`
+Example (PowerShell):
 
-Login user dengan email dan password.
+# Login
 
-**Request Body:**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
+curl -Method Post -Uri "http://163.53.195.57:5000/v1/api/login" -ContentType 'application/json' -Body '{"email":"user@example.com","password":"secret"}'
 
-**Response Success (200):**
+## Forgot Password
 
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+POST /v1/api/forgot-password
 
-**Response Error (401):**
+- Body: { email: string }
+- Response: Always returns success message if format is valid; actual email delivery depends on registration status.
 
-```json
-{
-  "message": "Gagal login",
-  "error": "Invalid credentials"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/v1/api/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123"
-  }'
-```
-
----
-
-## 💊 **Jadwal (Schedule) Endpoints**
-
-### POST `/v1/api/jadwal/input`
-
-Membuat jadwal obat baru. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
+## Jadwal (Medication Schedules)
 
-```json
-{
-  "nama_pasien": "John Doe",
-  "nama_obat": "Paracetamol",
-  "dosis_obat": "500mg",
-  "jumlah_obat": 30,
-  "jam_awal": "08:00",
-  "jam_berakhir": "20:00",
-  "catatan": "Diminum setelah makan",
-  "kategori": "Analgesik",
-  "slot_obat": "1"
-}
-```
-
-**Response Success (201):**
-
-```json
-{
-  "message": "Jadwal berhasil dibuat"
-}
-```
-
-**Response Error (500):**
+POST /v1/api/jadwal/input (auth)
 
-```json
-{
-  "error": "Slot obat sudah terisi"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/v1/api/jadwal/input \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "nama_pasien": "John Doe",
-    "nama_obat": "Paracetamol",
-    "dosis_obat": "500mg",
-    "jumlah_obat": 30,
-    "jam_awal": "08:00",
-    "jam_berakhir": "20:00",
-    "catatan": "Diminum setelah makan",
-    "kategori": "Analgesik",
-    "slot_obat": "1"
-  }'
-```
-
-### GET `/v1/api/jadwal/get-for-web`
-
-Mendapatkan semua jadwal user untuk web interface. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Response Success (200):**
-
-```json
-[
-  {
-    "id": 1,
-    "user_id": "uuid-123",
-    "profile_id": 1,
-    "nama_pasien": "John Doe",
-    "nama_obat": "Paracetamol",
-    "dosis_obat": "500mg",
-    "jumlah_obat": 30,
-    "jam_awal": "08:00",
-    "jam_berakhir": "20:00",
-    "catatan": "Diminum setelah makan",
-    "kategori": "Analgesik",
-    "slot_obat": "1",
-    "created_at": "2025-01-27T10:00:00Z"
-  }
-]
-```
-
-**Example cURL:**
-
-```bash
-curl -X GET http://163.53.195.57:5000/v1/api/jadwal/get-for-web \
-  -H "Authorization: Bearer <your_jwt_token>"
-```
-
-### GET `/v1/api/jadwal/get-for-iot`
-
-Mendapatkan jadwal user untuk IoT device. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Response Success (200):**
-
-```json
-[
-  {
-    "id": 1,
-    "nama_obat": "Paracetamol",
-    "slot_obat": "1",
-    "jam_awal": "08:00",
-    "jam_berakhir": "20:00"
-  }
-]
-```
-
-**Example cURL:**
-
-```bash
-curl -X GET http://163.53.195.57:5000/v1/api/jadwal/get-for-iot \
-  -H "Authorization: Bearer <your_jwt_token>"
-```
-
-### PUT `/v1/api/jadwal/update-stock-obat-iot`
-
-Update stok obat dari IoT device. **No Authentication Required**
-
-**Request Body:**
-
-```json
-{
-  "id_obat": 1
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "Stock obat berhasil diupdate"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X PUT http://163.53.195.57:5000/v1/api/jadwal/update-stock-obat-iot \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id_obat": 1
-  }'
-```
-
-### PUT `/v1/api/jadwal/update-stock-obat-web`
-
-Update stok obat dari web interface. **No Authentication Required**
-
-**Request Body:**
-
-```json
-{
-  "id_obat": 1,
-  "newStock": 25
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "Stock obat berhasil diupdate"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X PUT http://163.53.195.57:5000/v1/api/jadwal/update-stock-obat-web \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id_obat": 1,
-    "newStock": 25
-  }'
-```
-
-### PUT `/v1/api/jadwal/delete`
-
-Menghapus jadwal berdasarkan ID. **No Authentication Required**
-
-**Request Body:**
-
-```json
-{
-  "jadwal_id": 1
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "Jadwal berhasil dihapus"
-}
-```
+- Create a new jadwal (medication schedule) for the authenticated user.
+- Body: see frontend forms; includes fields such as nama_obat, kategori, slot_obat (A-F), dosis_obat, jumlah_obat, jam_awal[], jam_berakhir[], catatan.
+- Response: { message: "Jadwal berhasil dibuat" }
 
-**Example cURL:**
+GET /v1/api/jadwal/get-for-web (auth)
 
-```bash
-curl -X PUT http://163.53.195.57:5000/v1/api/jadwal/delete \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jadwal_id": 1
-  }'
-```
+- Get all schedules for the authenticated user (web-oriented shape).
+- Response: JSON list of schedules.
 
----
+GET /v1/api/jadwal/get-for-iot (auth)
 
-## 📊 **History Endpoints**
+- Get schedules for IoT consumption (flattened per time window).
+- Response: { jadwalMinum: Array<...> } where each entry includes id, nama_pasien, nama_obat, dosis_obat, jumlah_obat, kategori, slot_obat, catatan, jam_awal[], jam_berakhir[].
 
-### POST `/v1/api/history/input-history`
+PUT /v1/api/jadwal/update-stock-obat-iot
 
-Menambahkan history baru. **Requires Authentication**
+- Decrement stock for a given jadwal (1 dose per call). Used by device when slot opened.
+- Body: { id_obat: string }
+- Response: includes new stock value and status messaging.
+- Note: This endpoint currently does not enforce JWT in code; the device may still send Authorization.
 
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "activity": "Obat diminum",
-  "timestamp": "2025-01-27T10:00:00Z",
-  "jadwal_id": 1
-}
-```
-
-**Response Success (201):**
-
-```json
-{
-  "message": "History berhasil ditambahkan"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/v1/api/history/input-history \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "activity": "Obat diminum",
-    "timestamp": "2025-01-27T10:00:00Z",
-    "jadwal_id": 1
-  }'
-```
-
-### GET `/v1/api/history/get-all-history`
-
-Mendapatkan semua history user. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Response Success (200):**
-
-```json
-[
-  {
-    "id": 1,
-    "user_id": "uuid-123",
-    "activity": "Obat diminum",
-    "timestamp": "2025-01-27T10:00:00Z",
-    "jadwal_id": 1,
-    "created_at": "2025-01-27T10:00:00Z"
-  }
-]
-```
-
-**Example cURL:**
-
-```bash
-curl -X GET http://163.53.195.57:5000/v1/api/history/get-all-history \
-  -H "Authorization: Bearer <your_jwt_token>"
-```
-
----
-
-## 🎛️ **Control Endpoints**
-
-All control endpoints require authentication. Control appointments now include automatic dual WhatsApp reminder system.
-
-### POST `/v1/api/kontrol/create-kontrol`
-
-Membuat kontrol baru dengan dual WhatsApp reminders otomatis. **Requires Authentication**
-
-**Features:**
-
-- Creates control appointment record
-- Automatically schedules 2 WhatsApp reminders:
-  1. **24 hours before** at same time as appointment
-  2. **4 hours before** the appointment time
-- Stores array of Wablas schedule IDs for tracking
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "jadwal_tanggal": "2025-01-28",
-  "jam_mulai": "10:00",
-  "rumah_sakit": "RS Example",
-  "dokter": "Dr. Example",
-  "catatan": "Kontrol rutin tekanan darah",
-  "phone": "628123456789"
-}
-```
-
-**Response Success (201):**
-
-```json
-{
-  "id": "uuid-123",
-  "user_id": "uuid-456",
-  "jadwal_tanggal": "2025-01-28",
-  "jam_mulai": "10:00",
-  "rumah_sakit": "RS Example",
-  "dokter": "Dr. Example",
-  "catatan": "Kontrol rutin tekanan darah",
-  "wablas_schedule_ids": ["wbl_001", "wbl_002"],
-  "isDone": false,
-  "created_at": "2025-01-27T10:00:00Z",
-  "message": "Kontrol berhasil dibuat dengan 2 pengingat WhatsApp"
-}
-```
-
-**WhatsApp Reminder Schedule:**
-
-- **Reminder 1:** 2025-01-27 10:00 (24 hours before)
-- **Reminder 2:** 2025-01-28 06:00 (4 hours before)
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/v1/api/kontrol/create-kontrol \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "jadwal_tanggal": "2025-01-28",
-    "jam_mulai": "10:00",
-    "rumah_sakit": "RS Example",
-    "dokter": "Dr. Example",
-    "catatan": "Kontrol rutin tekanan darah",
-    "phone": "628123456789"
-  }'
-```
-
-### GET `/v1/api/kontrol/get-all-kontrol`
-
-Mendapatkan semua kontrol user dengan informasi schedule reminder. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Response Success (200):**
-
-```json
-[
-  {
-    "id": "uuid-123",
-    "user_id": "uuid-456",
-    "jadwal_tanggal": "2025-01-28",
-    "jam_mulai": "10:00",
-    "rumah_sakit": "RS Example",
-    "dokter": "Dr. Example",
-    "catatan": "Kontrol rutin tekanan darah",
-    "wablas_schedule_ids": ["wbl_001", "wbl_002"],
-    "isDone": false,
-    "created_at": "2025-01-27T10:00:00Z"
-  }
-]
-```
-
-**Response Fields:**
-
-- `wablas_schedule_ids`: Array of Wablas schedule IDs (2 reminders per control)
-- `null` if no WhatsApp reminders were created
-
-**Example cURL:**
-
-```bash
-curl -X GET http://163.53.195.57:5000/v1/api/kontrol/get-all-kontrol \
-  -H "Authorization: Bearer <your_jwt_token>"
-```
-
-### PATCH `/v1/api/kontrol/done`
-
-Menandai kontrol sebagai selesai. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "id": 1
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "Kontrol berhasil ditandai selesai"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X PATCH http://163.53.195.57:5000/v1/api/kontrol/done \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "id": 1
-  }'
-```
-
-### PUT `/v1/api/kontrol/edit/:id`
-
-Mengedit kontrol berdasarkan ID. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "title": "Kontrol Tekanan Darah Updated",
-  "description": "Cek tekanan darah rutin - updated",
-  "scheduled_date": "2025-01-29",
-  "type": "medical_checkup"
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "Kontrol berhasil diupdate"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X PUT http://163.53.195.57:5000/v1/api/kontrol/edit/1 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "title": "Kontrol Tekanan Darah Updated",
-    "description": "Cek tekanan darah rutin - updated",
-    "scheduled_date": "2025-01-29",
-    "type": "medical_checkup"
-  }'
-```
-
----
-
-## 📱 **WhatsApp Schedule Endpoints**
-
-Manual schedule management for control reminders.
-
-### POST `/api/schedule/control-reminder`
-
-Membuat manual WhatsApp schedule reminder untuk kontrol. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "user_id": "uuid-456",
-  "jadwal_tanggal": "2025-01-28",
-  "jam_mulai": "10:00",
-  "phone": "628123456789",
-  "rumah_sakit": "RS Example",
-  "dokter": "Dr. Example",
-  "catatan": "Kontrol rutin"
-}
-```
-
-**Response Success (200):**
-
-```json
-{
-  "message": "WhatsApp schedule reminders created successfully",
-  "schedules": [
-    {
-      "id": "wbl_001",
-      "type": "1_day_before",
-      "scheduledFor": "2025-01-27T10:00:00.000Z",
-      "message": "🏥 *Pengingat Jadwal Kontrol*\n\nHalo! Ini pengingat untuk jadwal kontrol Anda besok..."
-    },
-    {
-      "id": "wbl_002",
-      "type": "4_hours_before",
-      "scheduledFor": "2025-01-28T06:00:00.000Z",
-      "message": "🏥 *Pengingat Jadwal Kontrol*\n\nHalo! Ini pengingat untuk jadwal kontrol Anda..."
-    }
-  ],
-  "reminder_times": [
-    {
-      "date": "2025-01-27",
-      "time": "10:00",
-      "type": "1_day_before"
-    },
-    {
-      "date": "2025-01-28",
-      "time": "06:00",
-      "type": "4_hours_before"
-    }
-  ]
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/api/schedule/control-reminder \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "user_id": "uuid-456",
-    "jadwal_tanggal": "2025-01-28",
-    "jam_mulai": "10:00",
-    "phone": "628123456789",
-    "rumah_sakit": "RS Example",
-    "dokter": "Dr. Example",
-    "catatan": "Kontrol rutin"
-  }'
-```
-
----
-
-## ⚠️ **Peringatan (Warning) Endpoints**
-
-All peringatan endpoints require authentication.
-
-### POST `/v1/api/peringatan/create-peringatan`
-
-Membuat peringatan baru. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-
-```json
-{
-  "title": "Stok Obat Habis",
-  "message": "Stok Paracetamol hampir habis",
-  "type": "stock_warning",
-  "priority": "high"
-}
-```
-
-**Response Success (201):**
-
-```json
-{
-  "message": "Peringatan berhasil dibuat"
-}
-```
-
-**Example cURL:**
-
-```bash
-curl -X POST http://163.53.195.57:5000/v1/api/peringatan/create-peringatan \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{
-    "title": "Stok Obat Habis",
-    "message": "Stok Paracetamol hampir habis",
-    "type": "stock_warning",
-    "priority": "high"
-  }'
-```
-
-### GET `/v1/api/peringatan/get-all-peringatan`
-
-Mendapatkan semua peringatan user. **Requires Authentication**
-
-**Headers:**
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Response Success (200):**
-
-```json
-[
-  {
-    "id": 1,
-    "user_id": "uuid-123",
-    "title": "Stok Obat Habis",
-    "message": "Stok Paracetamol hampir habis",
-    "type": "stock_warning",
-    "priority": "high",
-    "is_read": false,
-    "created_at": "2025-01-27T10:00:00Z"
-  }
-]
-```
-
-**Example cURL:**
-
-```bash
-curl -X GET http://163.53.195.57:5000/v1/api/peringatan/get-all-peringatan \
-  -H "Authorization: Bearer <your_jwt_token>"
-```
-
----
-
-## 🔒 **Authentication Flow**
-
-1. **Login**: POST ke `/v1/api/login` dengan email dan password
-2. **Dapatkan Token**: Ambil `access_token` dari response
-3. **Gunakan Token**: Sertakan token di header `Authorization: Bearer <token>` untuk endpoint yang memerlukan autentikasi
-
-## 📝 **Error Handling**
-
-Semua endpoint menggunakan HTTP status codes standar:
-
-- **200**: OK - Request berhasil
-- **201**: Created - Resource berhasil dibuat
-- **400**: Bad Request - Request tidak valid
-- **401**: Unauthorized - Token tidak valid atau tidak ada
-- **404**: Not Found - Resource tidak ditemukan
-- **500**: Internal Server Error - Error server
-
-Format error response:
-
-```json
-{
-  "error": "Error message description",
-  "message": "User-friendly error message"
-}
-```
-
-## 🚀 **Development Notes**
-
-- Server berjalan di port 5000
-- Menggunakan Supabase untuk database dan authentication
-- CORS enabled untuk semua origins
-- Request body harus dalam format JSON dengan header `Content-Type: application/json`
-
-## 📱 **Postman Collection**
-
-Untuk memudahkan testing, import collection berikut ke Postman:
-
-**Base URL Variable**: `http://163.53.195.57:5000`
-
-**Environment Variables:**
-
-- `base_url`: `http://163.53.195.57:5000`
-- `jwt_token`: `<your_jwt_token_here>`
-
-Setelah login, set variable `jwt_token` dengan access_token yang didapat dari response login.
+PUT /v1/api/jadwal/update-stock-obat-web
+
+- Update stock to an explicit value (web UI).
+- Body: { id_obat: string, newStock: number }
+
+DELETE /v1/api/jadwal/delete/:jadwal_id (auth)
+
+- Delete a jadwal owned by the authenticated user.
+
+## History
+
+POST /v1/api/history/input-history (auth)
+
+- Insert a history entry for a jadwal.
+- Body: { id: string, status: string }
+  - Examples: "stock habis", "stock menipis", "stock diisi ulang", "obat diminum", "obat terlewat".
+- Response: { success: true, message: "History berhasil dibuat" }
+
+GET /v1/api/history/get-all-history (auth)
+
+- List all history rows for the authenticated user.
+
+## Peringatan (Warnings)
+
+POST /v1/api/peringatan/create-peringatan (auth)
+
+- Create a warning entry for the authenticated user.
+- Body: { id: string, pesan: string }
+  - id is the jadwal id.
+  - pesan is a short message. Suggested default for slot opens: "peringatan pasien mencoba membuka obat ${nama_obat} pada slot${slot_obat}" (device may construct the message; DB will store it).
+- Response: { success: true, message: "Peringatan berhasil dibuat", data }
+
+GET /v1/api/peringatan/get-all-peringatan (auth)
+
+- Get all peringatan for the authenticated user.
+
+## Profile
+
+PUT /v1/api/profile/update (auth, multipart/form-data)
+
+- Update profile fields and optional profile image.
+- Form fields:
+  - username: string (optional)
+  - no_hp: string (optional)
+  - image: file (optional, field name: image, max 5MB)
+- Behavior:
+  - Phone number changes trigger recreation of jadwal WhatsApp reminders and active control schedules.
+- Responses:
+  - 200 on success; 400 if image too large or invalid.
+
+GET /v1/api/profile/me (auth)
+
+- Returns the authenticated user's profile.
+- Response: { success: true, data: { id, user_id, username, email, no_hp } }
+
+## Control (Kontrol)
+
+All routes require auth.
+
+POST /v1/api/kontrol/create-kontrol
+GET /v1/api/kontrol/get-all-kontrol
+PATCH /v1/api/kontrol/done
+PUT /v1/api/kontrol/edit/:id
+DELETE /v1/api/kontrol/delete/:id
+
+## Notes
+
+All routes require auth.
+
+GET /v1/api/notes
+
+- Optional query: ?category=kontrol|pengingat|lainnya|obat|dokter
+  GET /v1/api/notes/search
+- Query: ?q=search_text
+  GET /v1/api/notes/stats
+  GET /v1/api/notes/:noteId
+  POST /v1/api/notes
+- Body: { category, message }
+  PUT /v1/api/notes/:noteId
+  DELETE /v1/api/notes/:noteId
+
+## Messages (WhatsApp)
+
+POST /v1/api/message/send (auth)
+
+- Body: { phone: string, message: string, type?: 'text' }
+- Normalizes Indonesian phone numbers to 62 format; returns sent status.
+
+POST /v1/api/message/send-bulk (auth)
+
+- Body: { recipients: Array<string|{phone,message}>, message: string, type?: 'text' }
+
+Development-only (no auth):
+
+- POST /v1/api/message/test/send
+- POST /v1/api/message/test/send-bulk
+
+## Admin
+
+POST /v1/api/admin/cron/stock-check (auth + admin)
+
+- Triggers the stock check cron logic once immediately.
+- Response: { success: true, result: { total, lowCount, emptyCount } }
+
+## Common error shapes
+
+- 400 Bad Request: { success: false, message: string, ... }
+- 401 Unauthorized: missing/invalid token.
+- 403 Forbidden: not admin (for admin endpoints).
+- 500 Internal Server Error: { error: string } or { success: false, message: string }
+
+## IoT quick flow
+
+1. Login to obtain token
+2. GET /v1/api/jadwal/get-for-iot with Bearer token
+3. When user opens the correct slot inside the time window:
+   - PUT /v1/api/jadwal/update-stock-obat-iot { id_obat }
+   - Optional: POST /v1/api/history/input-history { id: id_obat, status: "obat diminum" }
+   - Optional: POST /v1/api/peringatan/create-peringatan { id: id_obat, pesan: "peringatan pasien mencoba membuka obat ..." }
+4. Refresh schedule data periodically or after updates.
+
+## Notes on behavior
+
+- Stock cron (if enabled via env) will send WhatsApp alerts for low stock and out-of-stock on each run and write history rows. Out-of-stock pauses/removes WhatsApp reminders; refills recreate them.
+- Phone number changes (profile update) will rebuild relevant WhatsApp reminders/schedules automatically.

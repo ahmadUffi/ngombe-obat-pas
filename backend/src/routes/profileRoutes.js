@@ -1,5 +1,8 @@
 import express from "express";
-import { updateProfile } from "../controllers/profileController.js";
+import {
+  updateProfile,
+  getMyProfile,
+} from "../controllers/profileController.js";
 import { upload } from "../middleware/upload.js";
 import { verifySupabaseUser } from "../middleware/verifySupabaseJWT.js";
 
@@ -28,5 +31,8 @@ router.put(
   },
   updateProfile
 );
+
+// GET /v1/api/profile/me - Get authenticated user's profile
+router.get("/me", verifySupabaseUser, getMyProfile);
 
 export default router;

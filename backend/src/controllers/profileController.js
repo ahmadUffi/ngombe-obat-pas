@@ -4,6 +4,27 @@ import { recreateAllWaRemindersForUser } from "../services/jadwalService.js";
 import { recreateActiveControlSchedulesForUser } from "../services/controlService.js";
 
 /**
+ * Get authenticated user's profile
+ */
+export const getMyProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const { data, error } = await supabase
+    .from("profile")
+    .select("id, user_id, username, email, no_hp")
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Profile tidak ditemukan" });
+  }
+
+  return res.status(200).json({ success: true, data });
+});
+
+/**
  * Update user's profile (username and phone)
  */
 export const updateProfile = asyncHandler(async (req, res) => {
