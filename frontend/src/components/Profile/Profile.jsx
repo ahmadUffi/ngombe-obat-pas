@@ -59,6 +59,17 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleBack = () => {
+    try {
+      const canGoBack =
+        (window.history?.state?.idx ?? 0) > 0 || window.history.length > 1;
+      if (canGoBack) navigate(-1);
+      else navigate("/dashboard", { replace: true });
+    } catch {
+      navigate("/dashboard", { replace: true });
+    }
+  };
+
   const startEdit = () => {
     setFormData({
       username: user?.username || "",
@@ -234,7 +245,7 @@ const Profile = () => {
                 <div className="pt-1 flex items-center justify-between">
                   <button
                     type="button"
-                    onClick={() => navigate(-1)}
+                    onClick={handleBack}
                     className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-2"
                   >
                     <svg
