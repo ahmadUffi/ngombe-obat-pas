@@ -115,12 +115,10 @@ const Dashboard = () => {
               const medicationTime = new Date(`${today}T${time}`);
               return !isNaN(medicationTime.getTime()) && medicationTime >= now;
             } catch (timeErr) {
-              console.warn("Invalid time format:", time);
               return false;
             }
           });
         } catch (itemErr) {
-          console.warn("Error processing medication item:", itemErr);
           return false;
         }
       }).length;
@@ -131,42 +129,24 @@ const Dashboard = () => {
         try {
           return item.tanggal >= today && !item.isDone;
         } catch (err) {
-          console.warn("Error processing control item:", err);
           return false;
         }
       }).length;
 
       // Completed today
-      console.log("Processing completedToday calculation...");
-      console.log("Today date:", today);
-      console.log("Total history items:", historyData.length);
 
       const completedToday = historyData.filter((item, index) => {
         if (!item) {
-          console.warn(`History item ${index} is null/undefined`);
           return false;
         }
 
         try {
-          console.log(`Processing history item ${index}:`, {
-            id: item.id,
-            created_at: item.created_at,
-            status: item.status,
-            type: typeof item.created_at,
-          });
-
           // Check if created_at exists and is a string
           if (!item.created_at) {
-            console.warn(`History item ${index} has no created_at field`);
             return false;
           }
 
           if (typeof item.created_at !== "string") {
-            console.warn(
-              `History item ${index} created_at is not a string:`,
-              typeof item.created_at,
-              item.created_at
-            );
             return false;
           }
 
@@ -174,19 +154,11 @@ const Dashboard = () => {
           const isCompleted =
             item.status === "diminum" || item.status === "diambil";
 
-          console.log(
-            `Item ${index}: isToday=${isToday}, isCompleted=${isCompleted}`
-          );
-
           return isToday && isCompleted;
         } catch (err) {
-          console.error(`Error processing history item ${index}:`, err);
-          console.error("Item data:", item);
           return false;
         }
       }).length;
-
-      console.log("Final completedToday count:", completedToday);
 
       // Stock alert: obat hampir habis (1-5 pills)
       const stockAlert = jadwalData.filter((item) => {
@@ -194,7 +166,6 @@ const Dashboard = () => {
         try {
           return item.jumlah_obat > 0 && item.jumlah_obat < 6;
         } catch (err) {
-          console.warn("Error processing stock item:", err);
           return false;
         }
       }).length;
@@ -205,7 +176,6 @@ const Dashboard = () => {
         try {
           return item.jumlah_obat === 0;
         } catch (err) {
-          console.warn("Error processing empty stock item:", err);
           return false;
         }
       }).length;

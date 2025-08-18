@@ -43,7 +43,6 @@ const Control = () => {
   const loadControlData = async () => {
     try {
       const data = await getAllControl();
-      console.log("API Response:", data); // Debug log
 
       // Ensure data is an array
       const dataArray = Array.isArray(data) ? data : [];
@@ -61,7 +60,6 @@ const Control = () => {
       }));
       setControlSchedules(transformedData);
     } catch (err) {
-      console.error("Error loading control data:", err);
       // Set empty array on error instead of dummy data
       setControlSchedules([]);
       toast.error("Gagal memuat data kontrol. Silakan coba lagi.");
@@ -92,7 +90,6 @@ const Control = () => {
       loadControlData(); // Reload data
       toast.success("Jadwal kontrol berhasil dibuat!");
     } catch (err) {
-      console.error("Error creating control:", err);
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
@@ -128,7 +125,6 @@ const Control = () => {
       loadControlData(); // Reload data
       toast.success("Jadwal kontrol berhasil diperbarui!");
     } catch (err) {
-      console.error("Error updating control:", err);
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
@@ -153,7 +149,6 @@ const Control = () => {
             `Jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} berhasil ditandai selesai!`
           );
         } catch (err) {
-          console.error("Error marking done:", err);
           const errorMessage =
             err.response?.data?.message ||
             err.response?.data?.error ||
@@ -186,7 +181,6 @@ const Control = () => {
             `Jadwal kontrol dengan ${schedule.dokter} pada ${schedule.tanggal} berhasil dihapus!`
           );
         } catch (err) {
-          console.error("Error deleting control:", err);
           const errorMessage =
             err.response?.data?.message ||
             err.response?.data?.error ||

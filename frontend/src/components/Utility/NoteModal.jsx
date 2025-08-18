@@ -99,7 +99,6 @@ const NoteModal = ({
       await onSave(formData);
       onClose();
     } catch (error) {
-      console.error("Error saving note:", error);
     } finally {
       setIsLoading(false);
     }

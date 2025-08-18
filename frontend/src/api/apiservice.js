@@ -26,7 +26,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Login failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -49,10 +48,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Forgot password failed:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -81,7 +76,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal input jadwal:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -103,10 +97,6 @@ export class apiService {
       );
       return response.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil jadwal:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -133,10 +123,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal update stok obat:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -160,7 +146,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal hapus jadwal:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -189,7 +174,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal buat kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -211,10 +195,6 @@ export class apiService {
       );
       return response.data.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil kontrol:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -240,7 +220,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal edit kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -265,10 +244,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal tandai kontrol selesai:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -291,7 +266,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal hapus kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -320,7 +294,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal tambah history:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -342,10 +315,6 @@ export class apiService {
       );
       return response.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil history:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -374,10 +343,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal buat peringatan:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -399,10 +364,6 @@ export class apiService {
       );
       return response.data.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil peringatan:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -467,7 +428,6 @@ export class apiService {
       });
       return response.data;
     } catch (err) {
-      console.error("Get notes failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -488,7 +448,6 @@ export class apiService {
       });
       return response.data;
     } catch (err) {
-      console.error("Get note failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -509,7 +468,6 @@ export class apiService {
       });
       return response.data;
     } catch (err) {
-      console.error("Create note failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -535,7 +493,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Update note failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -559,7 +516,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Delete note failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -583,7 +539,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Search notes failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -603,10 +558,6 @@ export class apiService {
       });
       return response.data;
     } catch (err) {
-      console.error(
-        "Get notes stats failed:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -624,10 +575,6 @@ export class apiService {
   static async updateProfile(profileData, token = null) {
     try {
       const authToken = token || this.getToken();
-      console.log("updateProfile API call with:", {
-        hasImage: !!profileData?.image,
-        authToken,
-      });
 
       // Build FormData to support optional image upload
       const form = new FormData();
@@ -649,10 +596,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Update profile failed:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -667,11 +610,6 @@ export class apiService {
   static async updatePhoneNumber(phoneNumber, userId, token = null) {
     try {
       const authToken = token || this.getToken();
-      console.log("updatePhoneNumber API call with:", {
-        phoneNumber,
-        userId,
-        authToken,
-      });
 
       const response = await axios.put(
         `${BASE_URL}/v1/api/profile/phone`,
@@ -686,7 +624,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Update phone failed:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -697,11 +634,6 @@ export class apiService {
   static async updateAvatar(avatarUrl, userId, token = null) {
     try {
       const authToken = token || this.getToken();
-      console.log("updateAvatar API call with:", {
-        avatarUrl,
-        userId,
-        authToken,
-      });
 
       const response = await axios.put(
         `${BASE_URL}/v1/api/profile/avatar`,
@@ -716,7 +648,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Update avatar failed:", err.response?.data || err.message);
       throw err;
     }
   }

@@ -92,7 +92,6 @@ const WhatsAppMessageForm = ({
         });
       }
     } catch (error) {
-      console.error("Error sending WhatsApp message:", error);
       handleApiError(error, showToast);
     } finally {
       setLoading(false);

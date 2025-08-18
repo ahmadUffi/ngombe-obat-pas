@@ -84,7 +84,6 @@ const InputControlJadwal = ({ onSubmit, initialData }) => {
           : "Jadwal kontrol berhasil ditambahkan!"
       );
     } catch (error) {
-      console.error("Error submitting form:", error);
       toast.error("Terjadi kesalahan saat menyimpan jadwal kontrol");
     } finally {
       setIsSubmitting(false);

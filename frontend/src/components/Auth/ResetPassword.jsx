@@ -48,7 +48,6 @@ const ResetPassword = () => {
 
       setValidSession(true);
     } catch (error) {
-      console.error("Error checking reset session:", error);
       toast.error("Terjadi kesalahan saat memverifikasi link reset password");
       navigate("/login");
     } finally {
@@ -103,7 +102,6 @@ const ResetPassword = () => {
         navigate("/login");
       }, 2000);
     } catch (error) {
-      console.error("Reset password error:", error);
       toast.error(error.message || "Gagal memperbarui password");
     } finally {
       setLoading(false);

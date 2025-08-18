@@ -63,8 +63,6 @@ const Register = () => {
 
   // Function untuk handle post signup setelah email verification
   const handlePostSignUp = async (user, normalizedPhone) => {
-    console.log("📝 Creating user profile after email verification...");
-
     // Upload profile image (opsional)
     let profileImgUrl = null;
     if (state.profile) {
@@ -81,9 +79,7 @@ const Register = () => {
             .getPublicUrl(filePath);
           profileImgUrl = publicUrlData.publicUrl;
         }
-      } catch (uploadErr) {
-        console.warn("Profile upload failed:", uploadErr);
-      }
+      } catch (uploadErr) {}
     }
 
     // Save profile to table
@@ -116,8 +112,6 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     dispatch({ type: "SET_ERROR", value: null });
-
-    console.log("🔍 Starting form validation...");
 
     // Validasi form fields tidak kosong
     if (
@@ -164,27 +158,16 @@ const Register = () => {
       return;
     }
 
-    console.log("✅ Basic validation passed, validating phone...");
-    console.log("📱 Phone to validate:", state.noHp);
-
     // Validasi nomor telepon sebelum submit
     const phoneValidation = validateOnSubmit(state.noHp);
-    console.log("📋 Phone validation result:", phoneValidation);
 
     if (!phoneValidation.isValid) {
-      console.log("❌ Phone validation failed:", phoneValidation.error);
       dispatch({ type: "SET_PHONE_VALIDATION", value: phoneValidation });
       dispatch({ type: "SET_ERROR", value: phoneValidation.error.message });
       toast.error(phoneValidation.error.message);
       setLoading(false);
       return;
     }
-
-    console.log(
-      "✅ Phone validation passed! Normalized phone:",
-      phoneValidation.normalizedPhone
-    );
-    console.log("🚀 All validations passed, proceeding to create user...");
 
     try {
       // Sign up dengan email verification
@@ -204,8 +187,6 @@ const Register = () => {
       if (signUpError) throw signUpError;
 
       const user = signUpData.user;
-
-      console.log("User signup result:", user);
 
       // Jika user perlu konfirmasi email (yang selalu terjadi dengan email verification)
       if (user && !user.email_confirmed_at) {

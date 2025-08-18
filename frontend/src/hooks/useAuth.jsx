@@ -23,7 +23,6 @@ export const AuthProvider = ({ children }) => {
   // Fetch user profile from Supabase
   const fetchUserProfile = async (email) => {
     try {
-      console.log("Fetching user profile for email:", email);
       const { data, error } = await supabase
         .from("profile")
         .select("*")
@@ -31,15 +30,11 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error) {
-        console.error("Error fetching user profile:", error);
         return;
       }
 
-      console.log("User profile fetched successfully:", data);
       setUser(data);
-    } catch (err) {
-      console.error("Error fetching user profile:", err);
-    }
+    } catch (err) {}
   };
 
   // Check for existing token and fetch user profile on mount
@@ -51,7 +46,6 @@ export const AuthProvider = ({ children }) => {
         // If we have a token but no user data, we need to get the user email somehow
         // For now, let's store the email in localStorage during login
         const storedEmail = localStorage.getItem("user_email");
-        console.log("Stored email:", storedEmail);
 
         if (storedEmail) {
           await fetchUserProfile(storedEmail);
@@ -109,12 +103,9 @@ export const AuthProvider = ({ children }) => {
       // Get user profile from Supabase after successful login
       await fetchUserProfile(email);
 
-      console.log("Login successful, user data should be loaded");
-
       return response;
     } catch (err) {
       // Enhanced error handling
-      console.error("Login API Error:", err);
 
       let errorToThrow = err;
 
@@ -178,7 +169,6 @@ export const AuthProvider = ({ children }) => {
       apiService.removeToken();
       localStorage.removeItem("user_email"); // Remove stored email
     } catch (err) {
-      console.error("Logout error:", err);
     } finally {
       setLoading(false);
     }
@@ -191,18 +181,13 @@ export const AuthProvider = ({ children }) => {
 
   // Refresh user data - useful after profile updates
   const refreshUser = async () => {
-    console.log("refreshUser called");
     const storedEmail = localStorage.getItem("user_email");
-    console.log("Stored email:", storedEmail);
-    console.log("Is authenticated:", apiService.isAuthenticated());
-    console.log("Current user:", user);
 
     if (storedEmail && apiService.isAuthenticated()) {
       // First try to get user profile using the current user ID if available
       // This ensures we get the freshest data after an update
       if (user && user.id) {
         try {
-          console.log("Refreshing user with ID:", user.id);
           const { data, error } = await supabase
             .from("profile")
             .select("*")
@@ -210,22 +195,17 @@ export const AuthProvider = ({ children }) => {
             .single();
 
           if (data && !error) {
-            console.log("Refreshed user profile by ID:", data);
             setUser(data);
             return;
           } else {
-            console.warn("No data found when refreshing by ID", { error });
           }
-        } catch (err) {
-          console.error("Error refreshing user profile by ID:", err);
-        }
+        } catch (err) {}
       }
 
       // Fallback to using email
-      console.log("Falling back to email refresh");
+
       await fetchUserProfile(storedEmail);
     } else {
-      console.warn("Cannot refresh: no email stored or not authenticated");
     }
   };
 

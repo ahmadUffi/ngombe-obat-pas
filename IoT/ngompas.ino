@@ -11,11 +11,15 @@ const char* ssid = "@AhmadUffi";
 const char* password = "12345678";
 const char* loginURL = "http://163.53.195.57:5000/v1/api/login";
 const char* dataURL = "http://163.53.195.57:5000/v1/api/jadwal/get-for-iot";
-const char* updateStockURL = "http://163.53.195.57:5000/v1/api/jadwal/update-stock-obat-iot"; // NEW
+const char* updateStockURL = "http://163.53.195.57:5000/v1/api/jadwal/update-stock-obat-iot";
+const char* peringatanURL = "http://163.53.195.57:5000/v1/api/peringatan/create-peringatan";
+const char* messageURL = "http://163.53.195.57:5000/v1/api/message/send";
+const char* profileMeURL = "http://163.53.195.57:5000/v1/api/profile/me";
 const char* email = "ahmaduffi45@gmail.com";
 const char* passwd = "123456789";
 
 String accessToken = "";
+String profilePhone = ""; // nomor hp dari /profile/me
 
 TFT_eSPI tft = TFT_eSPI();
 RTC_DS3231 rtc;
@@ -24,6 +28,14 @@ const int jumlahSensor = 8;
 int pinSensor[jumlahSensor] = {14, 27, 26, 25, 33, 32, 35, 34};
 int nilaiSensor[jumlahSensor];
 bool slotSudahDibuka[8] = {false};
+
+// NOTE: Sesuaikan mapping dengan hardware Anda
+// LED untuk setiap slot A-H (default pin ESP32 generic, ubah sesuai wiring)
+int pinLed[jumlahSensor] = {12, 13, 15, 2, 4, 5, 18, 19};
+const int buzzerPin = 23; // buzzer aktif-high; sesuaikan pin
+
+unsigned long lastPeringatanMillis[8] = {0};
+const unsigned long peringatanCooldown = 60000UL; // 60s cooldown per slot
 
 uint16_t Background = TFT_BLACK;
 uint16_t Text = TFT_WHITE;
@@ -50,6 +62,9 @@ struct JadwalObat {
   int endMenit;
   int tersisaObat;              // Jumlah obat yang tersisa
   bool sudahDiminum;            // Flag apakah sudah diminum untuk waktu ini
+  bool warned15;                // Peringatan T-15 menit sebelum akhir window
+  bool warned5;                 // Peringatan T-5 menit sebelum akhir window
+  bool preMealWarned;           // Peringatan 60 menit sebelum (untuk "sebelum makan")
 };
 
 JadwalObat daftarJadwal[MAX_JADWAL];
@@ -195,6 +210,14 @@ void setup() {
   for (int i = 0; i < jumlahSensor; i++) {
     pinMode(pinSensor[i], INPUT_PULLUP);
   }
+
+  // Initialize LED & buzzer pins
+  for (int i = 0; i < jumlahSensor; i++) {
+    pinMode(pinLed[i], OUTPUT);
+    digitalWrite(pinLed[i], LOW);
+  }
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
   
   // Initialize arrays
   for (int i = 0; i < MAX_JADWAL; i++) {
@@ -208,6 +231,8 @@ void setup() {
   if (accessToken != "") {
     tft.drawString("Getting data...", 10, 80);
     getDataWithToken();
+  // dapatkan nomor hp profil untuk pengiriman pesan WA saat terlewat
+  fetchProfileMe();
     tft.drawString("Ready!", 10, 100);
   } else {
     tft.drawString("Login failed!", 10, 80);
@@ -217,6 +242,22 @@ void setup() {
   tft.fillScreen(Latar);
   
   Serial.println("Setup completed successfully!");
+}
+
+void beepBuzzer(unsigned long ms) {
+  unsigned long start = millis();
+  while (millis() - start < ms) {
+    digitalWrite(buzzerPin, HIGH);
+    delay(100);
+    digitalWrite(buzzerPin, LOW);
+    delay(100);
+  }
+}
+
+void shortBeep() {
+  digitalWrite(buzzerPin, HIGH);
+  delay(150);
+  digitalWrite(buzzerPin, LOW);
 }
 
 void loginToApi() {
@@ -368,8 +409,11 @@ void getDataWithToken() {
             startMenit,
             endJam,
             endMenit,
-            jumlahObat,  // tersisaObat initialized to jumlahObat
-            false        // sudahDiminum
+            jumlahObat,
+            false,
+            false,
+            false,
+            false
           };
 
           Serial.printf("Jadwal %d ditambahkan: %s (%s) %02d:%02d - %02d:%02d, slot: %c\n", 
@@ -389,6 +433,61 @@ void getDataWithToken() {
   } else {
     Serial.println("WiFi tidak terhubung atau token kosong");
   }
+}
+
+void fetchProfileMe() {
+  if (WiFi.status() != WL_CONNECTED || accessToken == "") return;
+  HTTPClient http;
+  http.begin(profileMeURL);
+  http.addHeader("Authorization", "Bearer " + accessToken);
+  http.setTimeout(10000);
+  int code = http.GET();
+  if (code > 0) {
+    String payload = http.getString();
+    StaticJsonDocument<512> doc;
+    if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+      if (doc["data"].is<JsonObject>()) {
+        JsonObject d = doc["data"]; // assuming { success, data: {...} }
+        profilePhone = String((const char*)d["no_hp"] | "");
+      } else if (doc["no_hp"].is<const char*>()) {
+        profilePhone = String((const char*)doc["no_hp"]);
+      }
+    }
+  }
+  http.end();
+}
+
+bool sendWhatsAppSimple(const String &phone, const String &msg) {
+  if (WiFi.status() != WL_CONNECTED || accessToken == "") return false;
+  HTTPClient http;
+  http.begin(messageURL);
+  http.addHeader("Authorization", "Bearer " + accessToken);
+  http.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<512> body;
+  body["phone"] = phone;
+  body["message"] = msg;
+  body["type"] = "text";
+  String payload;
+  serializeJson(body, payload);
+  int code = http.POST(payload);
+  http.end();
+  return code >= 200 && code < 300;
+}
+
+bool sendPeringatanApi(const String &jadwalId, const String &pesan) {
+  if (WiFi.status() != WL_CONNECTED || accessToken == "") return false;
+  HTTPClient http;
+  http.begin(peringatanURL);
+  http.addHeader("Authorization", "Bearer " + accessToken);
+  http.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<512> body;
+  body["id"] = jadwalId;  // backend expects { id, pesan }
+  body["pesan"] = pesan;
+  String payload;
+  serializeJson(body, payload);
+  int code = http.POST(payload);
+  http.end();
+  return code >= 200 && code < 300;
 }
 
 bool waktuDalamRentang(DateTime sekarang, int sj, int sm, int ej, int em) {
@@ -418,6 +517,14 @@ int findActiveSchedule(DateTime sekarang) {
     }
   }
   return -1;
+}
+
+int minutesUntil(int h, int m, DateTime now) {
+  int nowMin = now.hour() * 60 + now.minute();
+  int target = h * 60 + m;
+  int diff = target - nowMin;
+  if (diff < -720) diff += 1440; // handle next day wrap-around
+  return diff;
 }
 
 // Function to get medication info for display
@@ -566,6 +673,9 @@ void loop() {
       if (menitSekarang > akhir) {
         jadwalSudahDiproses[i] = false;
         daftarJadwal[i].sudahDiminum = false;
+  daftarJadwal[i].warned15 = false;
+  daftarJadwal[i].warned5 = false;
+  daftarJadwal[i].preMealWarned = false;
       }
     }
     menitSebelumnya = menit;
@@ -613,6 +723,13 @@ void loop() {
                    daftarJadwal[jadwalAktif].endJam,
                    daftarJadwal[jadwalAktif].endMenit,
                    daftarJadwal[jadwalAktif].slotObat);
+
+      // Nyalakan LED slot dan bunyikan buzzer 5 detik
+      int slotIndex = daftarJadwal[jadwalAktif].slotObat - 'A';
+      if (slotIndex >= 0 && slotIndex < jumlahSensor) {
+        digitalWrite(pinLed[slotIndex], HIGH);
+      }
+      beepBuzzer(5000);
     }
   }
 
@@ -645,6 +762,32 @@ void loop() {
             slotSudahDibuka[slotIndex] = true;
           }
 
+          // Wrong-slot detection -> send peringatan (cooldown 60s per slot)
+          for (int s = 0; s < jumlahSensor; s++) {
+            if (s == slotIndex) continue;
+            int val = digitalRead(pinSensor[s]);
+            if (val == HIGH) {
+              unsigned long nowMs = millis();
+              if (nowMs - lastPeringatanMillis[s] > peringatanCooldown) {
+                lastPeringatanMillis[s] = nowMs;
+                String pesan = "peringatan pasien mencoba membuka obat " + currentSchedule.namaObat +
+                                " pada slot" + String(currentSchedule.slotObat);
+                sendPeringatanApi(currentSchedule.id, pesan);
+              }
+            }
+          }
+
+          // Pre-expiry alerts at T-15 and T-5 minutes before end
+          int minsLeft = minutesUntil(currentSchedule.endJam, currentSchedule.endMenit, sekarang);
+          if (minsLeft == 15 && !currentSchedule.warned15) {
+            shortBeep();
+            currentSchedule.warned15 = true;
+          }
+          if (minsLeft == 5 && !currentSchedule.warned5) {
+            shortBeep();
+            currentSchedule.warned5 = true;
+          }
+
           if (slotSudahDibuka[slotIndex]) {
             statusObat = "Obat berhasil diminum!";
             statusSistem = SELESAI;
@@ -667,6 +810,12 @@ void loop() {
             
             Serial.printf("Obat %s diminum. Update backend: %s. Tersisa: %d\n", 
                          currentSchedule.namaObat.c_str(), updated ? "OK" : "PENDING", currentSchedule.tersisaObat);
+
+            // Matikan LED slot dan refresh jadwal dari server
+            if (slotIndex >= 0 && slotIndex < jumlahSensor) {
+              digitalWrite(pinLed[slotIndex], LOW);
+            }
+            getDataWithToken();
           } else {
             statusObat = "Buka slot " + String(currentSchedule.slotObat);
           }
@@ -684,6 +833,18 @@ void loop() {
         jadwalSudahDiproses[jadwalAktif] = true;
         
         Serial.printf("Jadwal %s terlewat waktu\n", currentSchedule.namaObat.c_str());
+
+        // Kirim pesan WhatsApp sederhana ke nomor profile (jika tersedia)
+        if (profilePhone.length() > 0) {
+          String msg = "Pengingat: Obat '" + currentSchedule.namaObat + "' di slot " +
+                        String(currentSchedule.slotObat) + " terlewat waktunya.";
+          sendWhatsAppSimple(profilePhone, msg);
+        }
+        // Matikan LED slot
+        int slotIndex2 = currentSchedule.slotObat - 'A';
+        if (slotIndex2 >= 0 && slotIndex2 < jumlahSensor) {
+          digitalWrite(pinLed[slotIndex2], LOW);
+        }
       }
     }
   }
@@ -706,6 +867,19 @@ void loop() {
   // Display next schedule info when waiting
   if (statusSistem == MENUNGGU) {
     displayNextSchedule(sekarang);
+    // Pre-meal alert: 60 minutes before start for kategori "sebelum makan"
+    for (int i = 0; i < jumlahJadwal; i++) {
+      if (jadwalSudahDiproses[i] || daftarJadwal[i].sudahDiminum) continue;
+      String k = daftarJadwal[i].kategori;
+      k.toLowerCase();
+      if (k.indexOf("sebelum") >= 0 && !daftarJadwal[i].preMealWarned) {
+        int mins = minutesUntil(daftarJadwal[i].startJam, daftarJadwal[i].startMenit, sekarang);
+        if (mins == 60) {
+          shortBeep();
+          daftarJadwal[i].preMealWarned = true;
+        }
+      }
+    }
   }
   
   // Refresh data periodically

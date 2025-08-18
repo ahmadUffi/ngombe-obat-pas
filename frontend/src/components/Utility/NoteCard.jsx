@@ -114,7 +114,6 @@ const NoteCard = ({ note, onEdit, onDelete }) => {
     try {
       await onDelete(note);
     } catch (error) {
-      console.error("Error deleting note:", error);
     } finally {
       setIsDeleting(false);
     }

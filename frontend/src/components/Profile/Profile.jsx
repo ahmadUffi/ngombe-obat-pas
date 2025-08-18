@@ -133,7 +133,6 @@ const Profile = () => {
         throw new Error(response.message || "Gagal memperbarui profile");
       }
     } catch (error) {
-      console.error("Update profile error:", error);
       toast.error(
         error.response?.data?.message ||
           error.message ||

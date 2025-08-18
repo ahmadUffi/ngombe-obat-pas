@@ -8,28 +8,16 @@ const EmailCallback = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState("verifying"); // verifying, success, error
   const [message, setMessage] = useState("Memverifikasi email Anda...");
-
-  useEffect(() => {
-    handleEmailConfirmation();
-  }, []);
-
   const handleEmailConfirmation = async () => {
     try {
-      // Get access token from URL
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get("access_token");
       const refreshToken = hashParams.get("refresh_token");
-
-      console.log("🔐 Processing email verification...", {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-      });
 
       if (!accessToken) {
         throw new Error("Token verifikasi tidak ditemukan");
       }
 
-      // Set session dengan token
       const {
         data: { user },
         error: sessionError,
@@ -41,9 +29,6 @@ const EmailCallback = () => {
       if (sessionError) throw sessionError;
 
       if (user) {
-        console.log("✅ User authenticated:", user.id);
-
-        // Cek apakah profile sudah ada
         const { data: existingProfile, error: profileCheckError } =
           await supabase
             .from("profile")
@@ -51,18 +36,12 @@ const EmailCallback = () => {
             .eq("user_id", user.id)
             .single();
 
+        // PGRST116 = no rows found (normal for new user)
         if (profileCheckError && profileCheckError.code !== "PGRST116") {
-          // PGRST116 = no rows found, yang normal untuk user baru
           throw profileCheckError;
         }
 
-        // Jika profile belum ada, buat dari metadata yang disimpan saat signup
         if (!existingProfile && user.user_metadata) {
-          console.log(
-            "📝 Creating profile from metadata...",
-            user.user_metadata
-          );
-
           const { error: profileError } = await supabase
             .from("profile")
             .insert([
@@ -76,24 +55,18 @@ const EmailCallback = () => {
             ]);
 
           if (profileError) {
-            console.error("❌ Profile creation failed:", profileError);
             throw new Error("Gagal membuat profil pengguna");
           }
-
-          console.log("✅ Profile created successfully");
         }
 
         setStatus("success");
         setMessage("Email berhasil diverifikasi! Mengarahkan ke dashboard...");
-
         toast.success("Email berhasil diverifikasi! Selamat datang!");
-
         setTimeout(() => {
           navigate("/dashboard");
         }, 3000);
       }
     } catch (error) {
-      console.error("❌ Email verification failed:", error);
       setStatus("error");
       setMessage(
         error.message ||
@@ -102,6 +75,11 @@ const EmailCallback = () => {
       toast.error("Verifikasi email gagal");
     }
   };
+
+  useEffect(() => {
+    handleEmailConfirmation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">

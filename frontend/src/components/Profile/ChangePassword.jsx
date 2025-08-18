@@ -10,7 +10,6 @@ import PasswordStrengthIndicator from "../UI/PasswordStrengthIndicator";
 const ChangePassword = () => {
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
-  console.log("ChangePassword Component - User data:", user);
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -137,7 +136,6 @@ const ChangePassword = () => {
         navigate("/login");
       }, 2000);
     } catch (error) {
-      console.error("Change password error:", error);
       toast.error(error.message || "Gagal mengubah password");
     } finally {
       setLoading(false);

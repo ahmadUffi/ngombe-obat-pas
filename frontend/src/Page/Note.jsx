@@ -90,7 +90,6 @@ const Note = () => {
         setNotes(response.data || []);
       }
     } catch (error) {
-      console.error("Error loading notes:", error);
       toast.error("Gagal memuat catatan");
     } finally {
       setIsLoading(false);
@@ -124,7 +123,6 @@ const Note = () => {
         setStats(calculateStatsFromNotes(notes));
       }
     } catch (error) {
-      console.error("Error loading stats:", error);
       // Fallback: calculate from notes array
       setStats(calculateStatsFromNotes(notes));
     }
@@ -209,7 +207,6 @@ const Note = () => {
         }
       }
     } catch (error) {
-      console.error("Error saving note:", error);
       const errorMessage =
         error.response?.data?.message || "Gagal menyimpan catatan";
       toast.error(errorMessage);
@@ -239,7 +236,6 @@ const Note = () => {
         });
       }
     } catch (error) {
-      console.error("Error deleting note:", error);
       const errorMessage =
         error.response?.data?.message || "Gagal menghapus catatan";
       toast.error(errorMessage);
@@ -282,7 +278,6 @@ const Note = () => {
         setFilteredNotes(response.data || []);
       }
     } catch (error) {
-      console.error("Error searching notes:", error);
       toast.error("Gagal melakukan pencarian");
     }
   };

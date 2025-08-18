@@ -11,13 +11,12 @@ const NavbarTop = ({ onToggleSidebar }) => {
   const [profileImageError, setProfileImageError] = useState(false);
   const [profileImageKey, setProfileImageKey] = useState(Date.now());
   const { logout, user } = useContext(AuthContext);
-  console.log("User in NavbarTop:", user);
+
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
 
   // Reset the profile image error and update image key when user changes
   useEffect(() => {
-    console.log("NavbarTop detected user change:", user);
     setProfileImageError(false);
     setProfileImageKey(Date.now());
   }, [user]);
@@ -25,10 +24,9 @@ const NavbarTop = ({ onToggleSidebar }) => {
   // Get profile image URL from user context or use mascot as default
   const getProfileImageSrc = () => {
     if (profileImageError || !user?.img_profile) {
-      console.log("Using default profile image (maskot)");
       return maskot;
     }
-    console.log("Using user profile image:", user.img_profile);
+
     return user.img_profile;
   };
 
@@ -57,7 +55,6 @@ const NavbarTop = ({ onToggleSidebar }) => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     const searchTerm = e.target.search.value;
-    console.log("Searching for:", searchTerm);
     // Add your search logic here
     closeMobileSearch();
   };
@@ -66,9 +63,7 @@ const NavbarTop = ({ onToggleSidebar }) => {
     try {
       await logout();
       navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    } catch (error) {}
     setShowUserMenu(false);
   };
 

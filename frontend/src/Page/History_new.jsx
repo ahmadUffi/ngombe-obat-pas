@@ -26,7 +26,6 @@ const History = () => {
           setError("Failed to fetch histories");
         }
       } catch (err) {
-        console.error("Error fetching histories:", err);
         setError("Failed to load history data");
       } finally {
         setLoading(false);
@@ -50,7 +49,6 @@ const History = () => {
         setError("Failed to refresh histories");
       }
     } catch (err) {
-      console.error("Error refreshing histories:", err);
       setError("Failed to refresh history data");
     } finally {
       setLoading(false);
