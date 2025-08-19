@@ -246,6 +246,33 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
     // Continue with the function even if history creation fails
   }
 
+  // If action comes from IoT, notify schedule owner on WhatsApp that medicine was taken
+  if (own === "iot") {
+    try {
+      const phone = await getFormattedPhoneByUserId(result.user_id);
+      if (phone) {
+        const now = new Date();
+        const waktu = now.toLocaleString("id-ID", {
+          timeZone: "Asia/Jakarta",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        const dosisLabel = result.dosis_obat ? ` (${result.dosis_obat})` : "";
+        const msg = `✅ Obat telah diminum\n\nPasien: ${result.nama_pasien}\nObat: ${result.nama_obat}${dosisLabel}\nSisa stok: ${stockObat}\nWaktu: ${waktu}`;
+        await sendWhatsAppMessage(phone, msg, "text");
+      }
+    } catch (waErr) {
+      console.warn(
+        "Failed to send WA 'obat diminum' notification:",
+        waErr?.message || waErr
+      );
+    }
+  }
+
   // Check if stock is empty or very low and add another history entry
   if (stockObat <= 0) {
     try {
