@@ -13,7 +13,10 @@ import {
   deleteWaRemindersByJadwal,
 } from "./waReminderService.js";
 import { sendWhatsAppMessage } from "./messageService.js";
-import { upsertDoseTakenByIot } from "./doseLogService.js";
+import {
+  ensurePendingForTodayAllJadwal,
+  upsertDoseTakenByIot,
+} from "./doseLogService.js";
 
 export const createJadwal = async (user_id, data) => {
   // Get user profile with phone number
@@ -115,6 +118,15 @@ export const createJadwal = async (user_id, data) => {
     } catch (historyError) {
       console.error("Failed to create history for new jadwal:", historyError);
       // Continue with the function even if history creation fails
+    }
+
+    // 4. create does logs
+
+    try {
+      const seed = await ensurePendingForTodayAllJadwal();
+      console.log("DoseLog seed today:", seed);
+    } catch (e) {
+      console.error("DoseLog seed failed:", e?.message || e);
     }
 
     return result;
