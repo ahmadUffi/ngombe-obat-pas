@@ -105,8 +105,13 @@ export const useJadwal = () => {
     [callApi, token]
   );
 
+  const getTodayDoseStatus = useCallback(async () => {
+    return await callApi(apiService.getTodayDoseStatus, token);
+  }, [callApi, token]);
+
   return {
     getAllJadwal,
+    getTodayDoseStatus,
     createJadwal,
     updateStock,
     deleteJadwal,

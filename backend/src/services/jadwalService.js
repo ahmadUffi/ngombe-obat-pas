@@ -13,6 +13,7 @@ import {
   deleteWaRemindersByJadwal,
 } from "./waReminderService.js";
 import { sendWhatsAppMessage } from "./messageService.js";
+import { upsertDoseTakenByIot } from "./doseLogService.js";
 
 export const createJadwal = async (user_id, data) => {
   // Get user profile with phone number
@@ -193,7 +194,7 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
   const { data: result, error: errorJumlahObat } = await supabase
     .from("jadwal")
     .select(
-      "id, user_id, profile_id, jumlah_obat, nama_obat, dosis_obat, nama_pasien, jam_awal"
+      "id, user_id, profile_id, jumlah_obat, nama_obat, dosis_obat, nama_pasien, jam_awal, jam_berakhir"
     )
     .eq("id", id_jadwal)
     .single();
@@ -249,6 +250,20 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
   // If action comes from IoT, notify schedule owner on WhatsApp that medicine was taken
   if (own === "iot") {
     try {
+      // Persist dose taken status (idempotent)
+      try {
+        await upsertDoseTakenByIot({
+          jadwal_id: id_jadwal,
+          user_id: result.user_id,
+          jam_awal: result.jam_awal,
+          jam_berakhir: result.jam_berakhir,
+          takenAt: new Date(),
+          source: "iot",
+        });
+      } catch (logErr) {
+        console.warn("Dose log upsert failed:", logErr?.message || logErr);
+      }
+
       const phone = await getFormattedPhoneByUserId(result.user_id);
       if (phone) {
         const now = new Date();

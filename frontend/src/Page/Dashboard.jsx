@@ -11,7 +11,7 @@ const Dashboard = () => {
     upcomingControls: 0,
     completedToday: 0,
     totalSchedules: 0,
-    stockAlert: 0, // < 6 pills (hampir habis)
+    stockAlert: 0, // <= 3 pills (hampir habis)
     emptyStock: 0, // = 0 pills (habis)
   });
   const [loading, setLoading] = useState(true);
@@ -164,7 +164,7 @@ const Dashboard = () => {
       const stockAlert = jadwalData.filter((item) => {
         if (!item || typeof item.jumlah_obat !== "number") return false;
         try {
-          return item.jumlah_obat > 0 && item.jumlah_obat < 6;
+          return item.jumlah_obat > 0 && item.jumlah_obat <= 4;
         } catch (err) {
           return false;
         }

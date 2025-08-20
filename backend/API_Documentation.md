@@ -64,6 +64,104 @@ DELETE /v1/api/jadwal/delete/:jadwal_id (auth)
 
 - Delete a jadwal owned by the authenticated user.
 
+### Dose Log & Status (jadwal_dose_log)
+
+## Cara Penggunaan Dose Log (Frontend & IoT)
+
+### 1. Mendapatkan Status Dosis Harian
+
+Endpoint:
+GET /v1/api/jadwal/dose-status-today (auth)
+
+Deskripsi:
+
+- Digunakan untuk menampilkan status dosis harian ("pending", "taken", "missed") di Dashboard frontend dan IoT.
+- Tidak perlu mengirimkan :user_id atau query user_id; status otomatis diambil untuk user yang sedang login (berdasarkan token Authorization).
+- Response: Array per jadwal per jam:
+  - { jadwal_id, user_id, nama_obat, nama_pasien, dose_time, status, taken_at }
+
+Contoh penggunaan di frontend:
+
+```js
+// Ambil status dosis harian user yang sedang login
+const response = await fetch("/v1/api/jadwal/dose-status-today", {
+  headers: { Authorization: "Bearer <token>" },
+});
+const doseStatus = await response.json();
+// Tampilkan status per jam di Dashboard
+```
+
+### 2. Mencatat Minum Obat dari IoT
+
+Endpoint:
+PUT /v1/api/jadwal/update-stock-obat-iot (auth)
+
+Deskripsi:
+
+- Digunakan oleh device IoT untuk mencatat minum obat dan update stok.
+- Body minimal: { id_obat: string }
+- Backend akan mengambil jadwal, jam_awal[], jam_berakhir[] dari database sesuai id_obat.
+- Backend otomatis mencari window valid (jam_awal[i] - jam_berakhir[i]) dan upsert status 'taken' jika waktu minum sesuai window.
+- Response: { success, message, ... } dan status dose log harian.
+
+Contoh penggunaan di IoT:
+
+```js
+// Device kirim request saat user minum obat
+await fetch("/v1/api/jadwal/update-stock-obat-iot", {
+  method: "PUT",
+  headers: {
+    Authorization: "Bearer <token>",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ id_obat: "..." }),
+});
+```
+
+### 3. Best Practice Integrasi IoT
+
+- Saat device reboot/startup, selalu GET status harian dari dose log sebelum eksekusi minum.
+- Hanya eksekusi minum jika status dosis = "pending".
+- Jika status sudah "taken" atau "missed", device tidak perlu eksekusi minum atau update stok.
+- Semua status harian tersimpan di server, device hanya eksekusi jika benar-benar perlu.
+
+### 4. Window Valid Minum Obat
+
+- Window valid minum obat = jam_awal[i] sampai jam_berakhir[i] (array, pasangan index).
+- Status "missed" otomatis jika waktu sudah lewat jam_berakhir dan belum diminum.
+
+### 5. Idempotensi & Keamanan
+
+- Endpoint dose log idempotent, device boleh kirim ulang request, status tetap konsisten (tidak double).
+- Aman dari reboot, device tidak akan menganggap dosis "belum diminum" jika status di server sudah "taken"/"missed".
+
+GET /v1/api/jadwal/dose-status-today (auth)
+
+- Get status dosis harian untuk semua jadwal user (Dashboard/IoT)
+- Response: Array of objects per jadwal per jam:
+  - { jadwal_id, user_id, nama_obat, nama_pasien, dose_time, status, taken_at }
+- Status values: 'pending', 'taken', 'missed'
+- Use this endpoint to show status "belum/sudah/terlewat" di Dashboard dan IoT
+
+Notes:
+
+- Status diambil dari tabel/view jadwal_dose_log (atau view jadwal_status_today jika tersedia)
+- Endpoint ini idempotent dan aman untuk device yang reboot
+
+PUT /v1/api/jadwal/update-stock-obat-iot (auth)
+
+- Digunakan oleh IoT untuk mencatat minum obat dan update stok.
+- Body minimal: { id_obat: string }
+- Backend akan mengambil jadwal, jam_awal[], jam_berakhir[] dari database sesuai id_obat.
+- Backend otomatis mencari window valid (jam_awal[i] - jam_berakhir[i]) dan upsert status 'taken' jika waktu minum sesuai window.
+- Response: { success, message, ... } dan status dose log harian.
+
+Catatan:
+
+- Jika device reboot, IoT harus GET status harian dari dose log sebelum eksekusi minum. Hanya eksekusi jika status 'pending'.
+- Window valid minum obat = jam_awal[i] sampai jam_berakhir[i] (array, pasangan index).
+- Status 'missed' otomatis jika waktu sudah lewat jam_berakhir dan belum diminum.
+
 ## History
 
 POST /v1/api/history/input-history (auth)

@@ -79,8 +79,8 @@ const Jadwal = () => {
     if (filter === "all") return true;
     if (filter === "habis") return item.jumlah_obat === 0;
     if (filter === "sedikit")
-      return item.jumlah_obat < 6 && item.jumlah_obat > 0;
-    if (filter === "aman") return item.jumlah_obat >= 6;
+      return item.jumlah_obat < 4 && item.jumlah_obat > 0;
+    if (filter === "aman") return item.jumlah_obat >= 4;
     return true;
   });
 
