@@ -19,7 +19,7 @@ import {
   markMissedForTodayAll,
 } from "./services/doseLogService.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import  supabaseMiddleware  from "./middleware/supabase.js";
+import supabaseMiddleware from "./middleware/supabase.js";
 
 // Load .env and override any existing env vars from the shell, so .env wins
 dotenv.config({ override: true });
@@ -81,7 +81,7 @@ if (CRON_ENABLED) {
 
 // Daily 00:01 cron: generate pending doses for today, then mark missed periodically
 cron.schedule(
-  "4 0 * * *",
+  "1 0 * * *",
   async () => {
     try {
       const seed = await ensurePendingForTodayAllJadwal();
