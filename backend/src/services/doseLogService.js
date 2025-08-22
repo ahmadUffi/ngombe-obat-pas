@@ -74,37 +74,44 @@ export async function upsertDoseTakenByIot({
     return { ok: false, message: "No jam_awal" };
   if (!Array.isArray(jam_berakhir) || jam_berakhir.length === 0)
     return { ok: false, message: "No jam_berakhir" };
-  const closest = findClosestDose(jam_awal, takenAt);
+
+  // Normalisasi semua jam_awal & jam_berakhir
+  const awalList = jam_awal.map(normalizeTimeStr);
+  const akhirList = jam_berakhir.map(normalizeTimeStr);
+
+  const closest = findClosestDose(awalList, takenAt);
   if (!closest) return { ok: false, message: "No closest dose" };
 
-  // Cari index jam_awal yang cocok
-  const idx = jam_awal.findIndex((j) => j === closest.jam);
-  if (idx === -1 || typeof jam_berakhir[idx] === "undefined")
+  const idx = awalList.findIndex((j) => j === closest.jam);
+  if (idx === -1 || typeof akhirList[idx] === "undefined")
     return { ok: false, message: "No matching jam_berakhir" };
 
-  const todayStr = toLocalDate(takenAt);
-  const [hhAwal, mmAwal] = closest.jam.split(":");
-  const [hhAkhir, mmAkhir] = jam_berakhir[idx].split(":");
-  const start = new Date(takenAt);
-  start.setHours(Number(hhAwal), Number(mmAwal), 0, 0);
-  const end = new Date(takenAt);
-  end.setHours(Number(hhAkhir), Number(mmAkhir), 0, 0);
-  if (takenAt < start || takenAt > end) {
+  const nowWIB = dayjs(takenAt).tz(TZ);
+  const start = nowWIB.hour(...closest.jam.split(":").map(Number)).second(0);
+  const [hhAkhir, mmAkhir] = akhirList[idx].split(":");
+  let end = nowWIB.hour(Number(hhAkhir)).minute(Number(mmAkhir)).second(0);
+
+  // Jika jam_berakhir < jam_awal ? berarti lewat tengah malam, tambahkan 1 hari
+  if (end.isBefore(start)) {
+    end = end.add(1, "day");
+  }
+
+  if (nowWIB.isBefore(start) || nowWIB.isAfter(end)) {
     return {
       ok: false,
-      message: `Diluar rentang waktu minum (${closest.jam} - ${jam_berakhir[idx]})`,
+      message: `Diluar rentang waktu minum (${closest.jam} - ${akhirList[idx]})`,
       dose_time: closest.jam,
     };
   }
 
-  const date_for = todayStr;
+  const date_for = nowWIB.format("YYYY-MM-DD");
   const payload = {
     jadwal_id,
     user_id,
     date_for,
     dose_time: closest.jam,
     status: "taken",
-    taken_at: takenAt.toISOString(),
+    taken_at: nowWIB.format(), // local ISO +07:00
     source,
   };
 
@@ -113,7 +120,7 @@ export async function upsertDoseTakenByIot({
     .upsert(payload, { onConflict: "jadwal_id, date_for, dose_time" });
 
   if (error) return { ok: false, message: error.message };
-  return { ok: true, date_for, dose_time: closest.jam, status: "taken" };
+  return { ok: true, ...payload };
 }
 
 // Create 'pending' rows for all jadwal for today (idempotent)
@@ -209,7 +216,7 @@ export async function markMissedForTodayAll() {
       continue;
     }
 
-    // 👉 bikin end pakai dayjs WIB
+    // ?? bikin end pakai dayjs WIB
     const end = dayjs.tz(`${date_for} ${jamAkhirNorm[idx]}`, TZ);
 
     console.log(
@@ -218,7 +225,7 @@ export async function markMissedForTodayAll() {
 
     if (now.isAfter(end)) {
       console.log(
-        `[markMissed] ✅ Marking as missed: id=${r.id}, dose=${doseTimeNorm}`
+        `[markMissed] ? Marking as missed: id=${r.id}, dose=${doseTimeNorm}`
       );
       const { error: upErr } = await supabase
         .from("jadwal_dose_log")
@@ -234,7 +241,7 @@ export async function markMissedForTodayAll() {
       }
     } else {
       console.log(
-        `[markMissed] ⏳ Still within range: dose=${doseTimeNorm}, end=${fmtWIB(
+        `[markMissed] ? Still within range: dose=${doseTimeNorm}, end=${fmtWIB(
           end
         )}`
       );
