@@ -1,4 +1,16 @@
 import { supabase } from "../config/supabaseClient.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "Asia/Jakarta";
+
+function fmtWIB(d) {
+  return dayjs(d).tz(TZ).format("DD/MM/YYYY, HH:mm:ss");
+}
 
 // Utilities
 function toLocalDate(ts = new Date()) {
@@ -7,6 +19,14 @@ function toLocalDate(ts = new Date()) {
   const m = String(ts.getMonth() + 1).padStart(2, "0");
   const d = String(ts.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`; // YYYY-MM-DD
+}
+function normalizeTimeStr(t) {
+  if (!t) return null;
+  // Supabase bisa kirim "13:26:00" atau Date object
+  if (t instanceof Date) {
+    return t.toTimeString().slice(0, 8); // "HH:MM:SS"
+  }
+  return String(t).padStart(8, "0").slice(0, 8); // jaga panjang 8 char
 }
 
 function parseHHMM(str) {
@@ -127,47 +147,100 @@ export async function ensurePendingForTodayAllJadwal() {
 }
 
 // Mark 'missed' for today when time + grace has passed (best-effort JS-side)
+// helper formatter WIB
+
+// Mark 'missed' for today when time + grace has passed (best-effort JS-side)
 export async function markMissedForTodayAll() {
-  const date_for = toLocalDate(new Date());
-  // Ambil jadwal_dose_log pending beserta jadwal_berakhir dari tabel jadwal
+  const date_for = dayjs().tz(TZ).format("YYYY-MM-DD");
+  console.log("[markMissed] Running for date:", date_for);
+
   const { data: rows, error } = await supabase
     .from("jadwal_dose_log")
     .select("id, dose_time, status, jadwal_id")
     .eq("date_for", date_for)
     .eq("status", "pending");
-  if (error) throw new Error("Fetch pending dose log failed: " + error.message);
+
+  if (error) {
+    console.error("[markMissed] Fetch pending dose log failed:", error.message);
+    throw new Error("Fetch pending dose log failed: " + error.message);
+  }
+
+  console.log("[markMissed] Pending rows:", rows?.length);
+
+  const now = dayjs().tz(TZ);
+  console.log("[markMissed] Current time:", fmtWIB(now));
 
   let updated = 0;
-  const now = new Date();
+
   for (const r of rows || []) {
-    // Ambil jam_awal dan jam_berakhir dari jadwal
+    console.log("\n[markMissed] Checking dose log:", r);
+
     const { data: jadwal, error: jadwalErr } = await supabase
       .from("jadwal")
       .select("jam_awal, jam_berakhir")
       .eq("id", r.jadwal_id)
       .single();
-    if (jadwalErr || !jadwal?.jam_awal || !jadwal?.jam_berakhir) continue;
-    // Cari index dose_time pada jam_awal
-    const idx = Array.isArray(jadwal.jam_awal)
-      ? jadwal.jam_awal.findIndex((j) => j === r.dose_time)
-      : -1;
-    if (
-      idx === -1 ||
-      !Array.isArray(jadwal.jam_berakhir) ||
-      typeof jadwal.jam_berakhir[idx] === "undefined"
-    )
+
+    if (jadwalErr) {
+      console.error("[markMissed] Jadwal fetch error:", jadwalErr.message);
       continue;
-    const [hhAkhir, mmAkhir] = jadwal.jam_berakhir[idx].split(":");
-    const end = new Date(now);
-    end.setHours(Number(hhAkhir), Number(mmAkhir), 0, 0);
-    if (now > end) {
+    }
+    console.log("[markMissed] Jadwal:", jadwal);
+
+    const doseTimeNorm = normalizeTimeStr(r.dose_time);
+    const jamAwalNorm = (jadwal.jam_awal || []).map(normalizeTimeStr);
+    const jamAkhirNorm = (jadwal.jam_berakhir || []).map(normalizeTimeStr);
+
+    console.log(
+      "[markMissed] Normalized times -> dose:",
+      doseTimeNorm,
+      "jam_awal:",
+      jamAwalNorm,
+      "jam_akhir:",
+      jamAkhirNorm
+    );
+
+    const idx = jamAwalNorm.findIndex((j) => j === doseTimeNorm);
+    if (idx === -1 || !jamAkhirNorm[idx]) {
+      console.warn(
+        "[markMissed] No matching jam_awal/jam_berakhir for",
+        doseTimeNorm
+      );
+      continue;
+    }
+
+    // 👉 bikin end pakai dayjs WIB
+    const end = dayjs.tz(`${date_for} ${jamAkhirNorm[idx]}`, TZ);
+
+    console.log(
+      `[markMissed] Comparing now=${fmtWIB(now)} vs end=${fmtWIB(end)} (WIB)`
+    );
+
+    if (now.isAfter(end)) {
+      console.log(
+        `[markMissed] ✅ Marking as missed: id=${r.id}, dose=${doseTimeNorm}`
+      );
       const { error: upErr } = await supabase
         .from("jadwal_dose_log")
         .update({ status: "missed" })
         .eq("id", r.id)
         .eq("status", "pending");
-      if (!upErr) updated += 1;
+
+      if (upErr) {
+        console.error("[markMissed] Update error:", upErr.message);
+      } else {
+        updated++;
+        console.log("[markMissed] Updated success for id:", r.id);
+      }
+    } else {
+      console.log(
+        `[markMissed] ⏳ Still within range: dose=${doseTimeNorm}, end=${fmtWIB(
+          end
+        )}`
+      );
     }
   }
+
+  console.log("[markMissed] Finished. Total updated:", updated);
   return { date_for, updated };
 }

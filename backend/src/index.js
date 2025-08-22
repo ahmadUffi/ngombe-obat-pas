@@ -47,11 +47,10 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
-
 // Cron: stock checker (env-controlled)
 const CRON_ENABLED =
   (process.env.CRON_ENABLED || "false").toLowerCase() === "true";
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 7,19 * * *"; // default 07:00 & 19:00
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 7,19 * * *"; // default 07:00 & 19:00 WIB
 
 console.log(
   "CRON config:",
@@ -73,13 +72,13 @@ if (CRON_ENABLED) {
         console.error("StockCron failed:", e?.message || e);
       }
     },
-    { timezone: "Asia/Jakarta" }
+    { timezone: "Asia/Jakarta" } // ✅ fix timezone
   );
 } else {
   console.log("StockCron disabled. Set CRON_ENABLED=true in .env to enable.");
 }
 
-// Daily 00:01 cron: generate pending doses for today, then mark missed periodically
+// Daily 00:01 WIB
 cron.schedule(
   "1 0 * * *",
   async () => {
@@ -90,10 +89,10 @@ cron.schedule(
       console.error("DoseLog seed failed:", e?.message || e);
     }
   },
-  { timezone: "Asia/Jakarta" }
+  { timezone: "Asia/Jakarta" } // ✅ fix timezone
 );
 
-// Optional: minute-level cron to flip overdue pending to missed (grace 60m)
+// Every 10 minutes (00, 10, 20, 30, 40, 50 WIB)
 cron.schedule(
   "*/10 * * * *",
   async () => {
@@ -104,5 +103,31 @@ cron.schedule(
       console.error("DoseLog mark missed failed:", e?.message || e);
     }
   },
-  { timezone: "Asia/Jakarta" }
+  { timezone: "Asia/Jakarta" } // ✅ fix timezone
+);
+
+// Test: every 30 seconds
+cron.schedule(
+  "*/30 * * * * *",
+  async () => {
+    console.log("Corn running every 30 detik");
+    console.log(
+      "Current local time:",
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+    );
+  },
+  { timezone: "Asia/Jakarta" } // ✅ fix timezone
+);
+
+// Daily test at 13:25 WIB
+cron.schedule(
+  "25 13 * * *",
+  async () => {
+    console.log("Corn running every 13:25 WIB");
+    console.log(
+      "Current local time:",
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+    );
+  },
+  { timezone: "Asia/Jakarta" } // ✅ fix timezone
 );
