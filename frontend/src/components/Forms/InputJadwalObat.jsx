@@ -253,7 +253,15 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       if (formData.jadwalMinum.length === 0) {
         newErrors.jadwalMinum = "Harus ada minimal 1 jadwal minum";
       }
+      // Validasi jam tidak boleh sama
+      const jamSet = new Set();
       formData.jadwalMinum.forEach((jadwal, index) => {
+        if (jamSet.has(jadwal.jam_awal)) {
+          newErrors[`jadwal_${index}_awal`] =
+            "Jam mulai tidak boleh sama dengan jadwal lain";
+        }
+        jamSet.add(jadwal.jam_awal);
+
         if (!jadwal.jam_awal) {
           newErrors[`jadwal_${index}_awal`] = "Jam mulai harus diisi";
         }
