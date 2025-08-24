@@ -15,7 +15,9 @@ const EmailCallback = () => {
       const refreshToken = hashParams.get("refresh_token");
 
       if (!accessToken) {
-        throw new Error("Token verifikasi tidak ditemukan");
+        throw new Error(
+          "Token verifikasi tidak ditemukan silahkan daftar ulang atau"
+        );
       }
 
       const {

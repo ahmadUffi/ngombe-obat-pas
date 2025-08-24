@@ -199,7 +199,7 @@ const Register = () => {
         toast.success(
           "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.",
           {
-            autoClose: 8000,
+            autoClose: 16000,
           }
         );
 
