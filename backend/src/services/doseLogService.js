@@ -67,7 +67,7 @@ export async function upsertDoseTakenByIot({
   user_id,
   jam_awal,
   jam_berakhir,
-  takenAt = new Date(),
+  takenAt,
   source = "iot",
 }) {
   if (!Array.isArray(jam_awal) || jam_awal.length === 0)

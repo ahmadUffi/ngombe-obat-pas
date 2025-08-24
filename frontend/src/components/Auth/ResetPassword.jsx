@@ -91,7 +91,7 @@ const ResetPassword = () => {
       }
 
       toast.success(
-        "Password berhasil diperbarui! Silakan login dengan password baru."
+        "Password berhasil diperbarui! Silakan login dengan password baru"
       );
 
       // Sign out user after successful password reset
