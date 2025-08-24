@@ -1,4 +1,4 @@
-# SmedBox Backend API Documentation
+# Ngompas Backend API Documentation
 
 Base URL: http://163.53.195.57:5000
 All routes are prefixed with /v1/api

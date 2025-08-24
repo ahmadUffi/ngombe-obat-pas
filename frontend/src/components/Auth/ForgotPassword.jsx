@@ -132,7 +132,7 @@ const ForgotPassword = () => {
             <img
               src={logo}
               alt="Ngompas Logo"
-              className="h-12 md:h-16 mb-8 mx-auto md:mx-0"
+              className="h-18 md:h-32 mb-8 mx-auto"
             />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
               Lupa Password?
@@ -195,7 +195,7 @@ const ForgotPassword = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-sm text-orange-500 hover:text-orange-600 transition-colors"
+                className="text-sm cursor-pointer text-orange-500 hover:text-orange-600 transition-colors"
               >
                 ← Kembali ke Login
               </button>

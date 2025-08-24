@@ -66,10 +66,9 @@ const NavbarLeft = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <nav
-        className={`navbar fixed z-50 min-h-full bg-[var(--white)] shadow-lg flex flex-col items-center p-5 transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          w-[173px] lg:w-[173px]
-        `}
+        className={`navbar fixed z-50 h-screen w-[173px] lg:w-[173px] bg-[var(--white)] shadow-lg flex flex-col items-center p-5 transition-transform duration-300 ease-in-out
+    ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+    overflow-y-auto`}
         aria-label="Main navigation"
       >
         {/* Close button for mobile */}
@@ -100,12 +99,15 @@ const NavbarLeft = ({ isOpen, onClose }) => {
             alt="Logo Ngompas"
             width={100}
             height={100}
-            className="drop-shadow-sm"
+            className="drop-shadow-sm "
           />
         </div>
 
-        {/* Navigation Menu */}
-        <div className="action mt-10 w-full">
+        {/* Navigation Menu (scroll only this part) */}
+        <div
+          className="action mt-10 w-full flex-1 overflow-y-auto"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           <ul className="flex flex-col gap-6 items-center justify-center">
             {/* Dashboard */}
             <li className="w-full">

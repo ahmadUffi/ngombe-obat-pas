@@ -166,7 +166,7 @@ ${timingText}
 
 Jangan lupa untuk datang tepat waktu ya! 😊
 
-_Pesan otomatis dari SmedBox_`;
+_Pesan otomatis dari NGOMPAS_`;
 };
 
 /**
@@ -184,7 +184,7 @@ export const generateControlReminderMessage = (controlData) => {
 
 Jangan lupa untuk datang tepat waktu ya! 😊
 
-_Pesan otomatis dari SmedBox_`;
+_Pesan otomatis dari NGOMAPS_`;
 };
 
 /**

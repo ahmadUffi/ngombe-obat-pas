@@ -289,7 +289,7 @@ export const updateObatByID = async (id_jadwal, own, newStock) => {
           hour12: false,
         });
         const dosisLabel = result.dosis_obat ? ` (${result.dosis_obat})` : "";
-        const msg = `✅ Obat telah diminum\n\nPasien: ${result.nama_pasien}\nObat: ${result.nama_obat}${dosisLabel}\nSisa stok: ${stockObat}\nWaktu: ${waktu}`;
+        const msg = `✅ Obat telah diminum\n\nPasien: ${result.nama_pasien}\nObat: ${result.nama_obat}\nDosis: ${dosisLabel}\nSisa stok: ${stockObat}\nWaktu: ${waktu}`;
         await sendWhatsAppMessage(phone, msg, "text");
       }
     } catch (waErr) {
@@ -372,7 +372,7 @@ async function maybeNotifyLowStock(jadwalRow, stockObat) {
         0,
         Math.floor(stockObat / Math.max(1, dosesPerDay))
       );
-      const msg = `⚠️ Stok obat menipis\n\nObat: ${jadwalRow.nama_obat}\nSisa: ${stockObat} butir\nPerkiraan cukup: ${daysLeft} hari\n\nSilakan isi ulang stok melalui SmedBox.`;
+      const msg = `⚠️ Stok obat menipis\n\nObat: ${jadwalRow.nama_obat}\nSisa: ${stockObat} butir\nPerkiraan cukup: ${daysLeft} hari\n\nSilakan isi ulang stok melalui ngompas.com`;
       await sendWhatsAppMessage(phone, msg, "text");
     }
   } catch (e) {
@@ -391,7 +391,7 @@ async function handleOutOfStock(jadwal_id, user_id, jadwalRow) {
   try {
     const phone = await getFormattedPhoneByUserId(user_id);
     if (phone) {
-      const msg = `⛔ Stok obat habis\n\nObat: ${jadwalRow.nama_obat}\nPasien: ${jadwalRow.nama_pasien}\n\nPengingat minum obat dihentikan sementara. Isi ulang stok di SmedBox untuk mengaktifkan kembali.`;
+      const msg = `⛔ Stok obat habis\n\nObat: ${jadwalRow.nama_obat}\nPasien: ${jadwalRow.nama_pasien}\n\nPengingat minum obat dihentikan sementara. Isi ulang stok di ngompas.com untuk mengaktifkan kembali. atau bisa hapus obat untuk menonaktifkan pengingat.`;
       await sendWhatsAppMessage(phone, msg, "text");
     }
   } catch (e) {

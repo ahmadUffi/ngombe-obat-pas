@@ -232,7 +232,7 @@ const Register = () => {
             <img
               src={logo}
               alt="Ngompas Logo"
-              className="h-12 md:h-16 mb-8 mx-auto md:mx-0"
+              className="h-18 md:h-32 mb-8 mx-auto"
             />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
               Buat Akun Baru
@@ -803,7 +803,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="font-medium text-orange-500 hover:text-orange-600 transition-colors"
+                  className="font-medium cursor-pointer text-orange-500 hover:text-orange-600 transition-colors"
                 >
                   Login di sini
                 </button>

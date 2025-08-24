@@ -149,7 +149,7 @@ export const generateReminderMessage = (jadwalData, jam) => {
 
 Jangan lupa minum obat sesuai jadwal ya! 😊
 
-_Pesan otomatis dari SmedBox_`;
+_Pesan otomatis dari NGOMPAS`;
 };
 
 // Format start_date for Wablas

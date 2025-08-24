@@ -152,7 +152,7 @@ export async function checkAllJadwalStockAndNotify() {
         if (phone) {
           await sendWhatsAppMessage(
             phone,
-            `⛔ Stok obat habis\n\nObat: ${jadwal.nama_obat}\nPasien: ${jadwal.nama_pasien}\n\nPengingat dihentikan. Silakan isi ulang di SmedBox.`,
+            `⛔ Stok obat habis\n\nObat: ${jadwal.nama_obat}\nPasien: ${jadwal.nama_pasien}\n\nPengingat dihentikan. Silakan isi ulang di ngompas.com untuk mengaktifkan kembali atau hapus obat untuk menonaktifkan pengingat.`,
             "text"
           );
         }
