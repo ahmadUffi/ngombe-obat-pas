@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabaseClient.js";
+import { createHistory } from "./historyService.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
@@ -163,7 +164,7 @@ export async function markMissedForTodayAll() {
 
   const { data: rows, error } = await supabase
     .from("jadwal_dose_log")
-    .select("id, dose_time, status, jadwal_id")
+    .select("id, dose_time, status, jadwal_id, user_id")
     .eq("date_for", date_for)
     .eq("status", "pending");
 
@@ -238,6 +239,18 @@ export async function markMissedForTodayAll() {
       } else {
         updated++;
         console.log("[markMissed] Updated success for id:", r.id);
+        // Create history entry for missed dose (best-effort)
+        try {
+          await createHistory(r.user_id, r.jadwal_id, "missed");
+          console.log(
+            `[markMissed] History created for missed dose: jadwal_id=${r.jadwal_id}`
+          );
+        } catch (histErr) {
+          console.error(
+            "[markMissed] Failed to create history for missed dose:",
+            histErr?.message || histErr
+          );
+        }
       }
     } else {
       console.log(

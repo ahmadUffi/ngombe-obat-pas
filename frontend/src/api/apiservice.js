@@ -651,4 +651,25 @@ export class apiService {
       throw err;
     }
   }
+
+  // does logs api
+
+  static async getLogs(token) {
+    const authToken = token || this.getToken();
+
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/v1/api/dose-log/status-today`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
 }

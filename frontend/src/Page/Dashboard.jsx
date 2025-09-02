@@ -7,12 +7,14 @@ import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    todayMedications: 0,
+    // Dose log status
+    dosesTotalToday: 0, // jumlah obat seharusnya hari ini
+    dosesTakenToday: 0, // taken (diminum/diambil)
+    dosesPendingToday: 0, // pending (belum waktunya / belum diambil)
+    dosesMissedToday: 0, // missed (waktu terlewat dan belum diambil)
+
+    // Other stats retained
     upcomingControls: 0,
-    completedToday: 0,
-    totalSchedules: 0,
-    stockAlert: 0, // <= 3 pills (hampir habis)
-    emptyStock: 0, // = 0 pills (habis)
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -100,28 +102,33 @@ const Dashboard = () => {
       const today = new Date().toISOString().split("T")[0];
       const now = new Date();
 
-      // Today's remaining medications
-      const todayMedications = jadwalData.filter((item) => {
-        if (!item || !item.jam_awal || item.jumlah_obat === 0) return false;
-
+      // Build list of all scheduled dose times for today
+      const scheduledTimesToday = (() => {
         try {
-          const times = Array.isArray(item.jam_awal)
-            ? item.jam_awal
-            : [item.jam_awal];
-
-          return times.some((time) => {
-            if (!time) return false;
-            try {
-              const medicationTime = new Date(`${today}T${time}`);
-              return !isNaN(medicationTime.getTime()) && medicationTime >= now;
-            } catch (timeErr) {
-              return false;
+          const allTimes = [];
+          for (const item of jadwalData || []) {
+            if (!item || !item.jam_awal) continue;
+            const times = Array.isArray(item.jam_awal)
+              ? item.jam_awal
+              : [item.jam_awal];
+            for (const t of times) {
+              if (!t) continue;
+              try {
+                const dt = new Date(`${today}T${t}`);
+                if (!isNaN(dt.getTime())) allTimes.push(dt);
+              } catch (_) {
+                // ignore invalid time
+              }
             }
-          });
-        } catch (itemErr) {
-          return false;
+          }
+          // Sort ascending to help allocation
+          return allTimes.sort((a, b) => a - b);
+        } catch (_) {
+          return [];
         }
-      }).length;
+      })();
+
+      const totalScheduledToday = scheduledTimesToday.length;
 
       // Upcoming controls
       const upcomingControls = controlData.filter((item) => {
@@ -133,60 +140,45 @@ const Dashboard = () => {
         }
       }).length;
 
-      // Completed today
-
-      const completedToday = historyData.filter((item, index) => {
-        if (!item) {
-          return false;
-        }
-
+      // Taken today from history (diminum/diambil) based on created_at
+      const takenTodayCount = historyData.filter((item) => {
         try {
-          // Check if created_at exists and is a string
-          if (!item.created_at) {
-            return false;
-          }
-
-          if (typeof item.created_at !== "string") {
-            return false;
-          }
-
+          if (!item || typeof item.created_at !== "string") return false;
           const isToday = item.created_at.startsWith(today);
-          const isCompleted =
+          const isTaken =
             item.status === "diminum" || item.status === "diambil";
-
-          return isToday && isCompleted;
-        } catch (err) {
+          return isToday && isTaken;
+        } catch (_) {
           return false;
         }
       }).length;
 
-      // Stock alert: obat hampir habis (1-5 pills)
-      const stockAlert = jadwalData.filter((item) => {
-        if (!item || typeof item.jumlah_obat !== "number") return false;
-        try {
-          return item.jumlah_obat > 0 && item.jumlah_obat <= 4;
-        } catch (err) {
-          return false;
-        }
-      }).length;
-
-      // Empty stock: obat habis (0 pills)
-      const emptyStock = jadwalData.filter((item) => {
-        if (!item || typeof item.jumlah_obat !== "number") return false;
-        try {
-          return item.jumlah_obat === 0;
-        } catch (err) {
-          return false;
-        }
-      }).length;
+      // Derive pending and missed by comparing scheduled times to now and allocating taken to past first
+      const pastScheduled = scheduledTimesToday.filter((dt) => dt < now).length;
+      const futureScheduled = totalScheduledToday - pastScheduled;
+      const allocatedToPast = Math.min(takenTodayCount, pastScheduled);
+      const remainingTaken = Math.max(0, takenTodayCount - allocatedToPast);
+      const missed = Math.max(0, pastScheduled - allocatedToPast);
+      const pending = Math.max(0, futureScheduled - remainingTaken);
 
       setStats({
-        todayMedications,
+        dosesTotalToday: totalScheduledToday,
+        dosesTakenToday: Math.min(takenTodayCount, totalScheduledToday),
+        dosesPendingToday: Math.min(
+          pending,
+          Math.max(
+            0,
+            totalScheduledToday - Math.min(takenTodayCount, totalScheduledToday)
+          )
+        ),
+        dosesMissedToday: Math.min(
+          missed,
+          Math.max(
+            0,
+            totalScheduledToday - Math.min(takenTodayCount, totalScheduledToday)
+          )
+        ),
         upcomingControls,
-        completedToday,
-        totalSchedules: jadwalData.length,
-        stockAlert,
-        emptyStock,
       });
     } catch (error) {
       toast.error(
@@ -197,12 +189,11 @@ const Dashboard = () => {
       );
 
       setStats({
-        todayMedications: 0,
+        dosesTotalToday: 0,
+        dosesTakenToday: 0,
+        dosesPendingToday: 0,
+        dosesMissedToday: 0,
         upcomingControls: 0,
-        completedToday: 0,
-        totalSchedules: 0,
-        stockAlert: 0,
-        emptyStock: 0,
       });
     } finally {
       setLoading(false);
@@ -283,45 +274,59 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {/* Today's Medications */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                {/* Total Scheduled Today */}
                 <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50">
                   <div className="absolute top-0 right-0 w-12 h-12 bg-blue-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
                   <div className="relative text-center">
-                    <div className="text-2xl mb-2">💊</div>
+                    <div className="text-2xl mb-2">⌚</div>
                     <div className="text-2xl font-bold mb-1 text-blue-600">
-                      {stats.todayMedications}
+                      {stats.dosesTotalToday}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">
-                      Obat Hari Ini
+                      Jadwal Obat Hari Ini
                     </div>
                   </div>
                 </div>
 
-                {/* Stock Alert - Hampir Habis */}
+                {/* Taken Today */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-green-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">✅</div>
+                    <div className="text-2xl font-bold mb-1 text-green-600">
+                      {stats.dosesTakenToday}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Diambil/Diminum
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pending Today */}
                 <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/50">
                   <div className="absolute top-0 right-0 w-12 h-12 bg-yellow-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
                   <div className="relative text-center">
-                    <div className="text-2xl mb-2">⚠️</div>
+                    <div className="text-2xl mb-2">⏳</div>
                     <div className="text-2xl font-bold mb-1 text-yellow-600">
-                      {stats.stockAlert}
+                      {stats.dosesPendingToday}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">
-                      Obat Hampir Habis
+                      Menunggu Waktu
                     </div>
                   </div>
                 </div>
 
-                {/* Empty Stock - Habis */}
+                {/* Missed Today */}
                 <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-red-50 to-pink-50 border border-red-200/50">
                   <div className="absolute top-0 right-0 w-12 h-12 bg-red-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
                   <div className="relative text-center">
                     <div className="text-2xl mb-2">❌</div>
                     <div className="text-2xl font-bold mb-1 text-red-600">
-                      {stats.emptyStock}
+                      {stats.dosesMissedToday}
                     </div>
                     <div className="text-sm font-semibold text-gray-600">
-                      Obat Habis
+                      Terlewat
                     </div>
                   </div>
                 </div>
