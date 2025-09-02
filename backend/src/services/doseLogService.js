@@ -1,5 +1,7 @@
 import { supabase } from "../config/supabaseClient.js";
 import { createHistory } from "./historyService.js";
+import { sendWhatsAppMessage } from "./messageService.js";
+import { formatPhoneNumber } from "./wablasService.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
@@ -11,6 +13,17 @@ const TZ = "Asia/Jakarta";
 
 function fmtWIB(d) {
   return dayjs(d).tz(TZ).format("DD/MM/YYYY, HH:mm:ss");
+}
+
+// Debug helper for consistent logs
+function dbg(tag, obj = undefined) {
+  try {
+    if (obj !== undefined) {
+      console.log(`[DoseLog:${tag}]`, obj);
+    } else {
+      console.log(`[DoseLog:${tag}]`);
+    }
+  } catch {}
 }
 
 // Utilities
@@ -71,6 +84,7 @@ export async function upsertDoseTakenByIot({
   takenAt = new Date(),
   source = "iot",
 }) {
+  dbg("upsert:start", { jadwal_id, user_id, takenAt: fmtWIB(takenAt) });
   if (!Array.isArray(jam_awal) || jam_awal.length === 0)
     return { ok: false, message: "No jam_awal" };
   if (!Array.isArray(jam_berakhir) || jam_berakhir.length === 0)
@@ -82,6 +96,7 @@ export async function upsertDoseTakenByIot({
 
   const closest = findClosestDose(awalList, takenAt);
   if (!closest) return { ok: false, message: "No closest dose" };
+  dbg("upsert:closest", closest);
 
   const idx = awalList.findIndex((j) => j === closest.jam);
   if (idx === -1 || typeof akhirList[idx] === "undefined")
@@ -98,6 +113,11 @@ export async function upsertDoseTakenByIot({
   }
 
   if (nowWIB.isBefore(start) || nowWIB.isAfter(end)) {
+    dbg("upsert:out_of_range", {
+      start: start.format(),
+      end: end.format(),
+      now: nowWIB.format(),
+    });
     return {
       ok: false,
       message: `Diluar rentang waktu minum (${closest.jam} - ${akhirList[idx]})`,
@@ -121,19 +141,30 @@ export async function upsertDoseTakenByIot({
     .upsert(payload, { onConflict: "jadwal_id, date_for, dose_time" });
 
   if (error) return { ok: false, message: error.message };
+  dbg("upsert:upsert_ok", payload);
   return { ok: true, ...payload };
 }
 
 // Create 'pending' rows for all jadwal for today (idempotent)
 export async function ensurePendingForTodayAllJadwal() {
   const date_for = toLocalDate(new Date());
+  dbg("ensurePending:start", { date_for, tz: TZ, now: fmtWIB(new Date()) });
   const { data: jadwalList, error } = await supabase
     .from("jadwal")
     .select("id, user_id, jam_awal");
-  if (error) throw new Error("Fetch jadwal failed: " + error.message);
+  if (error) {
+    dbg("ensurePending:fetch_error", error.message);
+    throw new Error("Fetch jadwal failed: " + error.message);
+  }
+  dbg("ensurePending:jadwal_count", jadwalList?.length || 0);
 
   let inserted = 0;
   for (const j of jadwalList || []) {
+    dbg("ensurePending:processing_jadwal", {
+      id: j.id,
+      user_id: j.user_id,
+      jam_count: Array.isArray(j.jam_awal) ? j.jam_awal.length : 0,
+    });
     const jams = Array.isArray(j.jam_awal) ? j.jam_awal : [];
     const rows = jams.map((jam) => ({
       jadwal_id: j.id,
@@ -149,8 +180,17 @@ export async function ensurePendingForTodayAllJadwal() {
         onConflict: "jadwal_id,date_for,dose_time",
         ignoreDuplicates: true,
       });
-    if (!insErr) inserted += rows.length;
+    if (!insErr) {
+      inserted += rows.length;
+      dbg("ensurePending:upsert_ok", { jadwal_id: j.id, rows: rows.length });
+    } else {
+      dbg("ensurePending:upsert_error", insErr.message);
+    }
   }
+
+  for (const j of jadwalList || []) {
+  }
+  dbg("ensurePending:done", { date_for, inserted });
   return { date_for, inserted };
 }
 
@@ -160,7 +200,7 @@ export async function ensurePendingForTodayAllJadwal() {
 // Mark 'missed' for today when time + grace has passed (best-effort JS-side)
 export async function markMissedForTodayAll() {
   const date_for = dayjs().tz(TZ).format("YYYY-MM-DD");
-  console.log("[markMissed] Running for date:", date_for);
+  dbg("missed:start", { date_for, tz: TZ, now: fmtWIB(new Date()) });
 
   const { data: rows, error } = await supabase
     .from("jadwal_dose_log")
@@ -169,44 +209,39 @@ export async function markMissedForTodayAll() {
     .eq("status", "pending");
 
   if (error) {
-    console.error("[markMissed] Fetch pending dose log failed:", error.message);
+    dbg("missed:fetch_error", error.message);
     throw new Error("Fetch pending dose log failed: " + error.message);
   }
 
-  console.log("[markMissed] Pending rows:", rows?.length);
-
   const now = dayjs().tz(TZ);
-  console.log("[markMissed] Current time:", fmtWIB(now));
+  dbg("missed:pending_count", rows?.length || 0);
 
   let updated = 0;
 
   for (const r of rows || []) {
-    console.log("\n[markMissed] Checking dose log:", r);
-
+    dbg("missed:row", r);
     const { data: jadwal, error: jadwalErr } = await supabase
       .from("jadwal")
-      .select("jam_awal, jam_berakhir")
+      .select("jam_awal, jam_berakhir, nama_obat, nama_pasien")
       .eq("id", r.jadwal_id)
       .single();
 
     if (jadwalErr) {
-      console.error("[markMissed] Jadwal fetch error:", jadwalErr.message);
+      dbg("missed:jadwal_fetch_error", {
+        id: r.jadwal_id,
+        error: jadwalErr.message,
+      });
       continue;
     }
-    console.log("[markMissed] Jadwal:", jadwal);
 
     const doseTimeNorm = normalizeTimeStr(r.dose_time);
     const jamAwalNorm = (jadwal.jam_awal || []).map(normalizeTimeStr);
     const jamAkhirNorm = (jadwal.jam_berakhir || []).map(normalizeTimeStr);
-
-    console.log(
-      "[markMissed] Normalized times -> dose:",
-      doseTimeNorm,
-      "jam_awal:",
-      jamAwalNorm,
-      "jam_akhir:",
-      jamAkhirNorm
-    );
+    dbg("missed:times", {
+      dose: doseTimeNorm,
+      startList: jamAwalNorm,
+      endList: jamAkhirNorm,
+    });
 
     const idx = jamAwalNorm.findIndex((j) => j === doseTimeNorm);
     if (idx === -1 || !jamAkhirNorm[idx]) {
@@ -219,15 +254,10 @@ export async function markMissedForTodayAll() {
 
     // ?? bikin end pakai dayjs WIB
     const end = dayjs.tz(`${date_for} ${jamAkhirNorm[idx]}`, TZ);
-
-    console.log(
-      `[markMissed] Comparing now=${fmtWIB(now)} vs end=${fmtWIB(end)} (WIB)`
-    );
+    dbg("missed:compare", { now: fmtWIB(now), end: fmtWIB(end) });
 
     if (now.isAfter(end)) {
-      console.log(
-        `[markMissed] ? Marking as missed: id=${r.id}, dose=${doseTimeNorm}`
-      );
+      dbg("missed:update_to_missed", { id: r.id, dose: doseTimeNorm });
       const { error: upErr } = await supabase
         .from("jadwal_dose_log")
         .update({ status: "missed" })
@@ -238,29 +268,54 @@ export async function markMissedForTodayAll() {
         console.error("[markMissed] Update error:", upErr.message);
       } else {
         updated++;
-        console.log("[markMissed] Updated success for id:", r.id);
         // Create history entry for missed dose (best-effort)
         try {
           await createHistory(r.user_id, r.jadwal_id, "missed");
-          console.log(
-            `[markMissed] History created for missed dose: jadwal_id=${r.jadwal_id}`
-          );
+          dbg("missed:history_created", { jadwal_id: r.jadwal_id });
         } catch (histErr) {
           console.error(
             "[markMissed] Failed to create history for missed dose:",
             histErr?.message || histErr
           );
         }
+
+        // Send WhatsApp message to user about missed dose (best-effort)
+        try {
+          const { data: profile } = await supabase
+            .from("profile")
+            .select("no_hp")
+            .eq("user_id", r.user_id)
+            .single();
+
+          const phone = profile?.no_hp
+            ? formatPhoneNumber(profile.no_hp)
+            : null;
+          dbg("missed:phone", { phone });
+
+          if (phone) {
+            const msg =
+              `❌ Jadwal obat terlewat\n\n` +
+              `👤 Pasien: ${jadwal?.nama_pasien || "-"}\n` +
+              `💊 Obat: ${jadwal?.nama_obat || "-"}\n` +
+              `⏰ Jadwal: ${doseTimeNorm} (batas ${jamAkhirNorm[idx]})\n\n` +
+              `Jika masih diperlukan, silakan minum secepatnya atau lanjutkan ke jadwal berikutnya.`;
+            await sendWhatsAppMessage(phone, msg, "text");
+            dbg("missed:wa_sent", { phone });
+          } else {
+            dbg("missed:no_phone", { user_id: r.user_id });
+          }
+        } catch (waErr) {
+          console.warn(
+            "[markMissed] WA notify failed:",
+            waErr?.message || waErr
+          );
+        }
       }
     } else {
-      console.log(
-        `[markMissed] ? Still within range: dose=${doseTimeNorm}, end=${fmtWIB(
-          end
-        )}`
-      );
+      dbg("missed:within_window", { dose: doseTimeNorm, end: fmtWIB(end) });
     }
   }
 
-  console.log("[markMissed] Finished. Total updated:", updated);
+  dbg("missed:done", { date_for, updated });
   return { date_for, updated };
 }
