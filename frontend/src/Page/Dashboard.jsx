@@ -19,7 +19,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { getAllJadwal } = useJadwal();
+  const { getAllJadwal, getTodayDoseStatus } = useJadwal();
   const { getAllControl } = useControl();
   const { getAllHistory } = useHistory();
 
@@ -36,6 +36,7 @@ const Dashboard = () => {
       let jadwalData = [];
       let controlData = [];
       let historyData = [];
+      let todayDoseData = [];
 
       try {
         const jadwalResponse = await getAllJadwal();
@@ -75,17 +76,12 @@ const Dashboard = () => {
 
       try {
         const historyResponse = await getAllHistory();
-
-        // Handle different response formats
         if (historyResponse) {
           if (historyResponse.data && Array.isArray(historyResponse.data)) {
-            // Format: { success: true, message: "...", data: [...] }
             historyData = historyResponse.data;
           } else if (Array.isArray(historyResponse)) {
-            // Format: [...]
             historyData = historyResponse;
           } else if (historyResponse.success && historyResponse.data) {
-            // Another possible format
             historyData = Array.isArray(historyResponse.data)
               ? historyResponse.data
               : [];
@@ -99,36 +95,22 @@ const Dashboard = () => {
         historyData = [];
       }
 
-      const today = new Date().toISOString().split("T")[0];
-      const now = new Date();
-
-      // Build list of all scheduled dose times for today
-      const scheduledTimesToday = (() => {
-        try {
-          const allTimes = [];
-          for (const item of jadwalData || []) {
-            if (!item || !item.jam_awal) continue;
-            const times = Array.isArray(item.jam_awal)
-              ? item.jam_awal
-              : [item.jam_awal];
-            for (const t of times) {
-              if (!t) continue;
-              try {
-                const dt = new Date(`${today}T${t}`);
-                if (!isNaN(dt.getTime())) allTimes.push(dt);
-              } catch (_) {
-                // ignore invalid time
-              }
-            }
-          }
-          // Sort ascending to help allocation
-          return allTimes.sort((a, b) => a - b);
-        } catch (_) {
-          return [];
+      // Fetch dose logs status today from API (authoritative)
+      try {
+        const doseResp = await getTodayDoseStatus();
+        // doseResp expected: { ok: true, data: [ {status: 'pending'|'taken'|'missed', ...}, ... ] }
+        if (doseResp && Array.isArray(doseResp.data)) {
+          todayDoseData = doseResp.data;
+        } else if (Array.isArray(doseResp)) {
+          todayDoseData = doseResp;
+        } else {
+          todayDoseData = [];
         }
-      })();
+      } catch (_) {
+        todayDoseData = [];
+      }
 
-      const totalScheduledToday = scheduledTimesToday.length;
+      const today = new Date().toISOString().split("T")[0];
 
       // Upcoming controls
       const upcomingControls = controlData.filter((item) => {
@@ -140,44 +122,23 @@ const Dashboard = () => {
         }
       }).length;
 
-      // Taken today from history (diminum/diambil) based on created_at
-      const takenTodayCount = historyData.filter((item) => {
-        try {
-          if (!item || typeof item.created_at !== "string") return false;
-          const isToday = item.created_at.startsWith(today);
-          const isTaken =
-            item.status === "diminum" || item.status === "diambil";
-          return isToday && isTaken;
-        } catch (_) {
-          return false;
-        }
-      }).length;
-
-      // Derive pending and missed by comparing scheduled times to now and allocating taken to past first
-      const pastScheduled = scheduledTimesToday.filter((dt) => dt < now).length;
-      const futureScheduled = totalScheduledToday - pastScheduled;
-      const allocatedToPast = Math.min(takenTodayCount, pastScheduled);
-      const remainingTaken = Math.max(0, takenTodayCount - allocatedToPast);
-      const missed = Math.max(0, pastScheduled - allocatedToPast);
-      const pending = Math.max(0, futureScheduled - remainingTaken);
+      // Use backend dose log status today as truth source
+      const totalScheduledToday = todayDoseData.length;
+      const dosesTakenToday = todayDoseData.filter(
+        (d) => d.status === "taken"
+      ).length;
+      const dosesMissedToday = todayDoseData.filter(
+        (d) => d.status === "missed"
+      ).length;
+      const dosesPendingToday = todayDoseData.filter(
+        (d) => d.status === "pending"
+      ).length;
 
       setStats({
         dosesTotalToday: totalScheduledToday,
-        dosesTakenToday: Math.min(takenTodayCount, totalScheduledToday),
-        dosesPendingToday: Math.min(
-          pending,
-          Math.max(
-            0,
-            totalScheduledToday - Math.min(takenTodayCount, totalScheduledToday)
-          )
-        ),
-        dosesMissedToday: Math.min(
-          missed,
-          Math.max(
-            0,
-            totalScheduledToday - Math.min(takenTodayCount, totalScheduledToday)
-          )
-        ),
+        dosesTakenToday,
+        dosesPendingToday,
+        dosesMissedToday,
         upcomingControls,
       });
     } catch (error) {
@@ -289,20 +250,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Taken Today */}
-                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50">
-                  <div className="absolute top-0 right-0 w-12 h-12 bg-green-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
-                  <div className="relative text-center">
-                    <div className="text-2xl mb-2">✅</div>
-                    <div className="text-2xl font-bold mb-1 text-green-600">
-                      {stats.dosesTakenToday}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-600">
-                      Diambil/Diminum
-                    </div>
-                  </div>
-                </div>
-
                 {/* Pending Today */}
                 <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/50">
                   <div className="absolute top-0 right-0 w-12 h-12 bg-yellow-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
@@ -313,6 +260,20 @@ const Dashboard = () => {
                     </div>
                     <div className="text-sm font-semibold text-gray-600">
                       Menunggu Waktu
+                    </div>
+                  </div>
+                </div>
+
+                {/* Taken Today */}
+                <div className="relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50">
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-green-400/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                  <div className="relative text-center">
+                    <div className="text-2xl mb-2">✅</div>
+                    <div className="text-2xl font-bold mb-1 text-green-600">
+                      {stats.dosesTakenToday}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-600">
+                      Diambil/Diminum
                     </div>
                   </div>
                 </div>

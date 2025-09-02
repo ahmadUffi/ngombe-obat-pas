@@ -106,7 +106,8 @@ export const useJadwal = () => {
   );
 
   const getTodayDoseStatus = useCallback(async () => {
-    return await callApi(apiService.getTodayDoseStatus, token);
+    // Use dose-log/status-today endpoint
+    return await callApi(apiService.getLogs, token);
   }, [callApi, token]);
 
   return {

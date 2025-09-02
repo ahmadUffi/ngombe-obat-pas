@@ -92,9 +92,9 @@ cron.schedule(
   { timezone: "Asia/Jakarta" } // ✅ fix timezone
 );
 
-// Every 10 minutes (00, 10, 20, 30, 40, 50 WIB)
+// Every 2 minutes (00, 10, 20, 30, 40, 50 WIB)
 cron.schedule(
-  "*/10 * * * *",
+  "*/02 * * * *",
   async () => {
     try {
       const res = await markMissedForTodayAll();
