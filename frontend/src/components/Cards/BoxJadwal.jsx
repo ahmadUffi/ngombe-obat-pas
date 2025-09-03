@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 
-const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
+const BoxJadwal = ({
+  data,
+  doseStatusByTime = {},
+  onEditQuantity,
+  onDelete,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Menggunakan format data baru dengan safe defaults
@@ -58,7 +63,10 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
     for (let i = 0; i < jadwalLengkap.length; i++) {
       const jadwal = jadwalLengkap[i];
       if (currentTime >= jadwal.awal && currentTime <= jadwal.berakhir) {
-        return { isActive: true, activeIndex: i };
+        // Only mark AKTIF when status for this time is still pending
+        const status = doseStatusByTime[jadwal.awal];
+        const isPending = !status || status === "pending";
+        return { isActive: !!isPending, activeIndex: i };
       }
     }
     return { isActive: false, activeIndex: -1 };
@@ -282,6 +290,16 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                 {jadwalLengkap.map((jadwal, idx) => {
                   const isCurrentlyActive =
                     currentStatus.isActive && currentStatus.activeIndex === idx;
+                  const slotStatus = doseStatusByTime[jadwal.awal];
+                  const now = new Date();
+                  const currentTime = `${now
+                    .getHours()
+                    .toString()
+                    .padStart(2, "0")}:${now
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}`;
+                  const isPast = currentTime > jadwal.berakhir;
                   // Function to calculate duration between two time strings (HH:MM format)
                   const calculateDuration = (startTime, endTime) => {
                     // Parse times to minutes since midnight
@@ -354,6 +372,17 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                                 AKTIF
                               </span>
                             </div>
+                          )}
+                          {/* Past slot badges from dose log */}
+                          {slotStatus === "taken" && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+                              Diminum
+                            </span>
+                          )}
+                          {isPast && slotStatus === "missed" && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+                              Terlewat
+                            </span>
                           )}
                           <span
                             className={`text-xs px-2 py-1 rounded-full ${

@@ -15,6 +15,7 @@ const Jadwal = () => {
   const [filter, setFilter] = useState("all");
   const [jadwalData, setJadwalData] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [todayDoseMap, setTodayDoseMap] = useState({}); // { [jadwal_id]: { [dose_time]: status } }
 
   // State untuk modal konfirmasi
   const [confirmModal, setConfirmModal] = useState({
@@ -28,6 +29,7 @@ const Jadwal = () => {
   // Using the custom hook for jadwal operations
   const {
     getAllJadwal,
+    getTodayDoseStatus,
     createJadwal,
     updateStock,
     deleteJadwal,
@@ -43,7 +45,11 @@ const Jadwal = () => {
 
   const loadJadwalData = async () => {
     try {
-      const data = await getAllJadwal();
+      // Load jadwal and today's dose statuses in parallel
+      const [data, doseRes] = await Promise.all([
+        getAllJadwal(),
+        getTodayDoseStatus().catch(() => ({ ok: false, data: [] })),
+      ]);
 
       // Ensure data is an array
       const dataArray = Array.isArray(data) ? data : [];
@@ -68,9 +74,21 @@ const Jadwal = () => {
         slot_obat: item.slot_obat || 1,
       }));
       setJadwalData(transformedData);
+
+      // Build map: { jadwal_id: { dose_time: status } }
+      const rows = Array.isArray(doseRes?.data) ? doseRes.data : [];
+      const map = rows.reduce((acc, row) => {
+        const jid = row.jadwal_id;
+        if (!jid) return acc;
+        if (!acc[jid]) acc[jid] = {};
+        acc[jid][row.dose_time] = row.status;
+        return acc;
+      }, {});
+      setTodayDoseMap(map);
     } catch (err) {
       // Set empty array on error instead of dummy data
       setJadwalData([]);
+      setTodayDoseMap({});
       setError("Gagal memuat data jadwal. Silakan coba lagi.");
     }
   };
@@ -449,6 +467,7 @@ const Jadwal = () => {
           <div key={data.id || index} className="flex-shrink-0">
             <BoxJadwal
               data={data}
+              doseStatusByTime={todayDoseMap?.[data.id] || {}}
               onEditQuantity={handleEditQuantity}
               onDelete={() => handleDeleteJadwal(data.id)}
             />

@@ -117,6 +117,11 @@ const History = () => {
           historyControlInfo.toLowerCase().includes(searchTerm.toLowerCase()) ||
           historyDokter.toLowerCase().includes(searchTerm.toLowerCase());
 
+        console.log(historyNamaObat.toLowerCase());
+        console.log(
+          historyNamaObat.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
         return matchesFilter && matchesSearch;
       });
 
@@ -278,7 +283,7 @@ const History = () => {
         return "bg-gradient-to-r from-teal-500 to-cyan-500";
       case "terlewat":
         return "bg-gradient-to-r from-red-500 to-rose-500";
-      case "missed":
+      case "obat tidak diminum":
         return "bg-gradient-to-r from-orange-500 to-red-500";
       case "dijadwalkan":
         return "bg-gradient-to-r from-blue-500 to-indigo-500";
@@ -314,13 +319,6 @@ const History = () => {
           className: "bg-red-100 text-red-800 border border-red-200",
           text: "Stok Habis",
           icon: "❗",
-        };
-      case "obat tidak diminum":
-        return {
-          className:
-            "bg-red-100 text-red-800 border border-red-200 font-medium",
-          text: "Obat Tidak Diminum",
-          icon: "✗",
         };
       case "mencoba membuka obat":
         return {
@@ -359,10 +357,10 @@ const History = () => {
           text: "Terlewat",
           icon: "⚠",
         };
-      case "missed":
+      case "obat tidak diminum":
         return {
           className: "bg-orange-100 text-orange-800 border border-orange-200",
-          text: "Missed",
+          text: "Obat Tidak Diminum",
           icon: "❌",
         };
       case "dijadwalkan":

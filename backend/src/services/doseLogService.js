@@ -270,7 +270,7 @@ export async function markMissedForTodayAll() {
         updated++;
         // Create history entry for missed dose (best-effort)
         try {
-          await createHistory(r.user_id, r.jadwal_id, "missed");
+          await createHistory(r.user_id, r.jadwal_id, "obat tidak diminum");
           dbg("missed:history_created", { jadwal_id: r.jadwal_id });
         } catch (histErr) {
           console.error(
