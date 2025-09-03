@@ -91,36 +91,46 @@ const History = () => {
         return [];
       }
 
+      // Helper to safely normalize any value to a lowercase string for search
+      const norm = (val) => {
+        if (val == null) return "";
+        if (Array.isArray(val)) return val.join(", ").toString().toLowerCase();
+        if (typeof val === "number") return String(val).toLowerCase();
+        if (typeof val === "string") return val.toLowerCase();
+        // objects or other types
+        try {
+          return String(val).toLowerCase();
+        } catch {
+          return "";
+        }
+      };
+
+      const q = (searchTerm || "").toLowerCase().trim();
+
       const filtered = histories.filter((history) => {
         if (!history) {
           return false;
         }
 
         // Safe property access
-        const historyStatus = history.status || "";
-        const historyNamaObat = history.nama_obat || "";
-        const historyWaktuMinum = history.waktu_minum || "";
-        const historyPasienName = history.pasien_name || "";
-        const historyControlInfo = history.control_info || "";
-        const historyDokter = history.dokter || "";
+        const historyStatus = norm(history.status);
+        const historyNamaObat = norm(history.nama_obat);
+        const historyWaktuMinum = norm(history.waktu_minum);
+        const historyPasienName = norm(history.pasien_name);
+        const historyControlInfo = norm(history.control_info);
+        const historyDokter = norm(history.dokter);
 
         const matchesFilter =
-          filter === "all" ||
-          historyStatus.toLowerCase() === filter.toLowerCase();
+          filter === "all" || historyStatus === (filter || "").toLowerCase();
 
         const matchesSearch =
-          !searchTerm ||
-          historyNamaObat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyWaktuMinum.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyStatus.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyPasienName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyControlInfo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          historyDokter.toLowerCase().includes(searchTerm.toLowerCase());
-
-        console.log(historyNamaObat.toLowerCase());
-        console.log(
-          historyNamaObat.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+          !q ||
+          historyNamaObat.includes(q) ||
+          historyWaktuMinum.includes(q) ||
+          historyStatus.includes(q) ||
+          historyPasienName.includes(q) ||
+          historyControlInfo.includes(q) ||
+          historyDokter.includes(q);
 
         return matchesFilter && matchesSearch;
       });
