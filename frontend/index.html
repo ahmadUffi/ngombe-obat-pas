@@ -1,15 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ngompas</title>
+    <meta name="robots" content="index, follow" />
+    <meta
+      name="description"
+      content="Ngompas adalah aplikasi pengingat minum obat dan kontrol kesehatan. Kelola jadwal obat, pantau status harian (diminum, terlewat, pending), dan riwayat aktivitas Anda."
+    />
+    <meta
+      name="keywords"
+      content="ngompas, pengingat obat, jadwal minum obat, kesehatan, kontrol dokter, riwayat kesehatan"
+    />
+    <meta name="theme-color" content="#6D28D9" />
+
+    <!-- Preconnect / DNS Prefetch for API host -->
+    <link rel="dns-prefetch" href="//api.ngompas.com" />
+    <link rel="preconnect" href="https://api.ngompas.com" crossorigin />
+
+    <!-- Open Graph -->
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Ngompas — Pengingat Minum Obat & Kontrol Kesehatan"
+    />
+    <meta
+      property="og:description"
+      content="Kelola jadwal obat, pantau status harian, dan lihat riwayat kesehatan Anda dengan Ngompas."
+    />
+    <meta property="og:image" content="/android-chrome-512x512.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Ngompas — Pengingat Minum Obat & Kontrol Kesehatan"
+    />
+    <meta
+      name="twitter:description"
+      content="Kelola jadwal obat, pantau status harian, dan lihat riwayat kesehatan Anda dengan Ngompas."
+    />
+    <meta name="twitter:image" content="/android-chrome-512x512.png" />
+
+    <title>Ngompas — Pengingat Minum Obat & Kontrol Kesehatan</title>
+
+    <!-- Structured Data: WebApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Ngompas",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web",
+        "description": "Aplikasi pengingat minum obat dan kontrol kesehatan untuk membantu Anda tetap teratur.",
+        "image": "/android-chrome-512x512.png",
+        "url": "/",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "IDR"
+        }
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <div
+        style="
+          padding: 1rem;
+          background: #fff1f2;
+          color: #991b1b;
+          text-align: center;
+        "
+      >
+        Ngompas membutuhkan JavaScript untuk berjalan dengan baik. Silakan
+        aktifkan JavaScript di browser Anda.
+      </div>
+    </noscript>
     <div id="modal"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
