@@ -139,7 +139,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
 
   return (
     <div className="p-2">
-      <div className="w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group max-h-[600px] flex flex-col">
+      <div className="w-[300px] md:w-[350px] lg:w-[380px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group max-h-[600px] flex flex-col">
         {/* Header - Always Visible */}
         <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 relative flex-shrink-0">
           {/* Status Badge */}
