@@ -78,9 +78,9 @@ if (CRON_ENABLED) {
   console.log("StockCron disabled. Set CRON_ENABLED=true in .env to enable.");
 }
 
-// Daily 00:01 WIB
+// Daily 13:35 WIB
 cron.schedule(
-  "1 0 * * *",
+  "35 13 * * *",
   async () => {
     try {
       const seed = await ensurePendingForTodayAllJadwal();

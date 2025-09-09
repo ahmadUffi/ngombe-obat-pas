@@ -36,11 +36,24 @@ function toLocalDate(ts = new Date()) {
 }
 function normalizeTimeStr(t) {
   if (!t) return null;
-  // Supabase bisa kirim "13:26:00" atau Date object
+  // Date object -> format HH:mm:ss WIB
   if (t instanceof Date) {
-    return t.toTimeString().slice(0, 8); // "HH:MM:SS"
+    return dayjs(t).tz(TZ).format("HH:mm:ss");
   }
-  return String(t).padStart(8, "0").slice(0, 8); // jaga panjang 8 char
+  const raw = String(t).trim();
+  // Already HH:mm:ss
+  if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) return raw;
+  // HH:mm (or H:mm)
+  if (/^\d{1,2}:\d{2}$/.test(raw)) {
+    const [h, m] = raw.split(":");
+    return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:00`;
+  }
+  // Compact e.g. 0830 -> 08:30:00
+  if (/^\d{3,4}$/.test(raw)) {
+    const padded = raw.padStart(4, "0");
+    return `${padded.slice(0, 2)}:${padded.slice(2)}:00`;
+  }
+  return null; // Unrecognized
 }
 
 function parseHHMM(str) {
@@ -90,22 +103,33 @@ export async function upsertDoseTakenByIot({
   if (!Array.isArray(jam_berakhir) || jam_berakhir.length === 0)
     return { ok: false, message: "No jam_berakhir" };
 
-  // Normalisasi semua jam_awal & jam_berakhir
-  const awalList = jam_awal.map(normalizeTimeStr);
-  const akhirList = jam_berakhir.map(normalizeTimeStr);
+  // Normalisasi semua jam_awal & jam_berakhir ke HH:mm:ss
+  const awalList = jam_awal.map(normalizeTimeStr).filter(Boolean);
+  const akhirList = jam_berakhir.map(normalizeTimeStr).filter(Boolean);
 
-  const closest = findClosestDose(awalList, takenAt);
+  // findClosestDose bekerja dengan HH:mm; kirim versi tanpa detik
+  const awalListForCalc = awalList.map((t) => t.slice(0, 5));
+  const closest = findClosestDose(awalListForCalc, takenAt);
   if (!closest) return { ok: false, message: "No closest dose" };
   dbg("upsert:closest", closest);
 
-  const idx = awalList.findIndex((j) => j === closest.jam);
+  const idx = awalList.findIndex((j) => j.slice(0, 5) === closest.jam);
   if (idx === -1 || typeof akhirList[idx] === "undefined")
     return { ok: false, message: "No matching jam_berakhir" };
 
   const nowWIB = dayjs(takenAt).tz(TZ);
-  const start = nowWIB.hour(...closest.jam.split(":").map(Number)).second(0);
+  const [hhStart, mmStart] = closest.jam.split(":");
+  const start = nowWIB
+    .hour(Number(hhStart))
+    .minute(Number(mmStart))
+    .second(0)
+    .millisecond(0);
   const [hhAkhir, mmAkhir] = akhirList[idx].split(":");
-  let end = nowWIB.hour(Number(hhAkhir)).minute(Number(mmAkhir)).second(0);
+  let end = nowWIB
+    .hour(Number(hhAkhir))
+    .minute(Number(mmAkhir))
+    .second(0)
+    .millisecond(0);
 
   // Jika jam_berakhir < jam_awal ? berarti lewat tengah malam, tambahkan 1 hari
   if (end.isBefore(start)) {
@@ -120,17 +144,21 @@ export async function upsertDoseTakenByIot({
     });
     return {
       ok: false,
-      message: `Diluar rentang waktu minum (${closest.jam} - ${akhirList[idx]})`,
-      dose_time: closest.jam,
+      message: `Diluar rentang waktu minum (${closest.jam} - ${akhirList[
+        idx
+      ].slice(0, 5)})`,
+      dose_time: closest.jam + ":00" ? closest.jam : closest.jam, // closest.jam format HH:mm
     };
   }
 
   const date_for = nowWIB.format("YYYY-MM-DD");
+  // Dose time disimpan konsisten HH:mm:ss
+  const doseTimeFull = awalList[idx]; // sudah HH:mm:ss
   const payload = {
     jadwal_id,
     user_id,
     date_for,
-    dose_time: closest.jam,
+    dose_time: doseTimeFull,
     status: "taken",
     taken_at: nowWIB.format(), // local ISO +07:00
     source,
@@ -166,13 +194,16 @@ export async function ensurePendingForTodayAllJadwal() {
       jam_count: Array.isArray(j.jam_awal) ? j.jam_awal.length : 0,
     });
     const jams = Array.isArray(j.jam_awal) ? j.jam_awal : [];
-    const rows = jams.map((jam) => ({
-      jadwal_id: j.id,
-      user_id: j.user_id,
-      date_for,
-      dose_time: jam,
-      status: "pending",
-    }));
+    const rows = jams
+      .map((jam) => normalizeTimeStr(jam))
+      .filter(Boolean)
+      .map((jam) => ({
+        jadwal_id: j.id,
+        user_id: j.user_id,
+        date_for,
+        dose_time: jam, // HH:mm:ss
+        status: "pending",
+      }));
     if (rows.length === 0) continue;
     const { error: insErr } = await supabase
       .from("jadwal_dose_log")
@@ -235,8 +266,12 @@ export async function markMissedForTodayAll() {
     }
 
     const doseTimeNorm = normalizeTimeStr(r.dose_time);
-    const jamAwalNorm = (jadwal.jam_awal || []).map(normalizeTimeStr);
-    const jamAkhirNorm = (jadwal.jam_berakhir || []).map(normalizeTimeStr);
+    const jamAwalNorm = (jadwal.jam_awal || [])
+      .map(normalizeTimeStr)
+      .filter(Boolean);
+    const jamAkhirNorm = (jadwal.jam_berakhir || [])
+      .map(normalizeTimeStr)
+      .filter(Boolean);
     dbg("missed:times", {
       dose: doseTimeNorm,
       startList: jamAwalNorm,
