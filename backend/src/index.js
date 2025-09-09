@@ -80,7 +80,7 @@ if (CRON_ENABLED) {
 
 // Daily 13:35 WIB
 cron.schedule(
-  "35 13 * * *",
+  "45 13 * * *",
   async () => {
     try {
       const seed = await ensurePendingForTodayAllJadwal();

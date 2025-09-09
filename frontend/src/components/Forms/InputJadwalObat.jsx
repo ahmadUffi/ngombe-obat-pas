@@ -76,6 +76,58 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
     });
   }, []);
 
+  // Helper: convert HH:MM to total minutes
+  const toMinutes = (hhmm) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  // Helper: evaluate overlaps (requires at least 1-minute gap)
+  const computeOverlapErrors = (jadwalList) => {
+    const intervals = jadwalList
+      .map((j, idx) => {
+        const s = toMinutes(j.jam_awal);
+        let e = toMinutes(j.jam_berakhir);
+        if (s == null || e == null) return null;
+        // Support cross-midnight (end < start)
+        if (e < s) e += 24 * 60;
+        return { idx, start: s, end: e };
+      })
+      .filter(Boolean);
+
+    // Sort by start (stable)
+    intervals.sort((a, b) => a.start - b.start);
+    const overlapIdx = new Set();
+    for (let i = 0; i < intervals.length - 1; i++) {
+      const cur = intervals[i];
+      const next = intervals[i + 1];
+      // Need at least 1 minute gap => next.start must be > cur.end
+      if (next.start <= cur.end) {
+        overlapIdx.add(cur.idx);
+        overlapIdx.add(next.idx);
+      }
+    }
+    return overlapIdx;
+  };
+
+  const applyOverlapErrors = (jadwalList) => {
+    const overlapIdx = computeOverlapErrors(jadwalList);
+    setErrors((prev) => {
+      // Remove old overlap errors first
+      const clean = { ...prev };
+      Object.keys(clean).forEach((k) => {
+        if (k.endsWith("_overlap")) delete clean[k];
+      });
+      if (overlapIdx.size === 0) return clean;
+      overlapIdx.forEach((i) => {
+        clean[`jadwal_${i}_overlap`] =
+          "Rentang waktu bertabrakan dengan jadwal lain (harus ada jeda minimal 1 menit).";
+      });
+      return clean;
+    });
+  };
+
   // Handle jadwal input changes
   const handleJadwalChange = (index, field, value) => {
     const updatedJadwal = [...formData.jadwalMinum];
@@ -188,6 +240,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       ...prev,
       jadwalMinum: updatedJadwal,
     }));
+    // Recompute overlap errors in real-time
+    applyOverlapErrors(updatedJadwal);
   };
 
   // Add new jadwal
@@ -227,6 +281,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       ...prev,
       jadwalMinum: updatedJadwal,
     }));
+    applyOverlapErrors(updatedJadwal);
   };
 
   // Validate current step
@@ -300,6 +355,15 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
           }
         }
       });
+
+      // Overlap validation (no intersecting intervals, need at least 1 minute gap)
+      const overlapIdx = computeOverlapErrors(formData.jadwalMinum);
+      if (overlapIdx.size > 0) {
+        overlapIdx.forEach((i) => {
+          newErrors[`jadwal_${i}_overlap`] =
+            "Rentang waktu bertabrakan (butuh jeda >= 1 menit).";
+        });
+      }
     }
 
     setErrors(newErrors);
@@ -591,7 +655,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
 
                     {/* Duration and Sequence Errors */}
                     {(errors[`jadwal_${index}_duration`] ||
-                      errors[`jadwal_${index}_sequence`]) && (
+                      errors[`jadwal_${index}_sequence`] ||
+                      errors[`jadwal_${index}_overlap`]) && (
                       <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         {errors[`jadwal_${index}_duration`] && (
                           <p className="text-amber-700 text-xs flex items-center gap-1 mb-1">
@@ -603,6 +668,12 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                           <p className="text-amber-700 text-xs flex items-center gap-1">
                             <span>⚠️</span>
                             {errors[`jadwal_${index}_sequence`]}
+                          </p>
+                        )}
+                        {errors[`jadwal_${index}_overlap`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1 mt-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_overlap`]}
                           </p>
                         )}
                       </div>

@@ -154,6 +154,36 @@ export async function upsertDoseTakenByIot({
   const date_for = nowWIB.format("YYYY-MM-DD");
   // Dose time disimpan konsisten HH:mm:ss
   const doseTimeFull = awalList[idx]; // sudah HH:mm:ss
+  const doseTimeShort = doseTimeFull.slice(0, 5);
+
+  // Cek apakah sudah ada log dengan status taken/missed agar tidak overwrite taken_at
+  try {
+    const { data: existingRows, error: existingErr } = await supabase
+      .from("jadwal_dose_log")
+      .select("id,status,taken_at,dose_time")
+      .eq("jadwal_id", jadwal_id)
+      .eq("date_for", date_for)
+      .in("dose_time", [doseTimeFull, doseTimeShort]);
+    if (!existingErr && Array.isArray(existingRows) && existingRows.length) {
+      // Prefer exact full match
+      let existing = existingRows.find((r) => r.dose_time === doseTimeFull);
+      if (!existing) existing = existingRows[0];
+      if (existing.status === "taken" || existing.status === "missed") {
+        dbg("upsert:skip_existing", existing);
+        return {
+          ok: true,
+          skipped: true,
+          reason: `dose already ${existing.status}`,
+          status: existing.status,
+          dose_time: existing.dose_time,
+          taken_at: existing.taken_at,
+          date_for,
+        };
+      }
+    }
+  } catch (e) {
+    dbg("upsert:existing_check_err", e?.message || e);
+  }
   const payload = {
     jadwal_id,
     user_id,
