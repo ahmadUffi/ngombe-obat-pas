@@ -363,9 +363,8 @@ async function maybeNotifyLowStock(jadwalRow, stockObat) {
     const dosesPerDay = Array.isArray(jadwalRow.jam_awal)
       ? jadwalRow.jam_awal.length || 1
       : 1;
-    // Threshold: <= 3 days of doses left
-    const threshold = dosesPerDay * 3;
-    if (stockObat > 0 && stockObat <= threshold) {
+    // Threshold: <= 2 days of doses left
+    if (stockObat > 0 && stockObat <= dosesPerDay * 2) {
       const phone = await getFormattedPhoneByUserId(jadwalRow.user_id);
       if (!phone) return;
       const daysLeft = Math.max(

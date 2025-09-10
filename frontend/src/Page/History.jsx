@@ -635,13 +635,13 @@ const History = () => {
                           Status
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
-                          Nama Obat / Pasien
+                          Nama Obat
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/6">
-                          Waktu / Jadwal
+                          Jadwal
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
-                          Dosis / Dokter
+                          Dosis
                         </th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-purple-800 border border-purple-200 w-1/8">
                           Sisa Obat
