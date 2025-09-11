@@ -78,9 +78,9 @@ if (CRON_ENABLED) {
   console.log("StockCron disabled. Set CRON_ENABLED=true in .env to enable.");
 }
 
-// Daily 13:35 WIB
+// Daily 00:01 WIB
 cron.schedule(
-  "45 13 * * *",
+  "1 0 * * *",
   async () => {
     try {
       const seed = await ensurePendingForTodayAllJadwal();
@@ -92,9 +92,9 @@ cron.schedule(
   { timezone: "Asia/Jakarta" } // ✅ fix timezone
 );
 
-// Every 2 minutes (00, 10, 20, 30, 40, 50 WIB)
+// Every 5 minutes (00, 10, 20, 30, 40, 50 WIB)
 cron.schedule(
-  "*/02 * * * *",
+  "*/5 * * * *",
   async () => {
     try {
       const res = await markMissedForTodayAll();
@@ -102,32 +102,6 @@ cron.schedule(
     } catch (e) {
       console.error("DoseLog mark missed failed:", e?.message || e);
     }
-  },
-  { timezone: "Asia/Jakarta" } // ✅ fix timezone
-);
-
-// Test: every 30 seconds
-cron.schedule(
-  "*/30 * * * * *",
-  async () => {
-    console.log("Corn running every 30 detik");
-    console.log(
-      "Current local time:",
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
-    );
-  },
-  { timezone: "Asia/Jakarta" } // ✅ fix timezone
-);
-
-// Daily test at 13:25 WIB
-cron.schedule(
-  "25 13 * * *",
-  async () => {
-    console.log("Corn running every 13:25 WIB");
-    console.log(
-      "Current local time:",
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
-    );
   },
   { timezone: "Asia/Jakarta" } // ✅ fix timezone
 );

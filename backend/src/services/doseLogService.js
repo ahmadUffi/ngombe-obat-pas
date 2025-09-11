@@ -28,11 +28,8 @@ function dbg(tag, obj = undefined) {
 
 // Utilities
 function toLocalDate(ts = new Date()) {
-  // Use server local time (DB already in Jakarta per setup)
-  const y = ts.getFullYear();
-  const m = String(ts.getMonth() + 1).padStart(2, "0");
-  const d = String(ts.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`; // YYYY-MM-DD
+  // Always compute date in WIB to avoid server timezone differences
+  return dayjs(ts).tz(TZ).format("YYYY-MM-DD");
 }
 function normalizeTimeStr(t) {
   if (!t) return null;
@@ -107,54 +104,42 @@ export async function upsertDoseTakenByIot({
   const awalList = jam_awal.map(normalizeTimeStr).filter(Boolean);
   const akhirList = jam_berakhir.map(normalizeTimeStr).filter(Boolean);
 
-  // findClosestDose bekerja dengan HH:mm; kirim versi tanpa detik
-  const awalListForCalc = awalList.map((t) => t.slice(0, 5));
-  const closest = findClosestDose(awalListForCalc, takenAt);
-  if (!closest) return { ok: false, message: "No closest dose" };
-  dbg("upsert:closest", closest);
-
-  const idx = awalList.findIndex((j) => j.slice(0, 5) === closest.jam);
-  if (idx === -1 || typeof akhirList[idx] === "undefined")
-    return { ok: false, message: "No matching jam_berakhir" };
-
   const nowWIB = dayjs(takenAt).tz(TZ);
-  const [hhStart, mmStart] = closest.jam.split(":");
-  const start = nowWIB
-    .hour(Number(hhStart))
-    .minute(Number(mmStart))
-    .second(0)
-    .millisecond(0);
-  const [hhAkhir, mmAkhir] = akhirList[idx].split(":");
-  let end = nowWIB
-    .hour(Number(hhAkhir))
-    .minute(Number(mmAkhir))
-    .second(0)
-    .millisecond(0);
+  // Cari interval aktif di WIB (now ∈ [start, end])
+  let chosen = null;
+  for (let i = 0; i < Math.min(awalList.length, akhirList.length); i++) {
+    const startRaw = awalList[i];
+    const endRaw = akhirList[i];
+    const baseDate = nowWIB.format("YYYY-MM-DD");
+    let start = dayjs.tz(`${baseDate} ${startRaw}`, TZ);
+    let end = dayjs.tz(`${baseDate} ${endRaw}`, TZ);
 
-  // Jika jam_berakhir < jam_awal ? berarti lewat tengah malam, tambahkan 1 hari
-  if (end.isBefore(start)) {
-    end = end.add(1, "day");
+    // Lintas tengah malam
+    if (end.isBefore(start)) {
+      if (nowWIB.isBefore(end)) {
+        start = start.subtract(1, "day");
+      } else {
+        end = end.add(1, "day");
+      }
+    }
+
+    const within = !nowWIB.isBefore(start) && !nowWIB.isAfter(end);
+    if (within) {
+      if (!chosen || start.isAfter(chosen.start)) {
+        chosen = { idx: i, start, end };
+      }
+    }
   }
 
-  if (nowWIB.isBefore(start) || nowWIB.isAfter(end)) {
-    dbg("upsert:out_of_range", {
-      start: start.format(),
-      end: end.format(),
-      now: nowWIB.format(),
-    });
-    return {
-      ok: false,
-      message: `Diluar rentang waktu minum (${closest.jam} - ${akhirList[
-        idx
-      ].slice(0, 5)})`,
-      dose_time: closest.jam + ":00" ? closest.jam : closest.jam, // closest.jam format HH:mm
-    };
+  if (!chosen) {
+    dbg("upsert:no_active_window", { now: nowWIB.format() });
+    return { ok: false, message: "Diluar semua rentang waktu minum" };
   }
 
-  const date_for = nowWIB.format("YYYY-MM-DD");
-  // Dose time disimpan konsisten HH:mm:ss
-  const doseTimeFull = awalList[idx]; // sudah HH:mm:ss
+  const idx = chosen.idx;
+  const doseTimeFull = awalList[idx]; // HH:mm:ss
   const doseTimeShort = doseTimeFull.slice(0, 5);
+  const date_for = chosen.start.format("YYYY-MM-DD"); // tanggal mengacu ke start WIB
 
   // Cek apakah sudah ada log dengan status taken/missed agar tidak overwrite taken_at
   try {
@@ -184,22 +169,50 @@ export async function upsertDoseTakenByIot({
   } catch (e) {
     dbg("upsert:existing_check_err", e?.message || e);
   }
+  const nowIso = nowWIB.format();
+  // Jika ada row pending -> update, jika tidak ada -> insert baru
+  try {
+    const { data: pendingRow } = await supabase
+      .from("jadwal_dose_log")
+      .select("id,status,dose_time")
+      .eq("jadwal_id", jadwal_id)
+      .eq("date_for", date_for)
+      .eq("dose_time", doseTimeFull)
+      .single();
+
+    if (pendingRow && pendingRow.status === "pending") {
+      const { error: upErr } = await supabase
+        .from("jadwal_dose_log")
+        .update({ status: "taken", taken_at: nowIso, source })
+        .eq("id", pendingRow.id)
+        .eq("status", "pending");
+      if (upErr) return { ok: false, message: upErr.message };
+      dbg("upsert:update_ok", { id: pendingRow.id, dose_time: doseTimeFull });
+      return {
+        ok: true,
+        jadwal_id,
+        user_id,
+        date_for,
+        dose_time: doseTimeFull,
+        status: "taken",
+        taken_at: nowIso,
+        source,
+      };
+    }
+  } catch (e) {}
+
   const payload = {
     jadwal_id,
     user_id,
     date_for,
     dose_time: doseTimeFull,
     status: "taken",
-    taken_at: nowWIB.format(), // local ISO +07:00
+    taken_at: nowIso, // ISO +07:00
     source,
   };
-
-  const { error } = await supabase
-    .from("jadwal_dose_log")
-    .upsert(payload, { onConflict: "jadwal_id, date_for, dose_time" });
-
+  const { error } = await supabase.from("jadwal_dose_log").insert(payload);
   if (error) return { ok: false, message: error.message };
-  dbg("upsert:upsert_ok", payload);
+  dbg("upsert:insert_ok", payload);
   return { ok: true, ...payload };
 }
 
