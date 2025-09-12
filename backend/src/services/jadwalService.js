@@ -105,11 +105,6 @@ export const createJadwal = async (user_id, data) => {
         jam_reminders: jamReminders, // ["08:00", "12:00", "16:00", "20:00"]
         wablas_reminder_ids: reminderIds, // ["id1", "id2", "id3", "id4"]
       });
-
-      console.log(
-        `Created ${reminderIds.length} WhatsApp reminders for jadwal:`,
-        result.id
-      );
     }
 
     // 3. Create history record for new jadwal
@@ -124,7 +119,6 @@ export const createJadwal = async (user_id, data) => {
 
     try {
       const seed = await ensurePendingForTodayAllJadwal();
-      console.log("DoseLog seed today:", seed);
     } catch (e) {
       console.error("DoseLog seed failed:", e?.message || e);
     }
@@ -509,7 +503,6 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
           try {
             const deleteResult = await deleteWablasReminder(reminderId);
             if (deleteResult.success) {
-              console.log("✅ Deleted Wablas reminder:", reminderId);
             } else {
               console.warn(
                 "⚠️ Failed to delete Wablas reminder:",
@@ -535,7 +528,6 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
         (sum, record) => sum + (record.wablas_reminder_ids?.length || 0),
         0
       );
-      console.log(`🗑️ Deleted ${totalReminders} WA reminder records`);
     }
 
     // 4. Create history record before deleting the jadwal
@@ -575,10 +567,6 @@ export const deleteJadwal = async (id_jadwal, user_id) => {
       throw new Error("Gagal menghapus data jadwal: " + errorDelete.message);
     }
 
-    console.log(
-      "Jadwal and all associated reminders deleted successfully:",
-      id_jadwal
-    );
     return data;
   } catch (error) {
     console.error("Error in deleteJadwal:", error);

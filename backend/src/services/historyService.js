@@ -17,7 +17,6 @@ export const createHistory = async (user_id, id, status) => {
     .single();
 
   if (dataEror) throw new Error("Data Jadwal not found");
-  console.log(dataJadwal);
   const insertData = {
     user_id: user_id,
     profile_id: profile.id,

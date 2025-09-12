@@ -362,7 +362,7 @@ export class apiService {
           },
         }
       );
-      return response.data.data; // Extract the data array from the response
+      return response.data; // Extract the data array from the response
     } catch (err) {
       throw err;
     }

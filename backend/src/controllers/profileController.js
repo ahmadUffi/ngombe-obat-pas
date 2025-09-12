@@ -28,8 +28,6 @@ export const getMyProfile = asyncHandler(async (req, res) => {
  * Update user's profile (username and phone)
  */
 export const updateProfile = asyncHandler(async (req, res) => {
-  console.log("updateProfile called with request:", req.body);
-
   const { username, no_hp } = req.body;
   const userId = req.user.id; // Mengambil userId dari req.user yang disediakan oleh middleware verifySupabaseUser  // Validate username
   if (!username || !username.trim()) {

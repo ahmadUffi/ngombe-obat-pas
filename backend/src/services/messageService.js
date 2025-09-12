@@ -9,9 +9,6 @@ const WABLAS_SECRET_KEY = process.env.WABLAS_SECRET_KEY || "";
 
 export const sendWhatsAppMessage = async (phone, message, type = "text") => {
   try {
-    console.log(`📤 Sending WhatsApp message via Wablas to: ${phone}`);
-    console.log(`💬 Message type: ${type}`);
-
     // Format auth token
     const authToken = `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`;
 
@@ -59,8 +56,6 @@ export const sendWhatsAppMessage = async (phone, message, type = "text") => {
       },
     });
 
-    console.log(`✅ WhatsApp message sent successfully:`, response.data);
-
     return {
       success: true,
       messageId: response.data.data?.id || response.data.id,
@@ -85,10 +80,6 @@ export const sendWhatsAppMessage = async (phone, message, type = "text") => {
 
 export const sendScheduledMessage = async (phone, message, scheduleDate) => {
   try {
-    console.log(
-      `⏰ Scheduling WhatsApp message to: ${phone} for: ${scheduleDate}`
-    );
-
     const authToken = `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`;
 
     const payload = {
@@ -107,8 +98,6 @@ export const sendScheduledMessage = async (phone, message, scheduleDate) => {
         },
       }
     );
-
-    console.log(`✅ WhatsApp message scheduled successfully:`, response.data);
 
     return {
       success: true,
@@ -135,8 +124,6 @@ export const sendScheduledMessage = async (phone, message, scheduleDate) => {
 
 export const getMessageStatus = async (messageId) => {
   try {
-    console.log(`🔍 Checking message status for ID: ${messageId}`);
-
     const authToken = `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`;
 
     const response = await axios.get(
@@ -147,8 +134,6 @@ export const getMessageStatus = async (messageId) => {
         },
       }
     );
-
-    console.log(`📊 Message status retrieved:`, response.data);
 
     return {
       success: true,

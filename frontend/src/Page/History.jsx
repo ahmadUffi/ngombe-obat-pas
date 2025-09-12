@@ -484,6 +484,26 @@ const History = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-6">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header Section */}
+          <div className="text-center mb-2 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-indigo-600/10 rounded-3xl blur-3xl"></div>
+            <div className="relative">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                Riwayat Aktivitas
+              </h1>
+              <p className="text-gray-600 text-base max-w-2xl mx-auto">
+                Lihat riwayat aktivitas obat Anda.
+              </p>
+              {!loading && (
+                <button
+                  onClick={refreshData}
+                  className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  <span className="mr-2">🔄</span>
+                  Refresh Data
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Filter and Search Section */}
           <div className="relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">

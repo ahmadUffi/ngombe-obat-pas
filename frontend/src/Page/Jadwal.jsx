@@ -291,6 +291,15 @@ const Jadwal = () => {
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               Kelola jadwal obat Anda dengan mudah dan teratur
             </p>
+            {!loading && (
+              <button
+                onClick={loadJadwalData}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
+              >
+                <span className="mr-2">🔄</span>
+                Refresh Data
+              </button>
+            )}
           </div>
         </div>
 

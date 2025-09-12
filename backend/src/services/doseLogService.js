@@ -15,17 +15,6 @@ function fmtWIB(d) {
   return dayjs(d).tz(TZ).format("DD/MM/YYYY, HH:mm:ss");
 }
 
-// Debug helper for consistent logs
-function dbg(tag, obj = undefined) {
-  try {
-    if (obj !== undefined) {
-      console.log(`[DoseLog:${tag}]`, obj);
-    } else {
-      console.log(`[DoseLog:${tag}]`);
-    }
-  } catch {}
-}
-
 // Utilities
 function toLocalDate(ts = new Date()) {
   // Always compute date in WIB to avoid server timezone differences
@@ -94,7 +83,6 @@ export async function upsertDoseTakenByIot({
   takenAt = new Date(),
   source = "iot",
 }) {
-  dbg("upsert:start", { jadwal_id, user_id, takenAt: fmtWIB(takenAt) });
   if (!Array.isArray(jam_awal) || jam_awal.length === 0)
     return { ok: false, message: "No jam_awal" };
   if (!Array.isArray(jam_berakhir) || jam_berakhir.length === 0)
@@ -132,7 +120,7 @@ export async function upsertDoseTakenByIot({
   }
 
   if (!chosen) {
-    dbg("upsert:no_active_window", { now: nowWIB.format() });
+    // outside all dose windows
     return { ok: false, message: "Diluar semua rentang waktu minum" };
   }
 
@@ -154,7 +142,6 @@ export async function upsertDoseTakenByIot({
       let existing = existingRows.find((r) => r.dose_time === doseTimeFull);
       if (!existing) existing = existingRows[0];
       if (existing.status === "taken" || existing.status === "missed") {
-        dbg("upsert:skip_existing", existing);
         return {
           ok: true,
           skipped: true,
@@ -167,7 +154,7 @@ export async function upsertDoseTakenByIot({
       }
     }
   } catch (e) {
-    dbg("upsert:existing_check_err", e?.message || e);
+    // swallow existing check error
   }
   const nowIso = nowWIB.format();
   // Jika ada row pending -> update, jika tidak ada -> insert baru
@@ -187,7 +174,6 @@ export async function upsertDoseTakenByIot({
         .eq("id", pendingRow.id)
         .eq("status", "pending");
       if (upErr) return { ok: false, message: upErr.message };
-      dbg("upsert:update_ok", { id: pendingRow.id, dose_time: doseTimeFull });
       return {
         ok: true,
         jadwal_id,
@@ -212,30 +198,24 @@ export async function upsertDoseTakenByIot({
   };
   const { error } = await supabase.from("jadwal_dose_log").insert(payload);
   if (error) return { ok: false, message: error.message };
-  dbg("upsert:insert_ok", payload);
   return { ok: true, ...payload };
 }
 
 // Create 'pending' rows for all jadwal for today (idempotent)
 export async function ensurePendingForTodayAllJadwal() {
   const date_for = toLocalDate(new Date());
-  dbg("ensurePending:start", { date_for, tz: TZ, now: fmtWIB(new Date()) });
+  // start ensure pending
   const { data: jadwalList, error } = await supabase
     .from("jadwal")
     .select("id, user_id, jam_awal");
   if (error) {
-    dbg("ensurePending:fetch_error", error.message);
+    // fetch error
     throw new Error("Fetch jadwal failed: " + error.message);
   }
-  dbg("ensurePending:jadwal_count", jadwalList?.length || 0);
+  // jadwal count: (jadwalList?.length || 0)
 
   let inserted = 0;
   for (const j of jadwalList || []) {
-    dbg("ensurePending:processing_jadwal", {
-      id: j.id,
-      user_id: j.user_id,
-      jam_count: Array.isArray(j.jam_awal) ? j.jam_awal.length : 0,
-    });
     const jams = Array.isArray(j.jam_awal) ? j.jam_awal : [];
     const rows = jams
       .map((jam) => normalizeTimeStr(jam))
@@ -256,15 +236,15 @@ export async function ensurePendingForTodayAllJadwal() {
       });
     if (!insErr) {
       inserted += rows.length;
-      dbg("ensurePending:upsert_ok", { jadwal_id: j.id, rows: rows.length });
+      // upsert ok
     } else {
-      dbg("ensurePending:upsert_error", insErr.message);
+      // upsert error
     }
   }
 
   for (const j of jadwalList || []) {
   }
-  dbg("ensurePending:done", { date_for, inserted });
+  // ensurePending done
   return { date_for, inserted };
 }
 
@@ -274,7 +254,7 @@ export async function ensurePendingForTodayAllJadwal() {
 // Mark 'missed' for today when time + grace has passed (best-effort JS-side)
 export async function markMissedForTodayAll() {
   const date_for = dayjs().tz(TZ).format("YYYY-MM-DD");
-  dbg("missed:start", { date_for, tz: TZ, now: fmtWIB(new Date()) });
+  // start mark missed
 
   const { data: rows, error } = await supabase
     .from("jadwal_dose_log")
@@ -283,17 +263,16 @@ export async function markMissedForTodayAll() {
     .eq("status", "pending");
 
   if (error) {
-    dbg("missed:fetch_error", error.message);
+    // fetch error
     throw new Error("Fetch pending dose log failed: " + error.message);
   }
 
   const now = dayjs().tz(TZ);
-  dbg("missed:pending_count", rows?.length || 0);
+  // pending count
 
   let updated = 0;
 
   for (const r of rows || []) {
-    dbg("missed:row", r);
     const { data: jadwal, error: jadwalErr } = await supabase
       .from("jadwal")
       .select("jam_awal, jam_berakhir, nama_obat, nama_pasien")
@@ -301,10 +280,7 @@ export async function markMissedForTodayAll() {
       .single();
 
     if (jadwalErr) {
-      dbg("missed:jadwal_fetch_error", {
-        id: r.jadwal_id,
-        error: jadwalErr.message,
-      });
+      // jadwal fetch error
       continue;
     }
 
@@ -315,11 +291,6 @@ export async function markMissedForTodayAll() {
     const jamAkhirNorm = (jadwal.jam_berakhir || [])
       .map(normalizeTimeStr)
       .filter(Boolean);
-    dbg("missed:times", {
-      dose: doseTimeNorm,
-      startList: jamAwalNorm,
-      endList: jamAkhirNorm,
-    });
 
     const idx = jamAwalNorm.findIndex((j) => j === doseTimeNorm);
     if (idx === -1 || !jamAkhirNorm[idx]) {
@@ -332,10 +303,10 @@ export async function markMissedForTodayAll() {
 
     // ?? bikin end pakai dayjs WIB
     const end = dayjs.tz(`${date_for} ${jamAkhirNorm[idx]}`, TZ);
-    dbg("missed:compare", { now: fmtWIB(now), end: fmtWIB(end) });
+    // compare times
 
     if (now.isAfter(end)) {
-      dbg("missed:update_to_missed", { id: r.id, dose: doseTimeNorm });
+      // update to missed
       const { error: upErr } = await supabase
         .from("jadwal_dose_log")
         .update({ status: "missed" })
@@ -349,7 +320,7 @@ export async function markMissedForTodayAll() {
         // Create history entry for missed dose (best-effort)
         try {
           await createHistory(r.user_id, r.jadwal_id, "obat tidak diminum");
-          dbg("missed:history_created", { jadwal_id: r.jadwal_id });
+          // history created
         } catch (histErr) {
           console.error(
             "[markMissed] Failed to create history for missed dose:",
@@ -368,7 +339,7 @@ export async function markMissedForTodayAll() {
           const phone = profile?.no_hp
             ? formatPhoneNumber(profile.no_hp)
             : null;
-          dbg("missed:phone", { phone });
+          // phone ready
 
           if (phone) {
             const msg =
@@ -378,9 +349,9 @@ export async function markMissedForTodayAll() {
               `⏰ Jadwal: ${doseTimeNorm} (batas ${jamAkhirNorm[idx]})\n\n` +
               `Jika masih diperlukan, silakan minum secepatnya atau lanjutkan ke jadwal berikutnya.`;
             await sendWhatsAppMessage(phone, msg, "text");
-            dbg("missed:wa_sent", { phone });
+            // wa sent
           } else {
-            dbg("missed:no_phone", { user_id: r.user_id });
+            // no phone
           }
         } catch (waErr) {
           console.warn(
@@ -390,10 +361,10 @@ export async function markMissedForTodayAll() {
         }
       }
     } else {
-      dbg("missed:within_window", { dose: doseTimeNorm, end: fmtWIB(end) });
+      // within window
     }
   }
 
-  dbg("missed:done", { date_for, updated });
+  // mark missed done
   return { date_for, updated };
 }

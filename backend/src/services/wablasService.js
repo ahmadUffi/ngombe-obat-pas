@@ -59,8 +59,6 @@ export const createWablasReminder = async (reminderData) => {
 // Delete Wablas Reminder
 export const deleteWablasReminder = async (reminderId) => {
   try {
-    console.log("Attempting to delete Wablas reminder:", reminderId);
-
     // Validate credentials first
     if (!WABLAS_TOKEN || !WABLAS_SECRET_KEY) {
       console.warn("Missing Wablas credentials, skipping delete");
@@ -81,10 +79,7 @@ export const deleteWablasReminder = async (reminderId) => {
       }
     );
 
-    console.log("Wablas delete response:", response.data);
-
     if (response.data.status) {
-      console.log("✅ Wablas reminder deleted successfully:", reminderId);
       return {
         success: true,
         data: response.data,
@@ -104,9 +99,6 @@ export const deleteWablasReminder = async (reminderId) => {
 
     // Handle specific error cases
     if (error.response?.status === 404) {
-      console.log(
-        "📝 Reminder not found (404), considering as already deleted"
-      );
       return {
         success: true,
         data: { message: "Reminder not found (already deleted)" },

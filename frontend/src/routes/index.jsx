@@ -8,6 +8,7 @@ import Jadwal from "../Page/Jadwal";
 import Control from "../Page/Control";
 import Note from "../Page/Note";
 import History from "../Page/History";
+import Peringatan from "../Page/Peringatan";
 import Login from "../components/Auth/Login";
 import Register from "../components/Auth/Register";
 import EmailCallback from "../components/Auth/EmailCallback";
@@ -108,6 +109,14 @@ export const routes = [
     isProtected: true,
     title: "Riwayat",
     icon: "📊",
+    showInNav: true,
+  },
+  {
+    path: "/peringatan",
+    element: <Peringatan />,
+    isProtected: true,
+    title: "Peringatan",
+    icon: "⚠️",
     showInNav: true,
   },
   {

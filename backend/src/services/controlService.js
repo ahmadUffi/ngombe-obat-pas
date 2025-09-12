@@ -20,8 +20,6 @@ const createControlReminders = async (
     controlData.waktu
   );
 
-  console.log("Creating multiple schedule reminders:", reminderTimes);
-
   const scheduleIds = [];
   const reminderTypes = [];
   const reminderTimeStrings = [];
@@ -47,12 +45,6 @@ const createControlReminders = async (
         scheduleIds.push(scheduleResponse.schedule_id);
         reminderTypes.push(reminderTime.type);
         reminderTimeStrings.push(`${reminderTime.date} ${reminderTime.time}`);
-
-        console.log(
-          `✅ Created ${reminderTime.type} reminder:`,
-          scheduleResponse.schedule_id,
-          `scheduled for: ${reminderTime.date} ${reminderTime.time}`
-        );
       }
     } catch (error) {
       console.error(`Failed to create ${reminderTime.type} reminder:`, error);
@@ -112,8 +104,6 @@ export const createControl = async (user_id, data) => {
     nama_pasien: data.nama_pasien,
   };
 
-  console.log("Attempting to insert control data:", insertData);
-
   try {
     // 1. Insert control to database first
     const { data: inserted, error: insertError } = await supabase
@@ -142,16 +132,11 @@ export const createControl = async (user_id, data) => {
           },
           formattedPhone
         );
-
-        console.log(
-          `✅ Created ${reminderResult.scheduleIds.length} WhatsApp reminders for control ${inserted.id}`
-        );
       } catch (scheduleError) {
         console.error(
           "Failed to create WhatsApp schedule reminders:",
           scheduleError
         );
-        console.log("Control created successfully without WhatsApp reminders");
       }
     }
 
@@ -190,10 +175,6 @@ export const updateIsDone = async (id, isDone) => {
   try {
     // If marking as done (completed), delete any pending WhatsApp schedules
     if (isDone === true) {
-      console.log(
-        `Marking control ${id} as completed, checking for pending schedules...`
-      );
-
       // Get reminder data first
       const { data: reminders } = await supabase
         .from("kontrol_wa_reminders")
@@ -207,33 +188,16 @@ export const updateIsDone = async (id, isDone) => {
             reminder.wablas_schedule_ids &&
             reminder.wablas_schedule_ids.length > 0
           ) {
-            console.log(
-              `Found ${reminder.wablas_schedule_ids.length} pending schedules for control ${id}`
-            );
-
             // Delete Wablas schedules
             const deleteResults = await deleteMultipleWablasSchedules(
               reminder.wablas_schedule_ids
             );
-
-            // Log results
-            deleteResults.forEach((result) => {
-              if (result.success) {
-                console.log(`✅ Deleted schedule ${result.scheduleId}`);
-              } else {
-                console.log(
-                  `⚠️ Failed to delete schedule ${result.scheduleId}: ${result.message}`
-                );
-              }
-            });
 
             // Deactivate reminder record regardless of Wablas delete success
             await supabase
               .from("kontrol_wa_reminders")
               .update({ is_active: false })
               .eq("kontrol_id", id);
-
-            console.log(`✅ Deactivated reminder records for control ${id}`);
           }
         }
       }
@@ -248,7 +212,6 @@ export const updateIsDone = async (id, isDone) => {
 
     if (error) throw new Error("Error updating control data: " + error.message);
 
-    console.log(`✅ Control ${id} updated - isDone: ${isDone}`);
     return data;
   } catch (error) {
     console.error("Error updating control isDone:", error);
@@ -285,10 +248,6 @@ export const updateControl = async (id, updatedData) => {
           reminder.wablas_schedule_ids &&
           reminder.wablas_schedule_ids.length > 0
         ) {
-          console.log(
-            `Updating control ${id} - Deleting ${reminder.wablas_schedule_ids.length} existing WhatsApp schedules`
-          );
-
           await deleteMultipleWablasSchedules(reminder.wablas_schedule_ids);
 
           // Mark reminders as inactive
@@ -313,10 +272,6 @@ export const updateControl = async (id, updatedData) => {
             nama_pasien: updatedData.nama_pasien || controlData.nama_pasien,
           },
           phone
-        );
-
-        console.log(
-          `✅ Created new WhatsApp reminders for updated control ${id}`
         );
       }
     }
@@ -364,29 +319,12 @@ export const deleteControl = async (id, user_id) => {
           reminder.wablas_schedule_ids &&
           reminder.wablas_schedule_ids.length > 0
         ) {
-          console.log(
-            `Deleting control ${id} - Found ${reminder.wablas_schedule_ids.length} WhatsApp schedules to delete`
-          );
-
           // Delete Wablas schedules
           const deleteResults = await deleteMultipleWablasSchedules(
             reminder.wablas_schedule_ids
           );
-
-          // Log results
-          deleteResults.forEach((result) => {
-            if (result.success) {
-              console.log(`✅ Deleted schedule ${result.scheduleId}`);
-            } else {
-              console.log(
-                `⚠️ Failed to delete schedule ${result.scheduleId}: ${result.message}`
-              );
-            }
-          });
         }
       }
-    } else {
-      console.log(`Control ${id} has no active WhatsApp schedules to delete`);
     }
 
     // 2. Delete control record (reminders will be deleted automatically via CASCADE)
@@ -398,7 +336,6 @@ export const deleteControl = async (id, user_id) => {
 
     if (error) throw new Error("Failed to delete control data");
 
-    console.log(`✅ Control ${id} and its reminders deleted successfully`);
     return data;
   } catch (error) {
     console.error("Error deleting control:", error);

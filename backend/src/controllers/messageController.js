@@ -70,9 +70,6 @@ export const sendMessage = async (req, res) => {
 
     const formattedPhone = phoneValidation.cleanPhone;
 
-    console.log(`📱 Sending WhatsApp message to: ${formattedPhone}`);
-    console.log(`💬 Message content: ${message.substring(0, 100)}...`);
-
     const result = await sendWhatsAppMessage(formattedPhone, message, type);
 
     if (result.success) {
@@ -128,10 +125,6 @@ export const sendBulkMessage = async (req, res) => {
         message: "Maximum 100 recipients allowed per bulk send",
       });
     }
-
-    console.log(
-      `📱 Sending bulk WhatsApp messages to ${recipients.length} recipients`
-    );
 
     const results = [];
     const errors = [];

@@ -29,8 +29,6 @@ export const createWablasSchedule = async (scheduleData) => {
       isGroup: isGroup, // 'true' or 'false' as string
     };
 
-    console.log("Creating Wablas schedule with data:", data);
-
     const response = await axios.post(`${WABLAS_BASE_URL}/schedule`, data, {
       headers: {
         Authorization: `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`,
@@ -47,8 +45,6 @@ export const createWablasSchedule = async (scheduleData) => {
         },
       ],
     });
-
-    console.log("Wablas schedule response:", response.data);
 
     if (response.data.status) {
       return {
@@ -80,8 +76,6 @@ export const createWablasSchedule = async (scheduleData) => {
  */
 export const deleteWablasSchedule = async (scheduleId) => {
   try {
-    console.log(`Attempting to delete Wablas schedule: ${scheduleId}`);
-
     // Delete the schedule directly
     const deleteResponse = await axios.delete(
       `${WABLAS_BASE_URL}/schedule/${scheduleId}`,
@@ -90,11 +84,6 @@ export const deleteWablasSchedule = async (scheduleId) => {
           Authorization: `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`,
         },
       }
-    );
-
-    console.log(
-      `✅ Successfully deleted schedule ${scheduleId}:`,
-      deleteResponse.data
     );
 
     return {

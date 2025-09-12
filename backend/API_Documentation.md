@@ -53,12 +53,13 @@ PUT /v1/api/jadwal/update-stock-obat-iot
 - Decrement stock for a given jadwal (1 dose per call). Used by device when slot opened.
 - Body: { id_obat: string }
 - Response: includes new stock value and status messaging.
-- Note: This endpoint currently does not enforce JWT in code; the device may still send Authorization.
+- Auth: Not enforced by backend middleware currently; device may still send Authorization header.
 
 PUT /v1/api/jadwal/update-stock-obat-web
 
 - Update stock to an explicit value (web UI).
 - Body: { id_obat: string, newStock: number }
+- Auth: Not enforced by backend middleware currently; UI should still send Authorization header.
 
 DELETE /v1/api/jadwal/delete/:jadwal_id (auth)
 
@@ -71,7 +72,7 @@ DELETE /v1/api/jadwal/delete/:jadwal_id (auth)
 ### 1. Mendapatkan Status Dosis Harian
 
 Endpoint:
-GET /v1/api/jadwal/dose-status-today (auth)
+GET /v1/api/dose-log/status-today (auth)
 
 Deskripsi:
 
@@ -84,7 +85,7 @@ Contoh penggunaan di frontend:
 
 ```js
 // Ambil status dosis harian user yang sedang login
-const response = await fetch("/v1/api/jadwal/dose-status-today", {
+const response = await fetch("/v1/api/dose-log/status-today", {
   headers: { Authorization: "Bearer <token>" },
 });
 const doseStatus = await response.json();
@@ -135,7 +136,7 @@ await fetch("/v1/api/jadwal/update-stock-obat-iot", {
 - Endpoint dose log idempotent, device boleh kirim ulang request, status tetap konsisten (tidak double).
 - Aman dari reboot, device tidak akan menganggap dosis "belum diminum" jika status di server sudah "taken"/"missed".
 
-GET /v1/api/jadwal/dose-status-today (auth)
+GET /v1/api/dose-log/status-today (auth)
 
 - Get status dosis harian untuk semua jadwal user (Dashboard/IoT)
 - Response: Array of objects per jadwal per jam:
@@ -225,14 +226,22 @@ All routes require auth.
 GET /v1/api/notes
 
 - Optional query: ?category=kontrol|pengingat|lainnya|obat|dokter
-  GET /v1/api/notes/search
+
+GET /v1/api/notes/search
+
 - Query: ?q=search_text
-  GET /v1/api/notes/stats
-  GET /v1/api/notes/:noteId
-  POST /v1/api/notes
+
+GET /v1/api/notes/stats
+
+GET /v1/api/notes/:noteId
+
+POST /v1/api/notes
+
 - Body: { category, message }
-  PUT /v1/api/notes/:noteId
-  DELETE /v1/api/notes/:noteId
+
+PUT /v1/api/notes/:noteId
+
+DELETE /v1/api/notes/:noteId
 
 ## Messages (WhatsApp)
 

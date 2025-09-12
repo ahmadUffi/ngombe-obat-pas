@@ -9,7 +9,11 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "k6:smoke": "k6 run k6/smoke.js",
+    "k6:full": "k6 run k6/full.js",
+    "k6:all": "k6 run k6/all-apis.js",
+    "k6:important": "k6 run --summary-export=important-summary.json k6/important-apis.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.0",
