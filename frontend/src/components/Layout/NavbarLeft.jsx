@@ -6,6 +6,7 @@ import ControlIcon from "../Icons/ControlIcon";
 import HistoryIcon from "../Icons/HistoryIcon";
 import { logo } from "../../assets";
 import { is } from "date-fns/locale";
+import { BellIcon } from "lucide-react";
 
 const NavbarLeft = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -172,6 +173,20 @@ const NavbarLeft = ({ isOpen, onClose }) => {
                   <NoteIcon isActive={isActive} />
                 </div>
                 <span className={getTextStyles("/note")}>Catatan</span>
+              </button>
+            </li>
+
+            {/* Peringatan */}
+            <li className="w-full">
+              <button
+                onClick={() => handleNavClick("/peringatan")}
+                className={getNavItemStyles("/peringatan")}
+                aria-label="Go to Peringatan"
+              >
+                <div className={isActive("/peringatan") ? "text-white" : ""}>
+                  <BellIcon />
+                </div>
+                <span className={getTextStyles("/peringatan")}>Peringatan</span>
               </button>
             </li>
 

@@ -197,27 +197,6 @@ const BoxJadwal = ({
                 </div>
               )}
             </div>
-            <button
-              onClick={toggleExpanded}
-              className="ml-2 p-1.5 rounded-full hover:bg-white/80 hover:shadow-sm  active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
-              aria-label={isExpanded ? "Tutup detail" : "Lihat detail"}
-            >
-              <svg
-                className={`w-5 h-5 text-gray-600 transform transition-transform duration-300 ${
-                  isExpanded ? "rotate-180 text-blue-600" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
           </div>
 
           {/* Compact Info */}
@@ -268,15 +247,55 @@ const BoxJadwal = ({
             )}
 
             {/* Status Makan */}
-            {waktuMinum && (
-              <div className="flex justify-center mt-2">
-                <span className={styles.makanBtn}>{waktuMinum}</span>
-              </div>
-            )}
+            <div className="flex flex-col items-center">
+              {waktuMinum && (
+                <div className="flex justify-center mt-2">
+                  <span className={styles.makanBtn}>{waktuMinum}</span>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={toggleExpanded}
+              className="ml-auto flex p-1 gap-2 items-center justify-center rounded-xl px-1.5 bg-white/80 shadow-sm active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
+              aria-label={isExpanded ? "Tutup Detail" : "Lihat Detail"}
+            >
+              <span className="text-[12px] font-medium ">
+                {isExpanded ? "Tutup Detail" : "Lihat Detail"}
+              </span>
+              {/* Arrow Down when collapsed, Arrow Up when expanded */}
+              {isExpanded ? (
+                <svg
+                  className="w-5 h-5 text-blue-600 transform transition-transform duration-300 flex items-center justify-center rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5 text-gray-600 transform transition-transform duration-300 flex items-center justify-center"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
-
-        {/* Expanded Details */}
         <div
           className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${
             isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
