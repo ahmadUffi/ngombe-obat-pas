@@ -110,21 +110,35 @@ export default function () {
     logFail("profile", profile);
 
   // 2. Notes CRUD + search + stats
+  // unique message so we can locate the created note if API doesn't return ID
+  const uniqueMsg = "all-" + randomString(8);
   const noteCreate = R.post(
     "notes_create",
     `${BASE_URL}/v1/api/notes`,
-    JSON.stringify({ category: "lainnya", message: "all-" + randomString(8) }),
+    JSON.stringify({ category: "lainnya", message: uniqueMsg }),
     { headers: jsonHeaders }
   );
   check(noteCreate, { "note create 201": (r) => r.status === 201 }) ||
     logFail("note create", noteCreate);
-  ctx.noteId = noteCreate.json()?.data?.id;
+  // handle response field either note_id or id
+  ctx.noteId =
+    noteCreate.json()?.data?.note_id || noteCreate.json()?.data?.id || null;
   // List all notes (basic list coverage)
   const notesList = R.get("notes_list", `${BASE_URL}/v1/api/notes`, {
     headers,
   });
   check(notesList, { "notes list 200": (r) => r.status === 200 }) ||
     logFail("notes list", notesList);
+  // Fallback: find created note in the list by unique message
+  if (!ctx.noteId) {
+    try {
+      const arr = notesList.json()?.data || notesList.json();
+      if (Array.isArray(arr)) {
+        const found = arr.find((n) => n?.message === uniqueMsg);
+        if (found) ctx.noteId = found.note_id || found.id;
+      }
+    } catch (_) {}
+  }
   if (ctx.noteId) {
     const noteGet = R.get(
       "notes_get",
@@ -177,28 +191,39 @@ export default function () {
     JSON.stringify(jadwalBody),
     { headers: jsonHeaders }
   );
-  if (jadwalCreate.status === 201) {
-    // fetch list to find the ID we just created (since controller returns only message)
+  check(jadwalCreate, { "jadwal create 201": (r) => r.status === 201 }) ||
+    logFail("jadwal create", jadwalCreate);
+  // Try to capture ID directly if API returns it in any common field
+  ctx.jadwalId =
+    jadwalCreate.json()?.data?.id ||
+    jadwalCreate.json()?.id ||
+    jadwalCreate.json()?.data?.jadwal_id ||
+    null;
+
+  // Fallback: fetch list to find the ID we just created (since controller often returns only message)
+  if (!ctx.jadwalId) {
     const list = R.get(
       "jadwal_list_web",
       `${BASE_URL}/v1/api/jadwal/get-for-web`,
       { headers }
     );
+    check(list, { "jadwal list web 200": (r) => r.status === 200 }) ||
+      logFail("jadwal list web", list);
     if (list.status === 200) {
       const arr = list.json();
       if (Array.isArray(arr)) {
         // heuristic: find by nama_obat & slot
         const found = arr.find(
           (j) =>
-            j.nama_obat === jadwalBody.nama_obat &&
-            j.slot_obat === jadwalBody.slot_obat
+            j?.nama_obat === jadwalBody.nama_obat &&
+            j?.slot_obat === jadwalBody.slot_obat
         );
-        if (found) ctx.jadwalId = found.id;
+        if (found) ctx.jadwalId = found.id || found.jadwal_id || null;
       }
     }
-  } else {
-    logFail("jadwal create", jadwalCreate);
   }
+  // Emit a check so it shows in the summary
+  check(ctx, { "jadwal id resolved": () => !!ctx.jadwalId });
 
   // Jadwal get-for-iot
   const jadwalIot = R.get(

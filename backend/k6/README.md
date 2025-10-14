@@ -141,9 +141,9 @@ Lihat `k6/endpoints.md` untuk cakupan CRUD notes, jadwal, kontrol, peringatan, h
 ## 9. Contoh Lengkap PowerShell
 
 ```
-$env:BASE_URL="https://api.example.com"
-$env:LOGIN_EMAIL="perf@example.com"
-$env:LOGIN_PASSWORD="Rahasia123"
+$env:BASE_URL="https://api.ngompas.com"
+$env:LOGIN_EMAIL="ahmaduffi45@gmail.com"
+$env:LOGIN_PASSWORD="qwerty1Q"
 $env:STAGES="15s:20,30s:50,20s:0"
 $env:MAX_RETRIES=2
 k6 run --summary-export=important-summary.json k6/important-apis.js

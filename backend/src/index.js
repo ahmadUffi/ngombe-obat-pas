@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import compression from "compression";
 import jadwalRoutes from "./routes/jadwalRoutes.js";
 import siginRoutes from "./routes/signinRoutes.js";
 import historyRoutes from "./routes/historyRoutes.js";
@@ -20,12 +21,16 @@ import {
 } from "./services/doseLogService.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import supabaseMiddleware from "./middleware/supabase.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Load .env and override any existing env vars from the shell, so .env wins
 dotenv.config({ override: true });
 
 const app = express();
 app.use(cors());
+// Enable gzip/deflate/br compression for API responses
+app.use(compression());
 app.use(express.json());
 app.use(supabaseMiddleware);
 
@@ -43,6 +48,38 @@ app.use("/v1/api/dose-log", doseLogRoutes);
 // app.use("/v1/api/schedule", scheduleRoutes); // Commented out temporarily
 
 const PORT = process.env.PORT || 5000;
+
+// Optionally serve the built frontend (SPA) with cache headers
+const SERVE_FRONTEND =
+  (process.env.SERVE_FRONTEND || "false").toLowerCase() === "true";
+if (SERVE_FRONTEND) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const distDir =
+    process.env.FRONTEND_DIST || path.resolve(__dirname, "../../frontend/dist");
+
+  app.use(
+    express.static(distDir, {
+      setHeaders: (res, filePath) => {
+        // Cache-bust hashed assets aggressively; HTML short cache
+        if (
+          /(\.[a-f0-9]{8,}\.)|(assets\/.+\.(js|css|png|jpg|svg|webp|woff2?))/i.test(
+            filePath
+          )
+        ) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
+    })
+  );
+
+  // SPA fallback AFTER API routes
+  app.get(/^(?!\/v1\/api).*/, (req, res) => {
+    res.sendFile(path.join(distDir, "index.html"));
+  });
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);

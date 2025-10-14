@@ -130,7 +130,7 @@ export const deleteWablasReminder = async (reminderId) => {
 
 // Generate reminder message
 export const generateReminderMessage = (jadwalData, jam) => {
-  const { nama_obat, dosis_obat, nama_pasien } = jadwalData;
+  const { nama_obat, dosis_obat, nama_pasien, slot_obat } = jadwalData;
 
   return `🕐 *Pengingat Minum Obat*
 
@@ -138,6 +138,7 @@ export const generateReminderMessage = (jadwalData, jam) => {
 👤 Pasien: ${nama_pasien}
 💊 Obat: ${nama_obat}
 📏 Dosis: ${dosis_obat}
+🧩 Slot: ${slot_obat}
 
 Jangan lupa minum obat sesuai jadwal ya! 😊
 

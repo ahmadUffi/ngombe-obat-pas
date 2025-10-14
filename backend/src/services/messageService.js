@@ -6,9 +6,49 @@ dotenv.config();
 const WABLAS_BASE_URL = "https://sby.wablas.com/api";
 const WABLAS_TOKEN = process.env.WABLAS_TOKEN || "";
 const WABLAS_SECRET_KEY = process.env.WABLAS_SECRET_KEY || "";
+const DRY_RUN_GLOBAL = (process.env.WABLAS_DRY_RUN || "0") === "1";
 
-export const sendWhatsAppMessage = async (phone, message, type = "text") => {
+// Simple in-memory store for dry-run message statuses
+const dryStore = new Map(); // id -> { phone, message, createdAt }
+function createDryMessage(phone, message, type) {
+  const id = `dry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  dryStore.set(id, {
+    phone,
+    message,
+    type,
+    createdAt: Date.now(),
+  });
+  return id;
+}
+function getDryStatus(messageId) {
+  const rec = dryStore.get(messageId);
+  if (!rec) return { success: false, error: "dry-run message not found" };
+  const elapsed = (Date.now() - rec.createdAt) / 1000;
+  let status = "queued";
+  if (elapsed >= 0.5) status = "sent";
+  if (elapsed >= 2) status = "delivered";
+  if (elapsed >= 5) status = "read";
+  return { success: true, status, response: { data: { status } } };
+}
+
+export const sendWhatsAppMessage = async (
+  phone,
+  message,
+  type = "text",
+  options = {}
+) => {
   try {
+    const dryRun = options?.dryRun || DRY_RUN_GLOBAL;
+    if (dryRun) {
+      const id = createDryMessage(phone, message, type);
+      return {
+        success: true,
+        messageId: id,
+        response: { data: { id, dryRun: true } },
+        phone,
+        sentAt: new Date().toISOString(),
+      };
+    }
     // Format auth token
     const authToken = `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`;
 
@@ -122,8 +162,12 @@ export const sendScheduledMessage = async (phone, message, scheduleDate) => {
   }
 };
 
-export const getMessageStatus = async (messageId) => {
+export const getMessageStatus = async (messageId, options = {}) => {
   try {
+    const dryRun = options?.dryRun || DRY_RUN_GLOBAL;
+    if (dryRun || messageId?.startsWith("dry_")) {
+      return getDryStatus(messageId);
+    }
     const authToken = `${WABLAS_TOKEN}.${WABLAS_SECRET_KEY}`;
 
     const response = await axios.get(

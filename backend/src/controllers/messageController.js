@@ -1,4 +1,7 @@
-import { sendWhatsAppMessage } from "../services/messageService.js";
+import {
+  sendWhatsAppMessage,
+  getMessageStatus,
+} from "../services/messageService.js";
 
 // Fungsi validasi nomor telepon Indonesia (sederhana)
 const validateIndonesianPhoneNumber = (phone) => {
@@ -45,7 +48,7 @@ const validateIndonesianPhoneNumber = (phone) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { phone, message, type = "text" } = req.body;
+    const { phone, message, type = "text", dryRun } = req.body;
 
     // Validasi input
     if (!phone || !message) {
@@ -70,7 +73,9 @@ export const sendMessage = async (req, res) => {
 
     const formattedPhone = phoneValidation.cleanPhone;
 
-    const result = await sendWhatsAppMessage(formattedPhone, message, type);
+    const result = await sendWhatsAppMessage(formattedPhone, message, type, {
+      dryRun,
+    });
 
     if (result.success) {
       res.status(200).json({
@@ -102,7 +107,7 @@ export const sendMessage = async (req, res) => {
 
 export const sendBulkMessage = async (req, res) => {
   try {
-    const { recipients, message, type = "text" } = req.body;
+    const { recipients, message, type = "text", dryRun } = req.body;
 
     // Validasi input
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
@@ -150,7 +155,8 @@ export const sendBulkMessage = async (req, res) => {
         const result = await sendWhatsAppMessage(
           formattedPhone,
           customMessage,
-          type
+          type,
+          { dryRun }
         );
 
         if (result.success) {
@@ -200,5 +206,35 @@ export const sendBulkMessage = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+export const getStatus = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true";
+    if (!messageId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "messageId is required" });
+    }
+    const result = await getMessageStatus(messageId, { dryRun });
+    if (result.success)
+      return res.status(200).json({ success: true, data: result });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: result.error || "Failed to fetch status",
+      });
+  } catch (error) {
+    console.error("❌ Error in getStatus controller:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
   }
 };
