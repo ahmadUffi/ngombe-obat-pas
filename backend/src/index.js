@@ -23,6 +23,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import supabaseMiddleware from "./middleware/supabase.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { swaggerDocument } from "./config/swagger.js";
 
 // Load .env and override any existing env vars from the shell, so .env wins
 dotenv.config({ override: true });
@@ -46,6 +47,71 @@ app.use("/v1/api/profile", profileRoutes);
 app.use("/v1/api/admin", adminRoutes);
 app.use("/v1/api/dose-log", doseLogRoutes);
 // app.use("/v1/api/schedule", scheduleRoutes); // Commented out temporarily
+
+// Swagger Documentation Routes
+app.get("/api-docs.json", (req, res) => {
+  res.json(swaggerDocument);
+});
+
+// Swagger UI HTML
+app.get("/api-docs", (req, res) => {
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmedBox API Documentation</title>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    .topbar {
+      display: none;
+    }
+    .swagger-ui .info .title {
+      font-size: 36px;
+    }
+    .swagger-ui .info {
+      margin: 50px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      window.ui = SwaggerUIBundle({
+        url: '/api-docs.json',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout",
+        persistAuthorization: true,
+        tryItOutEnabled: true,
+        filter: true,
+        syntaxHighlight: {
+          activate: true,
+          theme: "monokai"
+        }
+      });
+    };
+  </script>
+</body>
+</html>
+  `;
+  res.send(html);
+});
 
 const PORT = process.env.PORT || 5000;
 
