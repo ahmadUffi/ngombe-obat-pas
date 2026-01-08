@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 
-const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
+const BoxJadwal = ({
+  data,
+  doseStatusByTime = {},
+  onEditQuantity,
+  onDelete,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Menggunakan format data baru dengan safe defaults
@@ -14,6 +19,8 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
     catatan = "",
     kategori = "sebelum makan",
     slot_obat: slotObat = 1,
+    created_at: createdAt = null,
+    updated_at: updatedAt = null,
   } = data || {};
 
   // Konversi kategori ke format yang digunakan sebelumnya
@@ -27,10 +34,16 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
   }));
 
   // Status indicator based on stock level
+  // Calculate threshold dynamically: 2 days worth of doses
+  const frekuensiPerHari = jamAwal.length || 1; // berapa kali minum per hari
+  const dosisPerKonsumsi = parseInt(dosisObat) || 1; // berapa butir per sekali minum
+  const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi; // total butir per hari
+  const threshold = dosesPerDay * 2; // 2 days left
+
   const getStatusInfo = () => {
     if (jumlahObat === 0) {
       return { color: "bg-red-500", text: "Habis", textColor: "text-red-600" };
-    } else if (jumlahObat < 6) {
+    } else if (jumlahObat <= threshold) {
       return {
         color: "bg-orange-500",
         text: "Hampir Habis",
@@ -56,7 +69,10 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
     for (let i = 0; i < jadwalLengkap.length; i++) {
       const jadwal = jadwalLengkap[i];
       if (currentTime >= jadwal.awal && currentTime <= jadwal.berakhir) {
-        return { isActive: true, activeIndex: i };
+        // Only mark AKTIF when status for this time is still pending
+        const status = doseStatusByTime[jadwal.awal];
+        const isPending = !status || status === "pending";
+        return { isActive: !!isPending, activeIndex: i };
       }
     }
     return { isActive: false, activeIndex: -1 };
@@ -86,8 +102,42 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
   const nextSchedule = getNextSchedule();
   const statusInfo = getStatusInfo();
 
+  // Fungsi untuk format tanggal yang user-friendly
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return diffMinutes <= 1 ? "Baru saja" : `${diffMinutes} menit lalu`;
+      } else if (diffHours < 24) {
+        return `${diffHours} jam lalu`;
+      } else if (diffDays < 7) {
+        return `${diffDays} hari lalu`;
+      } else {
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: diffDays > 365 ? "numeric" : undefined,
+        });
+      }
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const createdDate = formatDate(createdAt);
+  const updatedDate = formatDate(updatedAt);
+  const isRecentlyUpdated = updatedAt && createdAt && updatedAt !== createdAt;
+
   const styles = {
-    title: "text-gray-600 text-xs font-medium",
+    title: "text-gray-600 text-sm font-medium",
     value: "text-gray-800 text-sm font-medium",
     compactBox:
       "bg-gray-50 px-2.5 py-1 rounded-md text-xs border border-gray-100 shadow-sm",
@@ -103,7 +153,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
 
   return (
     <div className="p-2">
-      <div className="w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group max-h-[600px] flex flex-col">
+      <div className="w-[300px] md:w-[350px] lg:w-[380px] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group max-h-[600px] flex flex-col">
         {/* Header - Always Visible */}
         <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 relative flex-shrink-0">
           {/* Status Badge */}
@@ -130,31 +180,29 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
           </div>
 
           <div className="flex items-center justify-between mt-5 pr-16">
-            {" "}
-            <h2 className="text-lg font-bold text-gray-800 line-clamp-2 hover:text-blue-700 transition-colors flex-1">
-              {namaObat}
-            </h2>{" "}
-            <button
-              onClick={toggleExpanded}
-              className="ml-2 p-1.5 rounded-full hover:bg-white/80 hover:shadow-sm active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
-              aria-label={isExpanded ? "Tutup detail" : "Lihat detail"}
-            >
-              <svg
-                className={`w-5 h-5 text-gray-600 transform transition-transform duration-300 ${
-                  isExpanded ? "rotate-180 text-blue-600" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-gray-800 line-clamp-2 hover:text-blue-700 transition-colors">
+                {namaObat}
+              </h2>
+              {/* Informasi Waktu - Subtle */}
+              {(createdDate || updatedDate) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {isRecentlyUpdated && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-blue-600 font-medium">
+                        Diperbarui {updatedDate}
+                      </span>
+                    </div>
+                  )}
+                  {!isRecentlyUpdated && createdDate && (
+                    <span className="text-xs text-gray-500">
+                      Dibuat {createdDate}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Compact Info */}
@@ -205,15 +253,55 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
             )}
 
             {/* Status Makan */}
-            {waktuMinum && (
-              <div className="flex justify-center mt-2">
-                <span className={styles.makanBtn}>{waktuMinum}</span>
-              </div>
-            )}
+            <div className="flex flex-col items-center">
+              {waktuMinum && (
+                <div className="flex justify-center mt-2">
+                  <span className={styles.makanBtn}>{waktuMinum}</span>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={toggleExpanded}
+              className="ml-auto flex p-1 gap-2 items-center justify-center rounded-xl px-1.5 bg-white/80 shadow-sm active:bg-white/90 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300"
+              aria-label={isExpanded ? "Tutup Detail" : "Lihat Detail"}
+            >
+              <span className="text-[12px] font-medium ">
+                {isExpanded ? "Tutup Detail" : "Lihat Detail"}
+              </span>
+              {/* Arrow Down when collapsed, Arrow Up when expanded */}
+              {isExpanded ? (
+                <svg
+                  className="w-5 h-5 text-blue-600 transform transition-transform duration-300 flex items-center justify-center rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5 text-gray-600 transform transition-transform duration-300 flex items-center justify-center"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
-
-        {/* Expanded Details */}
         <div
           className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${
             isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
@@ -227,6 +315,49 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                 {jadwalLengkap.map((jadwal, idx) => {
                   const isCurrentlyActive =
                     currentStatus.isActive && currentStatus.activeIndex === idx;
+                  const slotStatus = doseStatusByTime[jadwal.awal];
+                  const now = new Date();
+                  const currentTime = `${now
+                    .getHours()
+                    .toString()
+                    .padStart(2, "0")}:${now
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}`;
+                  const isPast = currentTime > jadwal.berakhir;
+                  // Function to calculate duration between two time strings (HH:MM format)
+                  const calculateDuration = (startTime, endTime) => {
+                    // Parse times to minutes since midnight
+                    const [startHours, startMinutes] = startTime
+                      .split(":")
+                      .map(Number);
+                    const [endHours, endMinutes] = endTime
+                      .split(":")
+                      .map(Number);
+
+                    let startTotalMinutes = startHours * 60 + startMinutes;
+                    let endTotalMinutes = endHours * 60 + endMinutes;
+
+                    // Handle case where end time is on the next day
+                    if (endTotalMinutes < startTotalMinutes) {
+                      endTotalMinutes += 24 * 60; // Add a day in minutes
+                    }
+
+                    const diffMinutes = endTotalMinutes - startTotalMinutes;
+
+                    // Format result
+                    const hours = Math.floor(diffMinutes / 60);
+                    const minutes = diffMinutes % 60;
+
+                    if (hours === 0) {
+                      return `${minutes} menit`;
+                    } else if (minutes === 0) {
+                      return `${hours} jam`;
+                    } else {
+                      return `${hours} jam ${minutes} menit`;
+                    }
+                  };
+
                   return (
                     <div
                       key={idx}
@@ -267,6 +398,17 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                               </span>
                             </div>
                           )}
+                          {/* Past slot badges from dose log */}
+                          {slotStatus === "taken" && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+                              Diminum
+                            </span>
+                          )}
+                          {isPast && slotStatus === "missed" && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+                              Terlewat
+                            </span>
+                          )}
                           <span
                             className={`text-xs px-2 py-1 rounded-full ${
                               isCurrentlyActive
@@ -279,7 +421,8 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                         </div>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Durasi: {jadwal.awal} - {jadwal.berakhir}
+                        Durasi:{" "}
+                        {calculateDuration(jadwal.awal, jadwal.berakhir)}
                         {isCurrentlyActive && (
                           <span className="ml-2 text-green-600 font-medium">
                             • Waktunya minum obat!
@@ -294,7 +437,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
 
             {/* Sisa Obat */}
             <div className="p-3 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center  justify-between mb-2">
                 <span className={styles.title}>Sisa Obat</span>
                 <div className="flex items-center gap-2">
                   <div
@@ -304,20 +447,6 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                     {jumlahObat} butir
                   </span>
                 </div>
-              </div>
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${statusInfo.color} transition-all duration-300`}
-                  style={{
-                    width: `${Math.min((jumlahObat / 30) * 100, 100)}%`,
-                  }}
-                ></div>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {statusInfo.text} -{" "}
-                {Math.min((jumlahObat / 30) * 100, 100).toFixed(0)}% dari
-                kapasitas maksimal
               </div>
             </div>
 
@@ -351,7 +480,7 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
             {/* Quick Actions */}
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 mb-2">Aksi Cepat</div>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-2 gap-1">
                 <button
                   onClick={() => onEditQuantity && onEditQuantity(data)}
                   className="bg-blue-100 hover:bg-blue-200 text-blue-700 py-1.5 px-1 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
@@ -392,6 +521,51 @@ const BoxJadwal = ({ data, onEditQuantity, onDelete }) => {
                 </button>
               </div>
             </div>
+
+            {/* Informasi Waktu Detail - Hanya tampil di expanded */}
+            {(createdDate || updatedDate) && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Riwayat Waktu
+                </div>
+                <div className="space-y-1">
+                  {createdDate && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Dibuat:</span>
+                      <span className="text-gray-800 font-medium">
+                        {createdDate}
+                      </span>
+                    </div>
+                  )}
+                  {updatedDate && isRecentlyUpdated && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">
+                        Terakhir diperbarui:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        <span className="text-blue-700 font-medium">
+                          {updatedDate}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

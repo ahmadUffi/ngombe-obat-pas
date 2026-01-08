@@ -5,19 +5,28 @@ import {
   updateControl,
   deleteControl,
 } from "../services/controlService.js";
+import { supabase } from "../config/supabaseClient.js";
 
 // ✅ Create Kontrol
 export const createKontrol = async (req, res) => {
   const user_id = req.user.id;
-  const { tanggal, dokter, waktu, nama_pasien } = req.body;
+  const {
+    tanggal,
+    waktu,
+    dokter,
+    nama_pasien,
+    enableReminder = true,
+  } = req.body;
 
   try {
     const newKontrol = await createControl(user_id, {
       tanggal,
-      dokter,
       waktu,
+      dokter,
       nama_pasien,
+      enableReminder,
     });
+
     return res.status(201).json({
       success: true,
       message: "Kontrol berhasil dibuat",
@@ -76,14 +85,39 @@ export const setKontrolIsDone = async (req, res) => {
 export const editKontrol = async (req, res) => {
   const { id } = req.params;
   const { tanggal, dokter, waktu, nama_pasien } = req.body;
+  const user_id = req.user.id;
 
   try {
+    // First check if the control is already done and belongs to user
+    const { data: existingControl, error: checkError } = await supabase
+      .from("kontrol")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", user_id)
+      .single();
+
+    if (checkError || !existingControl) {
+      return res.status(404).json({
+        success: false,
+        message: "Kontrol tidak ditemukan atau Anda tidak memiliki akses",
+      });
+    }
+
+    // Prevent editing if control is already marked as done
+    if (existingControl.isDone) {
+      return res.status(400).json({
+        success: false,
+        message: "Kontrol yang sudah selesai tidak dapat diedit",
+      });
+    }
+
     const updated = await updateControl(id, {
       tanggal,
       dokter,
       waktu,
       nama_pasien,
     });
+
     return res.status(200).json({
       success: true,
       message: "Kontrol berhasil diupdate",
@@ -104,6 +138,29 @@ export const deleteKontrol = async (req, res) => {
   const user_id = req.user.id;
 
   try {
+    // First check if the control exists and belongs to the user
+    const { data: existingControl, error: checkError } = await supabase
+      .from("kontrol")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", user_id)
+      .single();
+
+    if (checkError || !existingControl) {
+      return res.status(404).json({
+        success: false,
+        message: "Kontrol tidak ditemukan atau Anda tidak memiliki akses",
+      });
+    }
+
+    // Prevent deletion if control is already marked as done
+    if (existingControl.isDone) {
+      return res.status(400).json({
+        success: false,
+        message: "Kontrol yang sudah selesai tidak dapat dihapus",
+      });
+    }
+
     await deleteControl(id, user_id);
     return res.status(200).json({
       success: true,

@@ -8,13 +8,6 @@ import "react-toastify/dist/ReactToastify.css";
 import LoadingScreen from "./components/UI/LoadingScreen";
 
 const App = () => {
-  const { loading } = useContext(AuthContext);
-
-  // Show loading screen while checking authentication
-  if (loading) {
-    return <LoadingScreen message="Memuat aplikasi..." />;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
@@ -36,10 +29,10 @@ const App = () => {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      {/* React-toastify container */}
+      {/* Toast notifications container */}
       <ToastContainer
         position="top-right"
-        autoClose={4000}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

@@ -105,8 +105,14 @@ export const useJadwal = () => {
     [callApi, token]
   );
 
+  const getTodayDoseStatus = useCallback(async () => {
+    // Use dose-log/status-today endpoint
+    return await callApi(apiService.getLogs, token);
+  }, [callApi, token]);
+
   return {
     getAllJadwal,
+    getTodayDoseStatus,
     createJadwal,
     updateStock,
     deleteJadwal,
@@ -175,7 +181,12 @@ export const useHistory = () => {
   const token = apiService.getToken();
 
   const getAllHistory = useCallback(async () => {
-    return await callApi(apiService.getAllHistory, token);
+    try {
+      const response = await callApi(apiService.getAllHistory, token);
+      return response; // Return the complete response object
+    } catch (error) {
+      throw error;
+    }
   }, [callApi, token]);
 
   const addHistory = useCallback(

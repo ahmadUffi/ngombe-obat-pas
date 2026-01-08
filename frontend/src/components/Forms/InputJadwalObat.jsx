@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import CompactInput from "./CompactInput";
-import CompactSelect from "./CompactSelect";
+import CompactInput from "../Utility/CompactInput";
+import CompactSelect from "../Utility/CompactSelect";
 import StepIndicator from "../UI/StepIndicator";
 import AllSlotsFullWarning from "../Common/AllSlotsFullWarning";
+import { toast } from "react-toastify";
 
 const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   // Form state - editing is now disabled
@@ -46,7 +47,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   // Auto-select first available slot if current slot is used - Optimized
   useEffect(() => {
     if (usedSlots[formData.slot_obat] && !initialData) {
-      const availableSlots = ["A", "B", "C", "D", "E", "F", "G", "H"];
+      const availableSlots = ["A", "B", "C", "D", "E", "F"];
       const firstAvailable = availableSlots.find((slot) => !usedSlots[slot]);
 
       if (firstAvailable) {
@@ -74,6 +75,58 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       return prev;
     });
   }, []);
+
+  // Helper: convert HH:MM to total minutes
+  const toMinutes = (hhmm) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  // Helper: evaluate overlaps (requires at least 1-minute gap)
+  const computeOverlapErrors = (jadwalList) => {
+    const intervals = jadwalList
+      .map((j, idx) => {
+        const s = toMinutes(j.jam_awal);
+        let e = toMinutes(j.jam_berakhir);
+        if (s == null || e == null) return null;
+        // Support cross-midnight (end < start)
+        if (e < s) e += 24 * 60;
+        return { idx, start: s, end: e };
+      })
+      .filter(Boolean);
+
+    // Sort by start (stable)
+    intervals.sort((a, b) => a.start - b.start);
+    const overlapIdx = new Set();
+    for (let i = 0; i < intervals.length - 1; i++) {
+      const cur = intervals[i];
+      const next = intervals[i + 1];
+      // Need at least 1 minute gap => next.start must be > cur.end
+      if (next.start <= cur.end) {
+        overlapIdx.add(cur.idx);
+        overlapIdx.add(next.idx);
+      }
+    }
+    return overlapIdx;
+  };
+
+  const applyOverlapErrors = (jadwalList) => {
+    const overlapIdx = computeOverlapErrors(jadwalList);
+    setErrors((prev) => {
+      // Remove old overlap errors first
+      const clean = { ...prev };
+      Object.keys(clean).forEach((k) => {
+        if (k.endsWith("_overlap")) delete clean[k];
+      });
+      if (overlapIdx.size === 0) return clean;
+      overlapIdx.forEach((i) => {
+        clean[`jadwal_${i}_overlap`] =
+          "Rentang waktu bertabrakan dengan jadwal lain (harus ada jeda minimal 1 menit).";
+      });
+      return clean;
+    });
+  };
 
   // Handle jadwal input changes
   const handleJadwalChange = (index, field, value) => {
@@ -187,6 +240,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       ...prev,
       jadwalMinum: updatedJadwal,
     }));
+    // Recompute overlap errors in real-time
+    applyOverlapErrors(updatedJadwal);
   };
 
   // Add new jadwal
@@ -226,6 +281,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       ...prev,
       jadwalMinum: updatedJadwal,
     }));
+    applyOverlapErrors(updatedJadwal);
   };
 
   // Validate current step
@@ -252,7 +308,15 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       if (formData.jadwalMinum.length === 0) {
         newErrors.jadwalMinum = "Harus ada minimal 1 jadwal minum";
       }
+      // Validasi jam tidak boleh sama
+      const jamSet = new Set();
       formData.jadwalMinum.forEach((jadwal, index) => {
+        if (jamSet.has(jadwal.jam_awal)) {
+          newErrors[`jadwal_${index}_awal`] =
+            "Jam mulai tidak boleh sama dengan jadwal lain";
+        }
+        jamSet.add(jadwal.jam_awal);
+
         if (!jadwal.jam_awal) {
           newErrors[`jadwal_${index}_awal`] = "Jam mulai harus diisi";
         }
@@ -291,9 +355,21 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
           }
         }
       });
+
+      // Overlap validation (no intersecting intervals, need at least 1 minute gap)
+      const overlapIdx = computeOverlapErrors(formData.jadwalMinum);
+      if (overlapIdx.size > 0) {
+        overlapIdx.forEach((i) => {
+          newErrors[`jadwal_${i}_overlap`] =
+            "Rentang waktu bertabrakan (butuh jeda >= 1 menit).";
+        });
+      }
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Mohon perbaiki data yang tidak valid");
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -327,8 +403,12 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
       };
 
       await onSubmit(submitData);
+      toast.success("Jadwal obat berhasil disimpan!");
     } catch (error) {
-      console.error("Error submitting form:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Gagal menyimpan jadwal obat. Silakan coba lagi.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -349,28 +429,28 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg w-full max-w-md mx-auto max-h-[85vh] flex flex-col">
+    <div className="bg-white/95 backdrop-blur-sm rounded-3xl w-full max-w-md mx-auto max-h-[85vh] flex flex-col shadow-2xl border border-white/50">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
-        <h2 className="text-lg font-semibold text-gray-800 text-center">
-          {initialData ? "Edit" : "Tambah"} Jadwal Obat
+      <div className="p-6 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-3xl">
+        <h2 className="text-xl font-bold text-gray-800 text-center mb-4">
+          {initialData ? "✏️ Edit" : "✨ Tambah"} Jadwal Obat
         </h2>
         <StepIndicator currentStep={currentStep} />
 
-        <p className="text-sm text-gray-600 text-center mt-2">
+        <p className="text-sm text-gray-600 text-center mt-3 font-medium">
           {getStepTitle(currentStep)}
         </p>
       </div>
 
       {/* Form Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-6">
         {/* All Slots Full Warning */}
         {allSlotsFull && <AllSlotsFullWarning />}
 
         <form onSubmit={handleSubmit}>
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
-            <div className="space-y-1">
+            <div className="space-y-4">
               <CompactInput
                 label="Nama Pasien"
                 name="nama_pasien"
@@ -391,7 +471,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                 required
               />
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <CompactInput
                   label="Dosis"
                   name="dosis_obat"
@@ -439,24 +519,12 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       label: "Slot F",
                       disabled: !!usedSlots["F"],
                     },
-                    {
-                      value: "G",
-                      label: "Slot G",
-                      disabled: !!usedSlots["G"],
-                    },
-                    {
-                      value: "H",
-                      label: "Slot H",
-                      disabled: !!usedSlots["H"],
-                    },
                   ]}
                   error={errors.slot_obat}
                 />
-
-                {/* Slot Status Indicator */}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <CompactSelect
                   label="Kategori"
                   name="kategori"
@@ -465,7 +533,6 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                   options={[
                     { value: "sebelum makan", label: "Sebelum Makan" },
                     { value: "sesudah makan", label: "Sesudah Makan" },
-                    { value: "bersamaan makan", label: "Bersamaan Makan" },
                   ]}
                   error={errors.kategori}
                 />
@@ -485,57 +552,63 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
 
           {/* Step 2: Schedule */}
           {currentStep === 2 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">
-                  Jadwal Minum Obat
+                <h3 className="text-base font-semibold text-gray-800">
+                  📅 Jadwal Minum Obat
                 </h3>
                 <button
                   type="button"
                   onClick={handleAddJadwal}
-                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={formData.jadwalMinum.length >= 4}
                 >
-                  + Tambah
+                  ➕ Tambah
                 </button>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                <p className="text-xs text-blue-700">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
+                <p className="text-sm text-blue-700">
                   💡 <strong>Tips:</strong> Durasi minum obat maksimal 3 jam.
                   Jam selesai akan otomatis disesuaikan jika melebihi batas ini.
                 </p>
               </div>
 
               {errors.jadwalMinum && (
-                <p className="text-red-500 text-xs">{errors.jadwalMinum}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-red-600 text-sm flex items-center gap-2">
+                    <span>⚠️</span>
+                    {errors.jadwalMinum}
+                  </p>
+                </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {formData.jadwalMinum.map((jadwal, index) => (
                   <div
                     key={jadwal.id}
-                    className="border border-gray-200 rounded-lg p-3"
+                    className="border-2 border-gray-100 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-white hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span>⏰</span>
                         Jadwal {index + 1}
                       </span>
                       {formData.jadwalMinum.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveJadwal(index)}
-                          className="text-red-500 hover:text-red-700 text-xs"
+                          className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors hover:bg-red-50 px-2 py-1 rounded-lg"
                         >
-                          Hapus
+                          🗑️ Hapus
                         </button>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Jam Mulai
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          🕐 Jam Mulai
                         </label>
                         <input
                           type="time"
@@ -547,7 +620,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                               e.target.value
                             )
                           }
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-colors"
                         />
                         {errors[`jadwal_${index}_awal`] && (
                           <p className="text-red-500 text-xs mt-1">
@@ -557,8 +630,8 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Jam Selesai
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          🕐 Jam Selesai
                         </label>
                         <input
                           type="time"
@@ -570,7 +643,7 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                               e.target.value
                             )
                           }
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-colors"
                         />
                         {errors[`jadwal_${index}_berakhir`] && (
                           <p className="text-red-500 text-xs mt-1">
@@ -580,16 +653,30 @@ const InputJadwalObat = ({ onSubmit, initialData, existingJadwal = [] }) => {
                       </div>
                     </div>
 
-                    {/* Duration and sequence error messages */}
-                    {errors[`jadwal_${index}_duration`] && (
-                      <p className="text-orange-500 text-xs mt-1 bg-orange-50 p-2 rounded border border-orange-200">
-                        ⚠️ {errors[`jadwal_${index}_duration`]}
-                      </p>
-                    )}
-                    {errors[`jadwal_${index}_sequence`] && (
-                      <p className="text-red-500 text-xs mt-1 bg-red-50 p-2 rounded border border-red-200">
-                        ❌ {errors[`jadwal_${index}_sequence`]}
-                      </p>
+                    {/* Duration and Sequence Errors */}
+                    {(errors[`jadwal_${index}_duration`] ||
+                      errors[`jadwal_${index}_sequence`] ||
+                      errors[`jadwal_${index}_overlap`]) && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        {errors[`jadwal_${index}_duration`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1 mb-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_duration`]}
+                          </p>
+                        )}
+                        {errors[`jadwal_${index}_sequence`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_sequence`]}
+                          </p>
+                        )}
+                        {errors[`jadwal_${index}_overlap`] && (
+                          <p className="text-amber-700 text-xs flex items-center gap-1 mt-1">
+                            <span>⚠️</span>
+                            {errors[`jadwal_${index}_overlap`]}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}

@@ -9,16 +9,24 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "k6:smoke": "k6 run k6/smoke.js",
+    "k6:full": "k6 run k6/full.js",
+    "k6:all": "k6 run k6/all-apis.js",
+    "k6:important": "k6 run --summary-export=important-summary.json k6/important-apis.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.0",
-    "axios": "^1.10.0",
+    "compression": "^1.7.4",
+    "axios": "^1.11.0",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
     "dotenv": "^17.2.0",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "jwks-rsa": "^3.2.0"
+    "jwks-rsa": "^3.2.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

@@ -9,7 +9,7 @@ const LoadingScreen = ({ message = "Loading..." }) => {
           <div className="w-20 h-20 mx-auto bg-blue-500 rounded-full flex items-center justify-center">
             <span className="text-2xl text-white font-bold">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mt-4">SmedBox</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mt-4">Ngompas</h1>
         </div>
 
         {/* Loading Animation */}

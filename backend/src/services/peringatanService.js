@@ -1,17 +1,19 @@
 import { supabase } from "../config/supabaseClient.js";
+import { sendWhatsAppMessage } from "./messageService.js";
+import { formatPhoneNumber } from "./wablasService.js";
 
 //  Create Peringatan
 export const createPeringatan = async (user_id, id_jadwal, pesan) => {
   const { data: profile, error: profileError } = await supabase
     .from("profile")
-    .select("id")
+    .select("id, no_hp, username")
     .eq("user_id", user_id)
     .single();
 
   if (profileError || !profile) throw new Error("Profile not found");
   const { data: dataJadwal, error: dataError } = await supabase
     .from("jadwal")
-    .select("nama_obat, slot_obat")
+    .select("nama_obat, slot_obat, nama_pasien")
     .eq("user_id", user_id)
     .eq("id", id_jadwal)
     .single();
@@ -33,6 +35,27 @@ export const createPeringatan = async (user_id, id_jadwal, pesan) => {
 
   if (insertError) {
     throw new Error("Failed to create peringatan: " + insertError.message);
+  }
+
+  // Best-effort: send WhatsApp notification to profile phone number
+  try {
+    const phone = profile?.no_hp ? formatPhoneNumber(profile.no_hp) : null;
+    if (phone) {
+      const msg =
+        `⚠️ Peringatan Obat\n\n` +
+        `👤 Pasien: ${dataJadwal?.nama_pasien || "-"}\n` +
+        `💊 Obat: ${dataJadwal?.nama_obat || "-"}\n` +
+        `🧩 Slot: ${dataJadwal?.slot_obat || "-"}\n` +
+        (pesan ? `\n📝 ${pesan}` : "");
+      await sendWhatsAppMessage(phone, msg, "text");
+    } else {
+      // No phone number available; skip WA send
+    }
+  } catch (waErr) {
+    console.warn(
+      "[createPeringatan] WhatsApp send failed:",
+      waErr?.message || waErr
+    );
   }
 
   return data;

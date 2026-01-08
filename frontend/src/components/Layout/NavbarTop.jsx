@@ -3,13 +3,32 @@ import { useNavigate } from "react-router-dom";
 import SearchIcon from "../Icons/SearchIcon";
 import BellIcon from "../Icons/BellIcon";
 import { AuthContext } from "../../hooks/useAuth";
+import { maskot } from "../../assets";
 
 const NavbarTop = ({ onToggleSidebar }) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { logout } = useContext(AuthContext);
+  const [profileImageError, setProfileImageError] = useState(false);
+  const [profileImageKey, setProfileImageKey] = useState(Date.now());
+  const { logout, user } = useContext(AuthContext);
+
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
+
+  // Reset the profile image error and update image key when user changes
+  useEffect(() => {
+    setProfileImageError(false);
+    setProfileImageKey(Date.now());
+  }, [user]);
+
+  // Get profile image URL from user context or use mascot as default
+  const getProfileImageSrc = () => {
+    if (profileImageError || !user?.img_profile) {
+      return maskot;
+    }
+
+    return user.img_profile;
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -36,7 +55,6 @@ const NavbarTop = ({ onToggleSidebar }) => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     const searchTerm = e.target.search.value;
-    console.log("Searching for:", searchTerm);
     // Add your search logic here
     closeMobileSearch();
   };
@@ -45,9 +63,7 @@ const NavbarTop = ({ onToggleSidebar }) => {
     try {
       await logout();
       navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    } catch (error) {}
     setShowUserMenu(false);
   };
 
@@ -81,39 +97,6 @@ const NavbarTop = ({ onToggleSidebar }) => {
 
         <div className="flex items-center gap-3 lg:gap-5">
           {/* search */}
-          <div className="search hidden sm:block">
-            <form onSubmit={handleSearchSubmit}>
-              <div className="from-control bg-[var(--pink)] flex w-[250px] md:w-[300px] lg:w-[411px] h-[49px] rounded-full items-center gap-2.5">
-                <label htmlFor="search" className="ms-2.5">
-                  <SearchIcon />
-                </label>
-                <input
-                  type="text"
-                  id="search"
-                  name="search"
-                  placeholder="Cari Jadwal Minum Obat..."
-                  className="w-full bg-transparent outline-none pr-4 text-sm lg:text-base"
-                />
-              </div>
-            </form>
-          </div>
-
-          {/* Search icon for mobile */}
-          <button
-            className="sm:hidden flex items-center justify-center w-[45px] h-[45px] rounded-full bg-[var(--pink)] cursor-pointer hover:bg-opacity-80 transition-all"
-            aria-label="Search"
-            onClick={handleMobileSearch}
-          >
-            <SearchIcon />
-          </button>
-
-          {/* notification */}
-          <button
-            className="nontif w-[45px] h-[45px] rounded-full bg-[#CCFBF1] flex justify-center items-center cursor-pointer hover:bg-[#A7F3D0] transition-colors"
-            aria-label="Notifications"
-          >
-            <BellIcon />
-          </button>
 
           {/* profile */}
           <div className="relative" ref={userMenuRef}>
@@ -123,14 +106,15 @@ const NavbarTop = ({ onToggleSidebar }) => {
               aria-label="Profile menu"
             >
               <img
-                src=""
+                src={getProfileImageSrc()}
                 alt="Profile"
                 className="w-[45px] h-[45px] rounded-full object-cover"
+                // Force image reload when user updates
+                key={`profile-${profileImageKey}`}
                 onError={(e) => {
-                  e.target.style.display = "none";
+                  setProfileImageError(true);
                 }}
               />
-              <span className="text-white text-sm font-medium">U</span>
             </button>
 
             {/* User Dropdown Menu */}
@@ -138,7 +122,9 @@ const NavbarTop = ({ onToggleSidebar }) => {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
                   <p className="text-sm text-gray-600">Selamat datang</p>
-                  <p className="text-sm font-semibold text-gray-800">User</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {user?.username || user?.name || user?.email || "User"}
+                  </p>
                 </div>
 
                 <button
@@ -163,6 +149,54 @@ const NavbarTop = ({ onToggleSidebar }) => {
                   </svg>
                   Dashboard
                 </button>
+
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Edit Profile
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate("/change-password");
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-3.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                    />
+                  </svg>
+                  Ubah Password
+                </button>
+
+                <div className="border-t border-gray-200 my-1"></div>
 
                 <button
                   onClick={handleLogout}

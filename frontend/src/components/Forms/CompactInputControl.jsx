@@ -10,12 +10,16 @@ const CompactInputControl = ({
   icon = "📝",
 }) => (
   <div className="mb-4">
-    <label className="flex items-center text-sm font-bold text-gray-700 mb-2">
+    <label
+      className="flex items-center text-sm font-bold text-gray-700 mb-2"
+      htmlFor={name}
+    >
       <span className="mr-2">{icon}</span>
       {label} {required && <span className="text-red-500 ml-1">*</span>}
     </label>
     <div className="relative">
       <input
+        id={name}
         type={type}
         name={name}
         value={value}

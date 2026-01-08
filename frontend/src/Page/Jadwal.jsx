@@ -15,6 +15,7 @@ const Jadwal = () => {
   const [filter, setFilter] = useState("all");
   const [jadwalData, setJadwalData] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [todayDoseMap, setTodayDoseMap] = useState({}); // { [jadwal_id]: { [dose_time]: status } }
 
   // State untuk modal konfirmasi
   const [confirmModal, setConfirmModal] = useState({
@@ -28,6 +29,7 @@ const Jadwal = () => {
   // Using the custom hook for jadwal operations
   const {
     getAllJadwal,
+    getTodayDoseStatus,
     createJadwal,
     updateStock,
     deleteJadwal,
@@ -43,8 +45,11 @@ const Jadwal = () => {
 
   const loadJadwalData = async () => {
     try {
-      const data = await getAllJadwal();
-      console.log("Jadwal API Response:", data); // Debug log
+      // Load jadwal and today's dose statuses in parallel
+      const [data, doseRes] = await Promise.all([
+        getAllJadwal(),
+        getTodayDoseStatus().catch(() => ({ ok: false, data: [] })),
+      ]);
 
       // Ensure data is an array
       const dataArray = Array.isArray(data) ? data : [];
@@ -69,10 +74,21 @@ const Jadwal = () => {
         slot_obat: item.slot_obat || 1,
       }));
       setJadwalData(transformedData);
+
+      // Build map: { jadwal_id: { dose_time: status } }
+      const rows = Array.isArray(doseRes?.data) ? doseRes.data : [];
+      const map = rows.reduce((acc, row) => {
+        const jid = row.jadwal_id;
+        if (!jid) return acc;
+        if (!acc[jid]) acc[jid] = {};
+        acc[jid][row.dose_time] = row.status;
+        return acc;
+      }, {});
+      setTodayDoseMap(map);
     } catch (err) {
-      console.error("Error loading jadwal:", err);
       // Set empty array on error instead of dummy data
       setJadwalData([]);
+      setTodayDoseMap({});
       setError("Gagal memuat data jadwal. Silakan coba lagi.");
     }
   };
@@ -80,9 +96,26 @@ const Jadwal = () => {
   const filteredData = jadwalData.filter((item) => {
     if (filter === "all") return true;
     if (filter === "habis") return item.jumlah_obat === 0;
-    if (filter === "sedikit")
-      return item.jumlah_obat < 6 && item.jumlah_obat > 0;
-    if (filter === "aman") return item.jumlah_obat >= 6;
+    if (filter === "sedikit") {
+      // Calculate threshold dynamically: 2 days worth of doses
+      const frekuensiPerHari = Array.isArray(item.jam_awal)
+        ? item.jam_awal.length
+        : 1;
+      const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+      const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+      const threshold = dosesPerDay * 2; // 2 days left
+      return item.jumlah_obat > 0 && item.jumlah_obat <= threshold;
+    }
+    if (filter === "aman") {
+      // Calculate threshold dynamically: 2 days worth of doses
+      const frekuensiPerHari = Array.isArray(item.jam_awal)
+        ? item.jam_awal.length
+        : 1;
+      const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+      const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+      const threshold = dosesPerDay * 2; // 2 days left
+      return item.jumlah_obat > threshold;
+    }
     return true;
   });
 
@@ -91,7 +124,6 @@ const Jadwal = () => {
     if (isOpen) {
       setEditingItem(null); // Reset editing item when closing
     }
-    console.log(isOpen);
   };
 
   const handleEditQuantity = (item) => {
@@ -111,8 +143,6 @@ const Jadwal = () => {
     setIsCreating(true);
 
     try {
-      console.log("Frontend jadwal data:", jadwalData);
-
       // Transform frontend data to API format - backend expects arrays for time fields
       const apiData = {
         nama_pasien: jadwalData.nama_pasien || "",
@@ -130,7 +160,6 @@ const Jadwal = () => {
         slot_obat: (jadwalData.slot_obat || "A").toString(),
       };
 
-      console.log("Data being sent to API:", apiData);
       await createJadwal(apiData);
       setIsOpen(false);
       loadJadwalData(); // Reload data
@@ -143,10 +172,6 @@ const Jadwal = () => {
         autoClose: 3000,
       });
     } catch (err) {
-      console.error("Error creating jadwal:", err);
-      console.error("Error response:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
@@ -184,8 +209,6 @@ const Jadwal = () => {
         autoClose: 3000,
       });
     } catch (err) {
-      console.error("Error updating stock:", err);
-
       // Update toast to error
       toast.update(loadingToastId, {
         render: "Gagal mengupdate stok: " + err.message,
@@ -220,8 +243,6 @@ const Jadwal = () => {
             autoClose: 3000,
           });
         } catch (err) {
-          console.error("Error deleting jadwal:", err);
-
           // Update toast to error
           toast.update(loadingToastId, {
             render: "Gagal menghapus jadwal: " + err.message,
@@ -242,155 +263,255 @@ const Jadwal = () => {
 
   return (
     <Layout className="relative">
-      {/* Loading state */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/30 bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-xl">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-              <span className="text-gray-700 font-medium">Loading...</span>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-4 space-y-8">
+        {/* Loading state */}
+        {loading && (
+          <div className="fixed inset-0 bg-black/30 bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/50">
+              <div className="flex items-center space-x-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-purple-500 border-t-transparent"></div>
+                <span className="text-gray-700 font-semibold text-lg">
+                  Loading...
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <div className="flex items-center">
-            <span className="text-red-500 mr-2">⚠️</span>
-            <span className="flex-1">{error}</span>
-            <button
-              onClick={() => setError("")}
-              className="ml-2 text-red-700 hover:text-red-900"
-            >
-              ✕
-            </button>
+        {/* Error message */}
+        {error && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-red-200 p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-pink-50/50 rounded-3xl"></div>
+            <div className="relative flex items-center">
+              <span className="text-red-500 mr-3 text-xl">⚠️</span>
+              <span className="flex-1 text-red-700 font-semibold">{error}</span>
+              <button
+                onClick={() => setError("")}
+                className="ml-4 text-red-700 hover:text-red-900 p-2 rounded-xl hover:bg-red-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Header with Enhanced Design */}
+        <div className="text-center mb-12 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-indigo-600/10 rounded-3xl blur-3xl"></div>
+          <div className="relative">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full mb-6 shadow-2xl">
+              <span className="text-3xl">💊</span>
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+              Jadwal Minum Obat
+            </h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Kelola jadwal obat Anda dengan mudah dan teratur
+            </p>
+            {!loading && (
+              <button
+                onClick={loadJadwalData}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm"
+              >
+                <span className="mr-2">🔄</span>
+                Refresh Data
+              </button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Header Section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Jadwal Minum Obat
-          </h1>
-        </div>
+        {/* Statistics Cards as Interactive Filters */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 relative overflow-hidden mb-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 rounded-3xl"></div>
+          <div className="relative">
+            <div className="flex items-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl mr-4 shadow-lg">
+                <span className="text-2xl">📊</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Filter & Statistik Obat
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  Klik kartu untuk memfilter data
+                </p>
+              </div>
+            </div>
 
-        <p className="text-gray-600 mb-4">
-          Kelola jadwal obat Anda dengan mudah. Klik card untuk melihat detail
-          lengkap.
-        </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {/* Total Obat */}
+              <button
+                onClick={() => setFilter("all")}
+                className={`relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group ${
+                  filter === "all"
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-2xl scale-105"
+                    : "bg-gradient-to-br from-blue-50 to-indigo-50 text-gray-700 hover:from-blue-100 hover:to-indigo-100 shadow-lg"
+                }`}
+              >
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                <div className="relative text-center">
+                  <div className="text-2xl mb-2">🔍</div>
+                  <div
+                    className={`text-2xl font-bold mb-1 ${
+                      filter === "all" ? "text-white" : "text-blue-600"
+                    }`}
+                  >
+                    {jadwalData.length}
+                  </div>
+                  <div
+                    className={`text-sm font-semibold ${
+                      filter === "all" ? "text-blue-100" : "text-gray-600"
+                    }`}
+                  >
+                    Total Obat
+                  </div>
+                </div>
+              </button>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-3 mb-4">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "all"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            SEMUA ({jadwalData.length})
-          </button>
-          <button
-            onClick={() => setFilter("sedikit")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "sedikit"
-                ? "bg-orange-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            HAMPIR HABIS (
-            {
-              jadwalData.filter(
-                (item) => item.jumlah_obat < 6 && item.jumlah_obat > 0
-              ).length
-            }
-            )
-          </button>
-          <button
-            onClick={() => setFilter("habis")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "habis"
-                ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            HABIS ({jadwalData.filter((item) => item.jumlah_obat === 0).length})
-          </button>
-          <button
-            onClick={() => setFilter("aman")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              filter === "aman"
-                ? "bg-green-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            AMAN ({jadwalData.filter((item) => item.jumlah_obat >= 6).length})
-          </button>
+              {/* Obat Habis */}
+              <button
+                onClick={() => setFilter("habis")}
+                className={`relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group ${
+                  filter === "habis"
+                    ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-2xl scale-105"
+                    : "bg-gradient-to-br from-red-50 to-rose-50 text-gray-700 hover:from-red-100 hover:to-rose-100 shadow-lg"
+                }`}
+              >
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                <div className="relative text-center">
+                  <div className="text-2xl mb-2">❌</div>
+                  <div
+                    className={`text-2xl font-bold mb-1 ${
+                      filter === "habis" ? "text-white" : "text-red-600"
+                    }`}
+                  >
+                    {jadwalData.filter((item) => item.jumlah_obat === 0).length}
+                  </div>
+                  <div
+                    className={`text-sm font-semibold ${
+                      filter === "habis" ? "text-red-100" : "text-gray-600"
+                    }`}
+                  >
+                    Obat Habis
+                  </div>
+                </div>
+              </button>
+
+              {/* Hampir Habis */}
+              <button
+                onClick={() => setFilter("sedikit")}
+                className={`relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group ${
+                  filter === "sedikit"
+                    ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-2xl scale-105"
+                    : "bg-gradient-to-br from-orange-50 to-yellow-50 text-gray-700 hover:from-orange-100 hover:to-yellow-100 shadow-lg"
+                }`}
+              >
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                <div className="relative text-center">
+                  <div className="text-2xl mb-2">⚠️</div>
+                  <div
+                    className={`text-2xl font-bold mb-1 ${
+                      filter === "sedikit" ? "text-white" : "text-orange-600"
+                    }`}
+                  >
+                    {
+                      jadwalData.filter((item) => {
+                        const frekuensiPerHari = Array.isArray(item.jam_awal)
+                          ? item.jam_awal.length
+                          : 1;
+                        const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+                        const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+                        const threshold = dosesPerDay * 2;
+                        return (
+                          item.jumlah_obat > 0 && item.jumlah_obat <= threshold
+                        );
+                      }).length
+                    }
+                  </div>
+                  <div
+                    className={`text-sm font-semibold ${
+                      filter === "sedikit" ? "text-orange-100" : "text-gray-600"
+                    }`}
+                  >
+                    Hampir Habis
+                  </div>
+                </div>
+              </button>
+
+              {/* Stok Aman */}
+              <button
+                onClick={() => setFilter("aman")}
+                className={`relative p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl group ${
+                  filter === "aman"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-2xl scale-105"
+                    : "bg-gradient-to-br from-green-50 to-emerald-50 text-gray-700 hover:from-green-100 hover:to-emerald-100 shadow-lg"
+                }`}
+              >
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-110 transition-transform"></div>
+                <div className="relative text-center">
+                  <div className="text-2xl mb-2">✅</div>
+                  <div
+                    className={`text-2xl font-bold mb-1 ${
+                      filter === "aman" ? "text-white" : "text-green-600"
+                    }`}
+                  >
+                    {
+                      jadwalData.filter((item) => {
+                        const frekuensiPerHari = Array.isArray(item.jam_awal)
+                          ? item.jam_awal.length
+                          : 1;
+                        const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+                        const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+                        const threshold = dosesPerDay * 2;
+                        return item.jumlah_obat > threshold;
+                      }).length
+                    }
+                  </div>
+                  <div
+                    className={`text-sm font-semibold ${
+                      filter === "aman" ? "text-green-100" : "text-gray-600"
+                    }`}
+                  >
+                    Stok Aman
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Filter Result Info */}
-        <div className="mb-4 text-sm text-gray-600">
-          Menampilkan{" "}
-          <span className="font-medium text-gray-800">
-            {filteredData.length}
-          </span>{" "}
-          dari {jadwalData.length} jadwal obat
-          {filter !== "all" && (
-            <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-              Filter:{" "}
-              {filter === "critical"
-                ? "Kritis"
-                : filter === "low"
-                ? "Sedikit"
-                : "Aman"}
-            </span>
-          )}
-        </div>
-
-        {/* Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-3 rounded-lg shadow-sm border">
-            <div className="text-2xl font-bold text-blue-600">
-              {jadwalData.length}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="text-blue-800">
+              <span className="font-medium">
+                Menampilkan {filteredData.length}
+              </span>{" "}
+              dari {jadwalData.length} jadwal obat
             </div>
-            <div className="text-sm text-gray-600">Total Obat</div>
-          </div>
-          <div className="bg-white p-3 rounded-lg shadow-sm border">
-            <div className="text-2xl font-bold text-red-600">
-              {jadwalData.filter((item) => item.jumlah_obat <= 3).length}
-            </div>
-            <div className="text-sm text-gray-600">Perlu Beli</div>
-          </div>
-          <div className="bg-white p-3 rounded-lg shadow-sm border">
-            <div className="text-2xl font-bold text-orange-600">
-              {
-                jadwalData.filter(
-                  (item) => item.jumlah_obat <= 10 && item.jumlah_obat > 3
-                ).length
-              }
-            </div>
-            <div className="text-sm text-gray-600">Hampir Habis</div>
-          </div>
-          <div className="bg-white p-3 rounded-lg shadow-sm border">
-            <div className="text-2xl font-bold text-green-600">
-              {jadwalData.filter((item) => item.jumlah_obat > 10).length}
-            </div>
-            <div className="text-sm text-gray-600">Stok Aman</div>
+            {filter !== "all" && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium border border-blue-300">
+                Filter Aktif:{" "}
+                {filter === "sedikit"
+                  ? "Hampir Habis"
+                  : filter === "habis"
+                  ? "Habis"
+                  : filter === "aman"
+                  ? "Stok Aman"
+                  : filter}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Cards Grid */}
-      <div className="flex flex-wrap justify-start gap-6 mb-20">
+      <div className="flex flex-wrap justify-center lg:justify-start gap-6 mb-20">
         {filteredData.map((data, index) => (
           <div key={data.id || index} className="flex-shrink-0">
             <BoxJadwal
               data={data}
+              doseStatusByTime={todayDoseMap?.[data.id] || {}}
               onEditQuantity={handleEditQuantity}
               onDelete={() => handleDeleteJadwal(data.id)}
             />

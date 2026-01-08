@@ -1,0 +1,451 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SmedBox API",
+    "description": "API Documentation untuk SmedBox - Smart Medicine Box System. Sistem manajemen obat pintar dengan IoT integration, reminder WhatsApp, dan dose tracking.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "SmedBox Support",
+      "email": "support@smedbox.com"
+    },
+    "license": {
+      "name": "ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/v1/api",
+      "description": "Development server"
+    },
+    {
+      "url": "http://163.53.195.57:5000/v1/api",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication endpoints"
+    },
+    {
+      "name": "Profile",
+      "description": "User profile management"
+    },
+    {
+      "name": "Jadwal",
+      "description": "Medicine schedule management"
+    },
+    {
+      "name": "Dose Log",
+      "description": "Dose tracking and logging"
+    },
+    {
+      "name": "History",
+      "description": "Medicine intake history"
+    },
+    {
+      "name": "Kontrol",
+      "description": "Doctor appointment management"
+    },
+    {
+      "name": "Peringatan",
+      "description": "Alert and warning system"
+    },
+    {
+      "name": "Notes",
+      "description": "Personal notes management"
+    },
+    {
+      "name": "WhatsApp",
+      "description": "WhatsApp message integration"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin-only operations"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from login endpoint"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Error message"
+          },
+          "error": {
+            "type": "string",
+            "example": "Detailed error information"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "no_hp": {
+            "type": "string"
+          }
+        }
+      },
+      "Jadwal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama_pasien": {
+            "type": "string"
+          },
+          "nama_obat": {
+            "type": "string"
+          },
+          "dosis_obat": {
+            "type": "integer"
+          },
+          "jumlah_obat": {
+            "type": "integer"
+          },
+          "catatan": {
+            "type": "string"
+          },
+          "kategori": {
+            "type": "string"
+          },
+          "slot_obat": {
+            "type": "string",
+            "enum": ["A", "B", "C", "D", "E", "F"]
+          },
+          "jam_awal": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "jam_berakhir": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DoseLog": {
+        "type": "object",
+        "properties": {
+          "jadwal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama_obat": {
+            "type": "string"
+          },
+          "nama_pasien": {
+            "type": "string"
+          },
+          "dose_time": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "taken", "missed"]
+          },
+          "taken_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "History": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama_obat": {
+            "type": "string"
+          },
+          "dosis_obat": {
+            "type": "string"
+          },
+          "sisa_obat": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "waktu_minum": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Kontrol": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama_pasien": {
+            "type": "string"
+          },
+          "tanggal": {
+            "type": "string",
+            "format": "date"
+          },
+          "waktu": {
+            "type": "string"
+          },
+          "dokter": {
+            "type": "string"
+          },
+          "isDone": {
+            "type": "boolean"
+          },
+          "wablas_schedule_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Peringatan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nama_obat": {
+            "type": "string"
+          },
+          "slot_obat": {
+            "type": "string"
+          },
+          "pesan": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "note_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Unauthorized - Token tidak valid"
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "User does not have permission",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Forbidden - Admin access required"
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Resource tidak ditemukan"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Validation error message"
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Internal server error",
+              "error": "Error details"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {}
+}

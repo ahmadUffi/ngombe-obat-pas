@@ -1,6 +1,41 @@
 import React from "react";
 
 const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
+  // Fungsi untuk format tanggal yang user-friendly
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return diffMinutes <= 1 ? "Baru saja" : `${diffMinutes} menit lalu`;
+      } else if (diffHours < 24) {
+        return `${diffHours} jam lalu`;
+      } else if (diffDays < 7) {
+        return `${diffDays} hari lalu`;
+      } else {
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: diffDays > 365 ? "numeric" : undefined,
+        });
+      }
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const createdDate = formatDate(data.created_at);
+  const updatedDate = formatDate(data.updated_at);
+  const isRecentlyUpdated =
+    data.updated_at && data.created_at && data.updated_at !== data.created_at;
+
   // Format tanggal ke bahasa Indonesia
   const formatTanggal = (tanggal) => {
     const date = new Date(tanggal);
@@ -101,14 +136,18 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
   return (
     <div className="p-2">
       <div
-        className={`w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg group ${getCardBorderColor()} ${
-          isExpired() ? "opacity-75" : ""
-        }`}
+        className={`w-[280px] md:w-[320px] lg:w-[340px] bg-white rounded-xl shadow-md border transition-all duration-300 hover:shadow-lg group ${
+          data.isDone
+            ? "border-green-300 shadow-green-100 bg-green-50/30"
+            : getCardBorderColor()
+        } ${isExpired() || data.isDone ? "opacity-75" : ""}`}
       >
         {/* Header */}
         <div
           className={`p-4 rounded-t-xl ${
-            isExpired()
+            data.isDone
+              ? "bg-gradient-to-r from-green-50 to-emerald-50"
+              : isExpired()
               ? "bg-gradient-to-r from-gray-50 to-gray-100"
               : isToday()
               ? "bg-gradient-to-r from-red-50 to-pink-50"
@@ -121,10 +160,30 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
           <div className="absolute top-3 right-3">{getStatusBadge()}</div>
 
           <div className="flex items-center justify-between mb-2 pr-20">
-            <h3 className="text-lg font-bold text-gray-800 truncate flex items-center">
-              <span className="mr-2">👤</span>
-              {data.nama_pasien}
-            </h3>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-800 truncate flex items-center">
+                <span className="mr-2">👤</span>
+                {data.nama_pasien}
+              </h3>
+              {/* Informasi Waktu - Subtle */}
+              {(createdDate || updatedDate) && (
+                <div className="flex items-center gap-2 mt-1">
+                  {isRecentlyUpdated && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-blue-600 font-medium">
+                        Diperbarui {updatedDate}
+                      </span>
+                    </div>
+                  )}
+                  {!isRecentlyUpdated && createdDate && (
+                    <span className="text-xs text-gray-500">
+                      Dibuat {createdDate}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div
             className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDoctorColor()} shadow-sm`}
@@ -192,10 +251,15 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
         </div>
 
         {/* Actions */}
-        <div className="px-4 pb-4 flex justify-between gap-2">
+        <div className="px-4 pb-4 flex justify-between gap-2 flex-wrap">
           <button
             onClick={() => onEdit && onEdit(data)}
-            className="flex-1 px-4 py-2 text-sm font-medium text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+            disabled={data.isDone}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm flex items-center justify-center gap-1 ${
+              data.isDone
+                ? "text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed opacity-50"
+                : "text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-300 hover:shadow-md"
+            }`}
           >
             <svg
               className="w-4 h-4"
@@ -210,9 +274,33 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
-            Edit
+            {data.isDone ? "Tidak dapat diedit" : "Edit"}
           </button>
 
+          <button
+            onClick={() => onDelete && onDelete(data)}
+            disabled={data.isDone}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm flex items-center justify-center gap-1 ${
+              data.isDone
+                ? "text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed opacity-50"
+                : "text-red-700 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 border border-red-300 hover:shadow-md"
+            }`}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            {data.isDone ? "Tidak dapat dihapus" : "Hapus"}
+          </button>
           {!data.isDone && onMarkDone && (
             <button
               onClick={() => onMarkDone(data)}
@@ -234,27 +322,64 @@ const BoxControl = ({ data, onEdit, onDelete, onMarkDone }) => {
               Selesai
             </button>
           )}
-
-          <button
-            onClick={() => onDelete && onDelete(data)}
-            className="flex-1 px-4 py-2 text-sm font-medium text-red-700 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 border border-red-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-            Hapus
-          </button>
         </div>
+
+        {/* Info message for completed controls */}
+        {data.isDone && (
+          <div className="px-4 pb-3">
+            <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
+              <p className="text-xs text-green-700 font-medium flex items-center justify-center gap-1">
+                <span>ℹ️</span>
+                Kontrol sudah selesai - tidak dapat diedit atau dihapus
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Informasi Waktu Detail */}
+        {(createdDate || updatedDate) && (
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="pt-3">
+              <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Riwayat Waktu
+              </div>
+              <div className="space-y-1">
+                {createdDate && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Dibuat:</span>
+                    <span className="text-gray-800 font-medium">
+                      {createdDate}
+                    </span>
+                  </div>
+                )}
+                {updatedDate && isRecentlyUpdated && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Terakhir diperbarui:</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span className="text-blue-700 font-medium">
+                        {updatedDate}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

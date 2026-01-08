@@ -1,16 +1,15 @@
 import React from "react";
-const PlusIcon = () => {
+const PlusIcon = ({ className = "w-6 h-6 text-black" }) => {
   return (
     <svg
-      width="40"
-      height="40"
-      viewBox="0 0 40 40"
+      className={className}
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M20 8L20 32M32 20L8 20"
-        stroke="black"
+        d="M12 4v16m8-8H4"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
       />

@@ -28,7 +28,7 @@ const Modal = ({ isOpen, onClose, children }) => {
         }
       }}
     >
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-hidden bg-white rounded-lg shadow-xl">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-hidden bg-white rounded-3xl shadow-xl">
         <button
           className="absolute top-3 right-3 z-[100] w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 font-bold flex items-center justify-center cursor-pointer transition-colors text-gray-600"
           onClick={onClose}

@@ -67,7 +67,7 @@ export const useNavigation = () => {
 
   const getRouteTitle = () => {
     const route = routes.find((r) => r.path === location.pathname);
-    return route?.title || "SmedBox";
+    return route?.title || "Ngompas";
   };
 
   return {

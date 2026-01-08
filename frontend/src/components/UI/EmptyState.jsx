@@ -29,7 +29,7 @@ const WelcomeCard = () => {
   return (
     <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white text-center">
       <div className="text-5xl mb-4">🌟</div>
-      <h2 className="text-2xl font-bold mb-3">Selamat Datang di SmedBox!</h2>
+      <h2 className="text-2xl font-bold mb-3">Selamat Datang di Ngompas!</h2>
       <p className="text-blue-100 mb-6 leading-relaxed">
         Platform digital untuk membantu Anda mengelola jadwal obat dan kontrol
         kesehatan dengan mudah dan terorganisir.

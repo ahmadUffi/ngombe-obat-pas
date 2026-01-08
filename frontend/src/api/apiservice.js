@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base URL dari API documentation
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export class apiService {
   // ===============================
@@ -26,7 +26,28 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Login failed:", err.response?.data || err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Mengirim email reset password
+   * @param {Object} data - {email}
+   * @returns {Promise<Object>} - Response message
+   */
+  static async forgotPassword(data) {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/v1/api/forgot-password`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
       throw err;
     }
   }
@@ -55,7 +76,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal input jadwal:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -77,10 +97,6 @@ export class apiService {
       );
       return response.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil jadwal:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -107,10 +123,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal update stok obat:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -134,7 +146,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal hapus jadwal:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -163,7 +174,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal buat kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -185,10 +195,6 @@ export class apiService {
       );
       return response.data.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil kontrol:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -214,7 +220,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal edit kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -239,10 +244,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal tandai kontrol selesai:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -265,7 +266,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal hapus kontrol:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -294,7 +294,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error("Gagal tambah history:", err.response?.data || err.message);
       throw err;
     }
   }
@@ -316,10 +315,6 @@ export class apiService {
       );
       return response.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil history:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -348,10 +343,6 @@ export class apiService {
       );
       return response.data;
     } catch (err) {
-      console.error(
-        "Gagal buat peringatan:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -371,12 +362,8 @@ export class apiService {
           },
         }
       );
-      return response.data.data; // Extract the data array from the response
+      return response.data; // Extract the data array from the response
     } catch (err) {
-      console.error(
-        "Gagal mengambil peringatan:",
-        err.response?.data || err.message
-      );
       throw err;
     }
   }
@@ -415,5 +402,274 @@ export class apiService {
   static isAuthenticated() {
     const token = this.getToken();
     return !!token;
+  }
+
+  // ===============================
+  // NOTES ENDPOINTS
+  // ===============================
+
+  /**
+   * Get all notes for authenticated user
+   * @param {string} category - Optional category filter
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Notes data
+   */
+  static async getAllNotes(category = null, token) {
+    try {
+      const url = category
+        ? `${BASE_URL}/v1/api/notes?category=${category}`
+        : `${BASE_URL}/v1/api/notes`;
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Get a specific note by ID
+   * @param {string} noteId - Note ID
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Note data
+   */
+  static async getNoteById(noteId, token) {
+    try {
+      const response = await axios.get(`${BASE_URL}/v1/api/notes/${noteId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Create a new note
+   * @param {Object} noteData - {category, message}
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Created note data
+   */
+  static async createNote(noteData, token) {
+    try {
+      const response = await axios.post(`${BASE_URL}/v1/api/notes`, noteData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Update an existing note
+   * @param {string} noteId - Note ID
+   * @param {Object} updateData - {category?, message?}
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Updated note data
+   */
+  static async updateNote(noteId, updateData, token) {
+    try {
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/notes/${noteId}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Delete a note
+   * @param {string} noteId - Note ID
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Deleted note data
+   */
+  static async deleteNote(noteId, token) {
+    try {
+      const response = await axios.delete(
+        `${BASE_URL}/v1/api/notes/${noteId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Search notes
+   * @param {string} query - Search query
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Search results
+   */
+  static async searchNotes(query, token) {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/v1/api/notes/search?q=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Get notes statistics
+   * @param {string} token - JWT token
+   * @returns {Promise<Object>} - Notes statistics
+   */
+  static async getNotesStats(token) {
+    try {
+      const response = await axios.get(`${BASE_URL}/v1/api/notes/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // ===============================
+  // PROFILE ENDPOINTS
+  // ===============================
+
+  /**
+   * Update user profile
+   * @param {Object} profileData - {username, no_hp}
+   * @param {string} token - JWT token (optional, will get from localStorage if not provided)
+   * @returns {Promise<Object>} - Updated profile data
+   */
+  static async updateProfile(profileData, token = null) {
+    try {
+      const authToken = token || this.getToken();
+
+      // Build FormData to support optional image upload
+      const form = new FormData();
+      if (profileData?.username !== undefined)
+        form.append("username", profileData.username);
+      if (profileData?.no_hp !== undefined && profileData.no_hp !== null)
+        form.append("no_hp", profileData.no_hp);
+      if (profileData?.image) form.append("image", profileData.image);
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/update`,
+        form,
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            // Do NOT set Content-Type manually; let the browser set the multipart boundary
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Update user avatar
+   * @param {string} avatarUrl - Avatar URL
+   * @param {string} userId - User ID
+   * @param {string} token - JWT token (optional, will get from localStorage if not provided)
+   * @returns {Promise<Object>} - Updated avatar data
+   */
+  static async updatePhoneNumber(phoneNumber, userId, token = null) {
+    try {
+      const authToken = token || this.getToken();
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/phone`,
+        { no_hp: phoneNumber, user_id: userId },
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * @deprecated Use updatePhoneNumber instead
+   */
+  static async updateAvatar(avatarUrl, userId, token = null) {
+    try {
+      const authToken = token || this.getToken();
+
+      const response = await axios.put(
+        `${BASE_URL}/v1/api/profile/avatar`,
+        { avatar_url: avatarUrl, user_id: userId },
+        {
+          headers: {
+            Authorization: authToken ? `Bearer ${authToken}` : "",
+            "Content-Type": "application/json",
+            "x-user-id": userId, // Add user_id to headers as backup
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // does logs api
+
+  static async getLogs(token) {
+    const authToken = token || this.getToken();
+
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/v1/api/dose-log/status-today`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
   }
 }
