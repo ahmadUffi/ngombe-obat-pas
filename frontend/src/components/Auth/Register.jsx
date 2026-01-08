@@ -170,12 +170,13 @@ const Register = () => {
     }
 
     try {
-      // Sign up dengan email verification
+      // Sign up dan langsung anggap akun aktif (tanpa menunggu verifikasi email)
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email: state.email,
           password: state.password,
           options: {
+            // Masih boleh kirim email redirect, tapi kita tidak bergantung pada callback-nya
             emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: {
               username: state.username,
@@ -187,28 +188,11 @@ const Register = () => {
       if (signUpError) throw signUpError;
 
       const user = signUpData.user;
-
-      // Jika user perlu konfirmasi email (yang selalu terjadi dengan email verification)
-      if (user && !user.email_confirmed_at) {
-        dispatch({
-          type: "SET_SUCCESS",
-          value:
-            "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi sebelum login.",
-        });
-
-        toast.success(
-          "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.",
-          {
-            autoClose: 16000,
-          }
-        );
-
-        // Jangan lanjut ke create profile, tunggu email verification dulu
-        setLoading(false);
-        return;
+      if (!user) {
+        throw new Error("Gagal membuat akun pengguna");
       }
 
-      // Jika sudah confirmed (handle fallback)
+      // Langsung buat profil dan arahkan ke login (tanpa cek email_confirmed_at)
       await handlePostSignUp(user, phoneValidation.normalizedPhone);
     } catch (err) {
       const errorMessage = err.message || "Terjadi kesalahan saat registrasi";

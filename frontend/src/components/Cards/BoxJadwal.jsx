@@ -34,10 +34,16 @@ const BoxJadwal = ({
   }));
 
   // Status indicator based on stock level
+  // Calculate threshold dynamically: 2 days worth of doses
+  const frekuensiPerHari = jamAwal.length || 1; // berapa kali minum per hari
+  const dosisPerKonsumsi = parseInt(dosisObat) || 1; // berapa butir per sekali minum
+  const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi; // total butir per hari
+  const threshold = dosesPerDay * 2; // 2 days left
+
   const getStatusInfo = () => {
     if (jumlahObat === 0) {
       return { color: "bg-red-500", text: "Habis", textColor: "text-red-600" };
-    } else if (jumlahObat < 6) {
+    } else if (jumlahObat <= threshold) {
       return {
         color: "bg-orange-500",
         text: "Hampir Habis",

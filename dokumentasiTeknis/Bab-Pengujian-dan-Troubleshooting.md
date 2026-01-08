@@ -391,6 +391,8 @@ ORDER BY j.jumlah_obat ASC;
 
 #### A.2.4. Load Testing dengan k6 (Optional)
 
+> Catatan: Untuk panduan ringkas k6 yang berfokus pada berkas-berkas penting dan cara cepat menjalankannya, lihat dokumen: [Pengujian k6 (Ringkas)](./Pengujian-k6.md).
+
 ##### 📋 Setup k6
 
 **Install k6:**

@@ -153,7 +153,7 @@ app.listen(PORT, "0.0.0.0", () => {
 // Cron: stock checker (env-controlled)
 const CRON_ENABLED =
   (process.env.CRON_ENABLED || "false").toLowerCase() === "true";
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 7,19 * * *"; // default 07:00 & 19:00 WIB
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "46 15 * * *"; // default 07:00 & 19:00 WIB
 
 console.log(
   "CRON config:",

@@ -43,7 +43,8 @@ const EmailCallback = () => {
           throw profileCheckError;
         }
 
-        if (!existingProfile && user.user_metadata) {
+        // Buat profil jika belum ada (gunakan user_metadata jika tersedia, fallback ke email)
+        if (!existingProfile) {
           const { error: profileError } = await supabase
             .from("profile")
             .insert([
@@ -51,8 +52,8 @@ const EmailCallback = () => {
                 user_id: user.id,
                 email: user.email,
                 username:
-                  user.user_metadata.username || user.email.split("@")[0],
-                no_hp: user.user_metadata.phone || "",
+                  user.user_metadata?.username || user.email.split("@")[0],
+                no_hp: user.user_metadata?.phone || "",
               },
             ]);
 
@@ -69,6 +70,7 @@ const EmailCallback = () => {
         }, 3000);
       }
     } catch (error) {
+      console.error("Email verification error:", error);
       setStatus("error");
       setMessage(
         error.message ||

@@ -96,9 +96,26 @@ const Jadwal = () => {
   const filteredData = jadwalData.filter((item) => {
     if (filter === "all") return true;
     if (filter === "habis") return item.jumlah_obat === 0;
-    if (filter === "sedikit")
-      return item.jumlah_obat < 4 && item.jumlah_obat > 0;
-    if (filter === "aman") return item.jumlah_obat >= 4;
+    if (filter === "sedikit") {
+      // Calculate threshold dynamically: 2 days worth of doses
+      const frekuensiPerHari = Array.isArray(item.jam_awal)
+        ? item.jam_awal.length
+        : 1;
+      const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+      const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+      const threshold = dosesPerDay * 2; // 2 days left
+      return item.jumlah_obat > 0 && item.jumlah_obat <= threshold;
+    }
+    if (filter === "aman") {
+      // Calculate threshold dynamically: 2 days worth of doses
+      const frekuensiPerHari = Array.isArray(item.jam_awal)
+        ? item.jam_awal.length
+        : 1;
+      const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+      const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+      const threshold = dosesPerDay * 2; // 2 days left
+      return item.jumlah_obat > threshold;
+    }
     return true;
   });
 
@@ -398,9 +415,17 @@ const Jadwal = () => {
                     }`}
                   >
                     {
-                      jadwalData.filter(
-                        (item) => item.jumlah_obat < 6 && item.jumlah_obat > 0
-                      ).length
+                      jadwalData.filter((item) => {
+                        const frekuensiPerHari = Array.isArray(item.jam_awal)
+                          ? item.jam_awal.length
+                          : 1;
+                        const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+                        const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+                        const threshold = dosesPerDay * 2;
+                        return (
+                          item.jumlah_obat > 0 && item.jumlah_obat <= threshold
+                        );
+                      }).length
                     }
                   </div>
                   <div
@@ -430,7 +455,17 @@ const Jadwal = () => {
                       filter === "aman" ? "text-white" : "text-green-600"
                     }`}
                   >
-                    {jadwalData.filter((item) => item.jumlah_obat >= 6).length}
+                    {
+                      jadwalData.filter((item) => {
+                        const frekuensiPerHari = Array.isArray(item.jam_awal)
+                          ? item.jam_awal.length
+                          : 1;
+                        const dosisPerKonsumsi = parseInt(item.dosis_obat) || 1;
+                        const dosesPerDay = frekuensiPerHari * dosisPerKonsumsi;
+                        const threshold = dosesPerDay * 2;
+                        return item.jumlah_obat > threshold;
+                      }).length
+                    }
                   </div>
                   <div
                     className={`text-sm font-semibold ${
